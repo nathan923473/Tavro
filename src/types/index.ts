@@ -13,16 +13,20 @@ export type PersonalGoal = {
   weeklyCompletion: number;
 };
 
+/** Launch model: all challenges are free; no paid tiers in MVP. */
 export type Challenge = {
   id: string;
   title: string;
   creatorName: string;
+  creatorId: string;
   description: string;
   startDate: string;
   endDate: string;
   participants: number;
   joined: boolean;
   progressPercent: number;
+  inviteSlug: string;
+  focusAreas: string[];
 };
 
 export type GroupMember = {
@@ -35,9 +39,11 @@ export type AccountabilityGroup = {
   id: string;
   name: string;
   memberCount: number;
+  maxMembers: number;
   members: GroupMember[];
   recentMessage: string;
   checkInStreak: number;
+  inviteCode: string;
 };
 
 export type GroupActivity = {
@@ -60,4 +66,25 @@ export type DemoUser = {
   groupName?: string;
   primaryGoals: string[];
   habits: string[];
+  isCreator: boolean;
+  referralCode: string;
+};
+
+/** Voluntary social share — no weight numbers required. */
+export type AchievementCard = {
+  id: string;
+  headline: string;
+  subline: string;
+  streakDays: number;
+  consistencyPercent: number;
+  generatedAt: string;
+};
+
+export type CreatorAnalyticsSnapshot = {
+  inviteLinkClicks: number;
+  signUpsFromInvites: number;
+  dailyActiveParticipants: number;
+  challengeJoins: number;
+  referralSignUps: number;
+  periodLabel: string;
 };

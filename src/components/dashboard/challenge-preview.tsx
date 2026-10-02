@@ -31,7 +31,10 @@ export function ChallengePreview({ challenges }: ChallengePreviewProps) {
                     with {challenge.creatorName}
                   </p>
                 </div>
-                <Badge>{challenge.progressPercent}%</Badge>
+                <div className="flex flex-col items-end gap-1">
+                  <Badge>{challenge.progressPercent}%</Badge>
+                  <Badge tone="muted">Free</Badge>
+                </div>
               </div>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
                 <div

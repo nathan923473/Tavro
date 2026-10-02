@@ -1,6 +1,14 @@
+import { ShareableAchievementCard } from "@/components/share/shareable-achievement-card";
+import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
-import { consistencyMetrics, weeklyProgress } from "@/lib/mock-data";
+import {
+  consistencyMetrics,
+  demoUser,
+  latestAchievement,
+  weeklyProgress,
+} from "@/lib/mock-data";
+import { Share2 } from "lucide-react";
 
 export const metadata = {
   title: "Progress",
@@ -11,23 +19,46 @@ export default function ProgressPage() {
     <div className="animate-fade-up">
       <PageHeader
         title="Progress"
-        subtitle="Private trends · celebrate consistency"
+        subtitle="Private trends · share wins if you want"
       />
       <div className="space-y-4 px-4 py-4">
         <Card>
           <p className="text-sm text-muted-foreground">
-            Your progress is visible only to you unless you choose to share
-            encouragement in a group. Skipped days are part of a sustainable
-            journey.
+            Your data stays private by default. Achievement cards never include
+            weight — only habits and consistency you choose to celebrate.
           </p>
         </Card>
+
+        <section aria-labelledby="achievement-heading">
+          <h2
+            id="achievement-heading"
+            className="mb-2 flex items-center gap-2 px-1 text-base font-semibold"
+          >
+            <Share2 className="h-4 w-4 text-primary" aria-hidden />
+            Shareable achievement
+          </h2>
+          <ShareableAchievementCard
+            achievement={latestAchievement}
+            userName={demoUser.firstName}
+          />
+          <p className="mt-2 px-1 text-xs text-muted-foreground">
+            Screenshot this card or copy a link for Instagram — totally optional.
+          </p>
+          <div className="mt-3">
+            <CopyLinkButton
+              url="/progress"
+              label="Copy link to my progress (demo)"
+              fullWidth
+            />
+          </div>
+        </section>
 
         <section aria-labelledby="week-chart-heading">
           <h2 id="week-chart-heading" className="mb-2 px-1 text-base font-semibold">
             This week
           </h2>
           <Card>
-            <div className="flex items-end justify-between gap-2 h-36">
+            <div className="flex h-36 items-end justify-between gap-2">
               {weeklyProgress.map((day) => {
                 const pct =
                   day.total === 0

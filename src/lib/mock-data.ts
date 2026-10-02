@@ -1,7 +1,9 @@
 import type {
   AccountabilityGroup,
+  AchievementCard,
   Challenge,
   ConsistencySnapshot,
+  CreatorAnalyticsSnapshot,
   DemoUser,
   GroupActivity,
   PersonalGoal,
@@ -13,6 +15,26 @@ export const demoUser: DemoUser = {
   groupName: "Morning Momentum",
   primaryGoals: ["Build consistent movement", "Improve daily energy"],
   habits: ["Daily walk", "Water intake", "Evening wind-down"],
+  isCreator: false,
+  referralCode: "jordan-7k2m",
+};
+
+export const demoCreatorAnalytics: CreatorAnalyticsSnapshot = {
+  inviteLinkClicks: 1240,
+  signUpsFromInvites: 186,
+  dailyActiveParticipants: 94,
+  challengeJoins: 312,
+  referralSignUps: 48,
+  periodLabel: "Last 7 days",
+};
+
+export const latestAchievement: AchievementCard = {
+  id: "ach1",
+  headline: "12 days of showing up",
+  subline: "Movement & mindfulness — at my own pace",
+  streakDays: 12,
+  consistencyPercent: 78,
+  generatedAt: "2026-10-02",
 };
 
 export const todaysGoals: PersonalGoal[] = [
@@ -50,37 +72,86 @@ export const todaysGoals: PersonalGoal[] = [
   },
 ];
 
-export const activeChallenges: Challenge[] = [
+export const myChallenges: Challenge[] = [
   {
     id: "c1",
     title: "7-Day Gentle Reset",
     creatorName: "Coach Riley",
-    description: "Small daily wins: walk, hydrate, and one nourishing meal.",
+    creatorId: "creator-riley",
+    description:
+      "Small daily wins: walk, hydrate, and one nourishing meal. No weigh-ins.",
     startDate: "2026-09-28",
     endDate: "2026-10-05",
     participants: 842,
     joined: true,
     progressPercent: 57,
+    inviteSlug: "gentle-reset-riley",
+    focusAreas: ["Consistency", "Hydration", "Gentle movement"],
   },
+];
+
+export const discoverChallenges: Challenge[] = [
   {
     id: "c2",
     title: "Walk Before Coffee",
     creatorName: "Alex Fit",
-    description: "Start mornings with 10 minutes outside — no perfection required.",
+    creatorId: "creator-alex",
+    description:
+      "Start mornings with 10 minutes outside — no perfection required.",
     startDate: "2026-10-01",
     endDate: "2026-10-31",
     participants: 1204,
     joined: false,
     progressPercent: 0,
+    inviteSlug: "walk-before-coffee",
+    focusAreas: ["Morning routine", "Steps"],
   },
+  {
+    id: "c3",
+    title: "Hydration & High-Fives",
+    creatorName: "Coach Riley",
+    creatorId: "creator-riley",
+    description:
+      "Hit your water goal and send one encouragement to a group mate daily.",
+    startDate: "2026-10-08",
+    endDate: "2026-10-22",
+    participants: 456,
+    joined: false,
+    progressPercent: 0,
+    inviteSlug: "hydration-high-fives",
+    focusAreas: ["Hydration", "Community"],
+  },
+  {
+    id: "c4",
+    title: "Evening Wind-Down Club",
+    creatorName: "Sam Wellness",
+    creatorId: "creator-sam",
+    description:
+      "Five minutes to stretch, breathe, or journal — build a calmer night routine.",
+    startDate: "2026-10-01",
+    endDate: "2026-11-01",
+    participants: 678,
+    joined: false,
+    progressPercent: 0,
+    inviteSlug: "evening-wind-down",
+    focusAreas: ["Sleep hygiene", "Mindfulness"],
+  },
+];
+
+/** @deprecated Use myChallenges + discoverChallenges */
+export const activeChallenges: Challenge[] = [
+  ...myChallenges,
+  ...discoverChallenges,
 ];
 
 export const accountabilityGroup: AccountabilityGroup = {
   id: "grp1",
   name: "Morning Momentum",
   memberCount: 6,
+  maxMembers: 8,
   checkInStreak: 4,
   recentMessage: "Who’s joining the lunchtime walk today?",
+  inviteCode: "morning-momentum-x3",
   members: [
     { id: "m1", displayName: "Jordan", checkedInToday: true },
     { id: "m2", displayName: "Sam", checkedInToday: true },
@@ -130,3 +201,7 @@ export const weeklyProgress = [
   { day: "Sat", completed: 0, total: 4 },
   { day: "Sun", completed: 0, total: 4 },
 ];
+
+export function getChallengeBySlug(slug: string): Challenge | undefined {
+  return activeChallenges.find((c) => c.inviteSlug === slug);
+}

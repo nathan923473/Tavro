@@ -2,8 +2,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
+import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { accountabilityGroup, groupFeed } from "@/lib/mock-data";
-import { Heart, MessageCircle, Users } from "lucide-react";
+import { groupInvitePath } from "@/lib/site-url";
+import { Heart, MessageCircle, UserPlus, Users } from "lucide-react";
 
 export const metadata = {
   title: "Groups",
@@ -29,8 +31,8 @@ export default function GroupsPage() {
             <div className="flex-1">
               <h2 className="text-lg font-semibold">{accountabilityGroup.name}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {accountabilityGroup.memberCount} members · optional participation ·
-                no public weigh-ins
+                {accountabilityGroup.memberCount}/{accountabilityGroup.maxMembers}{" "}
+                members · invite friends · no public weigh-ins
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Badge tone="success">
@@ -42,11 +44,28 @@ export default function GroupsPage() {
               </div>
             </div>
           </div>
-          <div className="mt-4 flex gap-2">
-            <Button fullWidth>Open group chat</Button>
-            <Button variant="outline" fullWidth>
-              Leave group
-            </Button>
+          <div className="mt-4 space-y-2">
+            <CopyLinkButton
+              url={groupInvitePath(accountabilityGroup.inviteCode)}
+              label="Copy group invite link"
+              fullWidth
+            />
+            <div className="flex gap-2">
+              <Button fullWidth>Open group chat</Button>
+              <Button variant="outline" fullWidth>
+                Leave group
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="border-dashed">
+          <div className="flex gap-2 text-sm text-muted-foreground">
+            <UserPlus className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+            <p>
+              Start another circle anytime. Groups stay small (4–8) so
+              encouragement feels personal, not competitive.
+            </p>
           </div>
         </Card>
 

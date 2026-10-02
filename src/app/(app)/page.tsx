@@ -1,13 +1,14 @@
 import { ChallengePreview } from "@/components/dashboard/challenge-preview";
 import { CheckInCard } from "@/components/dashboard/check-in-card";
 import { ConsistencyCard } from "@/components/dashboard/consistency-card";
+import { ReferralCard } from "@/components/dashboard/referral-card";
 import { GroupActivityPreview } from "@/components/dashboard/group-activity-preview";
 import { TodaysGoals } from "@/components/dashboard/todays-goals";
 import { WelcomeBanner } from "@/components/dashboard/welcome-banner";
 import { PageHeader } from "@/components/layout/page-header";
 import {
   accountabilityGroup,
-  activeChallenges,
+  myChallenges,
   consistencyMetrics,
   demoUser,
   groupFeed,
@@ -28,7 +29,8 @@ export default function HomePage() {
         />
         <CheckInCard />
         <TodaysGoals goals={todaysGoals} />
-        <ChallengePreview challenges={activeChallenges} />
+        <ChallengePreview challenges={myChallenges} />
+        <ReferralCard referralCode={demoUser.referralCode} />
         {demoUser.joinedGroup ? (
           <GroupActivityPreview group={accountabilityGroup} feed={groupFeed} />
         ) : null}
