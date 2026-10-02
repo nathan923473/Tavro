@@ -14,6 +14,7 @@ import {
   LogOut,
   Shield,
   UserRound,
+  Users,
 } from "lucide-react";
 
 export const metadata = {
@@ -63,18 +64,48 @@ export default function ProfilePage() {
         </Card>
 
         <Card>
+          <h2 className="font-semibold">Communities</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Follow creators for free challenges — no auto-enrolment.
+          </p>
+          <div className="mt-3 space-y-2">
+            <Link
+              href="/following"
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface text-sm font-semibold"
+            >
+              <Users className="h-4 w-4" aria-hidden />
+              Communities I follow
+            </Link>
+            <Link
+              href="/creator/sarahfitness"
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface text-sm font-semibold"
+            >
+              Explore Coach Sarah&apos;s community
+            </Link>
+          </div>
+        </Card>
+
+        <Card>
           <h2 className="font-semibold">Fitness creators</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Host free challenges with unique invite links. No subscriptions or paid
-            challenges during launch.
+            Host free challenges with unique invite links. No subscriptions during
+            launch.
           </p>
-          <Link
-            href="/creator/analytics"
-            className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface text-sm font-semibold"
-          >
-            <BarChart3 className="h-4 w-4" aria-hidden />
-            View creator analytics (demo)
-          </Link>
+          <div className="mt-3 space-y-2">
+            <Link
+              href="/creator/dashboard"
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+            >
+              <BarChart3 className="h-4 w-4" aria-hidden />
+              Creator dashboard (demo)
+            </Link>
+            <Link
+              href="/creator/analytics"
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface text-sm font-semibold"
+            >
+              Invite analytics
+            </Link>
+          </div>
         </Card>
 
         <InstallPrompt />

@@ -2,7 +2,9 @@ import { ChallengeCard } from "@/components/challenges/challenge-card";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { discoverChallenges, myChallenges } from "@/lib/mock-data";
-import { Compass, Heart } from "lucide-react";
+import { creatorCommunities } from "@/lib/mock-creators";
+import { Compass, Heart, Sparkles } from "lucide-react";
+import Link from "next/link";
 
 export const metadata = {
   title: "Challenges",
@@ -44,6 +46,39 @@ export default function ChallengesPage() {
             {myChallenges.map((challenge) => (
               <li key={challenge.id}>
                 <ChallengeCard challenge={challenge} showShareLink />
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section aria-labelledby="creators-heading">
+          <h2
+            id="creators-heading"
+            className="mb-2 flex items-center gap-2 px-1 text-base font-semibold"
+          >
+            <Sparkles className="h-4 w-4 text-primary" aria-hidden />
+            Creator communities
+          </h2>
+          <ul className="mb-6 space-y-2">
+            {creatorCommunities.map((c) => (
+              <li key={c.id}>
+                <Link href={`/creator/${c.slug}`}>
+                  <Card className="flex items-center gap-3 p-3 transition-colors hover:bg-muted/40">
+                    <div
+                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white"
+                      style={{ backgroundColor: c.brandColor }}
+                    >
+                      {c.avatarInitials}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">{c.communityName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {c.memberCount.toLocaleString()} members ·{" "}
+                        {c.challengesHosted} challenges
+                      </p>
+                    </div>
+                  </Card>
+                </Link>
               </li>
             ))}
           </ul>
