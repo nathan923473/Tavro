@@ -1,8 +1,17 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import type { WeightProgressSummary, WeeklyWeighIn } from "@/types";
+import { WeightUnitToggle } from "@/components/progress/weight-unit-toggle";
+import {
+  convertWeight,
+  readStoredWeightUnit,
+  storeWeightUnit,
+} from "@/lib/weight-units";
+import type { WeightProgressSummary, WeightUnit, WeeklyWeighIn } from "@/types";
 import { Lock, Scale } from "lucide-react";
+import { useMemo, useSyncExternalStore } from "react";
 
 type WeightProgressChartProps = {
   weighIns: WeeklyWeighIn[];
@@ -16,24 +25,81 @@ const CHART = {
   padY: 12,
 };
 
+/** Weigh-ins in mock/API data are stored in `summary.unit` (lb for demo). */
+function toDisplayWeight(
+  value: number,
+  storageUnit: WeightUnit,
+  displayUnit: WeightUnit,
+): number {
+  return convertWeight(value, storageUnit, displayUnit);
+}
+
 export function WeightProgressChart({
   weighIns,
   summary,
 }: WeightProgressChartProps) {
-  const weights = weighIns.map((w) => w.weight);
-  const minW = Math.min(...weights) - 2;
-  const maxW = Math.max(...weights) + 2;
+  const storageUnit = summary.unit;
+
+  const displayUnit = useSyncExternalStore(
+    (onStoreChange) => {
+      const handler = () => onStoreChange();
+      window.addEventListener("storage", handler);
+      return () => window.removeEventListener("storage", handler);
+    },
+    readStoredWeightUnit,
+    (): WeightUnit => "lb",
+  );
+
+  function handleUnitChange(unit: WeightUnit) {
+    storeWeightUnit(unit);
+    window.dispatchEvent(new Event("storage"));
+  }
+
+  const displayWeighIns = useMemo(
+    () =>
+      weighIns.map((entry) => ({
+        ...entry,
+        weight: toDisplayWeight(entry.weight, storageUnit, displayUnit),
+      })),
+    [weighIns, storageUnit, displayUnit],
+  );
+
+  const displaySummary = useMemo(
+    () => ({
+      startWeight: toDisplayWeight(
+        summary.startWeight,
+        storageUnit,
+        displayUnit,
+      ),
+      currentWeight: toDisplayWeight(
+        summary.currentWeight,
+        storageUnit,
+        displayUnit,
+      ),
+      goalWeight:
+        summary.goalWeight != null
+          ? toDisplayWeight(summary.goalWeight, storageUnit, displayUnit)
+          : undefined,
+    }),
+    [summary, storageUnit, displayUnit],
+  );
+
+  const weights = displayWeighIns.map((w) => w.weight);
+  const pad = displayUnit === "kg" ? 0.8 : 2;
+  const minW = Math.min(...weights) - pad;
+  const maxW = Math.max(...weights) + pad;
   const range = maxW - minW || 1;
 
   const plotW = CHART.width - CHART.padX * 2;
   const plotH = CHART.height - CHART.padY * 2;
 
-  const points = weighIns.map((entry, i) => {
+  const points = displayWeighIns.map((entry, i) => {
     const x =
       CHART.padX +
-      (weighIns.length <= 1 ? plotW / 2 : (i / (weighIns.length - 1)) * plotW);
-    const y =
-      CHART.padY + ((maxW - entry.weight) / range) * plotH;
+      (displayWeighIns.length <= 1
+        ? plotW / 2
+        : (i / (displayWeighIns.length - 1)) * plotW);
+    const y = CHART.padY + ((maxW - entry.weight) / range) * plotH;
     return { x, y, entry };
   });
 
@@ -43,8 +109,8 @@ export function WeightProgressChart({
 
   const areaPath = `${linePath} L ${points[points.length - 1]?.x.toFixed(1) ?? 0} ${CHART.height - CHART.padY} L ${points[0]?.x.toFixed(1) ?? 0} ${CHART.height - CHART.padY} Z`;
 
-  const totalChange = summary.currentWeight - summary.startWeight;
-  const unit = summary.unit;
+  const totalChange =
+    displaySummary.currentWeight - displaySummary.startWeight;
 
   return (
     <Card>
@@ -58,10 +124,13 @@ export function WeightProgressChart({
             <p className="text-xs text-muted-foreground">Weekly weigh-ins · private</p>
           </div>
         </div>
-        <Badge tone="muted" className="gap-1">
-          <Lock className="h-3 w-3" aria-hidden />
-          Only you
-        </Badge>
+        <div className="flex flex-col items-end gap-2">
+          <WeightUnitToggle value={displayUnit} onChange={handleUnitChange} />
+          <Badge tone="muted" className="gap-1">
+            <Lock className="h-3 w-3" aria-hidden />
+            Only you
+          </Badge>
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-2 text-center">
@@ -70,7 +139,7 @@ export function WeightProgressChart({
             Start
           </p>
           <p className="text-sm font-semibold tabular-nums">
-            {summary.startWeight} {unit}
+            {displaySummary.startWeight.toFixed(1)} {displayUnit}
           </p>
         </div>
         <div className="rounded-xl bg-primary/10 px-2 py-2">
@@ -78,7 +147,7 @@ export function WeightProgressChart({
             Current
           </p>
           <p className="text-sm font-semibold tabular-nums text-primary">
-            {summary.currentWeight} {unit}
+            {displaySummary.currentWeight.toFixed(1)} {displayUnit}
           </p>
         </div>
         <div className="rounded-xl bg-muted/60 px-2 py-2">
@@ -87,7 +156,7 @@ export function WeightProgressChart({
           </p>
           <p className="text-sm font-semibold tabular-nums">
             {totalChange <= 0 ? "" : "+"}
-            {totalChange.toFixed(1)} {unit}
+            {totalChange.toFixed(1)} {displayUnit}
           </p>
         </div>
       </div>
@@ -97,7 +166,7 @@ export function WeightProgressChart({
           viewBox={`0 0 ${CHART.width} ${CHART.height}`}
           className="mx-auto h-40 w-full max-w-md"
           role="img"
-          aria-label={`Weight trend from ${summary.startWeight} to ${summary.currentWeight} ${unit} over ${weighIns.length} weekly weigh-ins`}
+          aria-label={`Weight trend from ${displaySummary.startWeight.toFixed(1)} to ${displaySummary.currentWeight.toFixed(1)} ${displayUnit} over ${displayWeighIns.length} weekly weigh-ins`}
         >
           <defs>
             <linearGradient id="weightFill" x1="0" y1="0" x2="0" y2="1">
@@ -131,9 +200,16 @@ export function WeightProgressChart({
           />
           {points.map(({ x, y, entry }) => (
             <g key={entry.id}>
-              <circle cx={x} cy={y} r="4" fill="var(--surface)" stroke="var(--primary)" strokeWidth="2" />
+              <circle
+                cx={x}
+                cy={y}
+                r="4"
+                fill="var(--surface)"
+                stroke="var(--primary)"
+                strokeWidth="2"
+              />
               <title>
-                {entry.label}: {entry.weight} {unit}
+                {entry.label}: {entry.weight.toFixed(1)} {displayUnit}
               </title>
             </g>
           ))}
@@ -141,8 +217,10 @@ export function WeightProgressChart({
       </div>
 
       <ul className="mt-2 flex justify-between gap-1 px-1 text-[10px] text-muted-foreground">
-        {weighIns.map((entry, i) =>
-          i === 0 || i === weighIns.length - 1 || i === Math.floor(weighIns.length / 2) ? (
+        {displayWeighIns.map((entry, i) =>
+          i === 0 ||
+          i === displayWeighIns.length - 1 ||
+          i === Math.floor(displayWeighIns.length / 2) ? (
             <li key={entry.id}>{entry.label}</li>
           ) : (
             <li key={entry.id} className="sr-only">
@@ -152,14 +230,15 @@ export function WeightProgressChart({
         )}
       </ul>
 
-      {summary.goalWeight != null ? (
+      {displaySummary.goalWeight != null ? (
         <p className="mt-3 text-center text-xs text-muted-foreground">
-          Personal goal: {summary.goalWeight} {unit} — steady progress beats quick drops.
+          Personal goal: {displaySummary.goalWeight.toFixed(1)} {displayUnit} —
+          steady progress beats quick drops.
         </p>
       ) : null}
 
       <Button className="mt-4" variant="secondary" fullWidth aria-disabled>
-        Log weekly weigh-in
+        Log weekly weigh-in ({displayUnit})
       </Button>
     </Card>
   );
