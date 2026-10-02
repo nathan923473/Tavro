@@ -54,6 +54,28 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 So “Copy invite link” buttons use your local URL while testing.
 
+### Localhost not working?
+
+1. **Cursor cloud vs your PC** — `localhost` in Chrome on your laptop only works if **you** ran `npm run dev` in a **cloned copy** of the repo on that same laptop. The agent’s Preview is separate; your home `localhost` is not the cloud server.
+
+2. **Check setup:**
+   ```bash
+   npm run doctor
+   ```
+
+3. **Port 3000 busy** (common error: `EADDRINUSE`):
+   ```bash
+   npm run dev:alt
+   ```
+   Open **http://localhost:3456**
+
+4. **Turbopack issues** — try:
+   ```bash
+   npm run dev:webpack
+   ```
+
+5. Leave the terminal **open** while the app runs. Closing it stops the server.
+
 ## Install as PWA
 
 ### iPhone (Safari)
