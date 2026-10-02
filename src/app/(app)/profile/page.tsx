@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
+import { SupabaseStatus } from "@/components/profile/supabase-status";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { demoUser } from "@/lib/mock-data";
 import { userReferralPath } from "@/lib/site-url";
@@ -107,6 +108,8 @@ export default function ProfilePage() {
             </Link>
           </div>
         </Card>
+
+        <SupabaseStatus />
 
         <InstallPrompt />
 
