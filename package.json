@@ -3,9 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3000 --turbopack",
+    "dev": "next dev -p 3000 -H 127.0.0.1 --turbopack",
+    "dev:alt": "next dev -p 3456 -H 127.0.0.1 --turbopack",
+    "dev:webpack": "next dev -p 3000 -H 127.0.0.1 --webpack",
     "build": "next build --webpack",
-    "start": "next start -p 3000",
+    "start": "next start -p 3000 -H 127.0.0.1",
+    "doctor": "node scripts/doctor.mjs",
     "lint": "eslint",
     "icons": "node scripts/generate-icons.mjs",
     "postinstall": "node scripts/generate-icons.mjs"
