@@ -27,12 +27,32 @@ src/
 
 ## Run locally
 
+**Requirements:** [Node.js](https://nodejs.org) 20 LTS (or 18+).
+
 ```bash
+cd streakly   # folder that contains package.json
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). Leave the terminal open while you use the app.
+
+**Production-like local host** (installable PWA + service worker):
+
+```bash
+npm run build
+npm run start
+```
+
+Then open [http://localhost:3000](http://localhost:3000) again.
+
+Optional — copy `.env.example` to `.env.local` and set:
+
+```env
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+So “Copy invite link” buttons use your local URL while testing.
 
 ## Install as PWA
 
