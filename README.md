@@ -27,10 +27,10 @@ src/
 
 ```bash
 npm install
-npm run dev -- -p 43123
+npm run dev
 ```
 
-Open [http://localhost:43123](http://localhost:43123).
+Open [http://localhost:3000](http://localhost:3000).
 
 ## Install as PWA
 
