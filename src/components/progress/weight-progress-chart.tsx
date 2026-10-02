@@ -8,6 +8,7 @@ import {
   convertWeight,
   readStoredWeightUnit,
   storeWeightUnit,
+  subscribeWeightUnit,
 } from "@/lib/weight-units";
 import type { WeightProgressSummary, WeightUnit, WeeklyWeighIn } from "@/types";
 import { Lock, Scale } from "lucide-react";
@@ -41,18 +42,13 @@ export function WeightProgressChart({
   const storageUnit = summary.unit;
 
   const displayUnit = useSyncExternalStore(
-    (onStoreChange) => {
-      const handler = () => onStoreChange();
-      window.addEventListener("storage", handler);
-      return () => window.removeEventListener("storage", handler);
-    },
+    subscribeWeightUnit,
     readStoredWeightUnit,
     (): WeightUnit => "lb",
   );
 
   function handleUnitChange(unit: WeightUnit) {
     storeWeightUnit(unit);
-    window.dispatchEvent(new Event("storage"));
   }
 
   const displayWeighIns = useMemo(

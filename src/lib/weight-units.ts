@@ -17,7 +17,14 @@ export function formatWeight(value: number, unit: WeightUnit): string {
   return `${value.toFixed(decimals)} ${unit}`;
 }
 
-export const WEIGHT_UNIT_STORAGE_KEY = "steady-circle-weight-unit";
+export const WEIGHT_UNIT_STORAGE_KEY = "streakly-weight-unit";
+
+const unitListeners = new Set<() => void>();
+
+export function subscribeWeightUnit(onStoreChange: () => void): () => void {
+  unitListeners.add(onStoreChange);
+  return () => unitListeners.delete(onStoreChange);
+}
 
 export function readStoredWeightUnit(): WeightUnit {
   if (typeof window === "undefined") return "lb";
@@ -27,4 +34,5 @@ export function readStoredWeightUnit(): WeightUnit {
 
 export function storeWeightUnit(unit: WeightUnit): void {
   window.localStorage.setItem(WEIGHT_UNIT_STORAGE_KEY, unit);
+  unitListeners.forEach((listener) => listener());
 }

@@ -42,7 +42,7 @@ export default async function GroupInvitePage({ params }: GroupInvitePageProps) 
           <Link href="/" className="font-medium text-primary">
             Skip for now
           </Link>{" "}
-          and use SteadyCircle solo
+          and use Streakly solo
         </p>
       </div>
     </div>

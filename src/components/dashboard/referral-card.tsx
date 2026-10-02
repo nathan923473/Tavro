@@ -17,7 +17,7 @@ export function ReferralCard({ referralCode }: ReferralCardProps) {
         <div className="flex-1">
           <h2 className="font-semibold">Invite a friend</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            SteadyCircle is free. Share your link — they can join solo or hop into
+            Streakly is free. Share your link — they can join solo or hop into
             a challenge with you.
           </p>
           <div className="mt-3">

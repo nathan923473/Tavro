@@ -6,7 +6,7 @@ export function getAppBaseUrl(): string {
   if (typeof window !== "undefined") {
     return window.location.origin;
   }
-  return "https://steady.circle";
+  return "https://streakly.app";
 }
 
 export function challengeInvitePath(slug: string): string {

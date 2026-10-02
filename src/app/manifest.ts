@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "SteadyCircle — Weight Loss Accountability",
-    short_name: "SteadyCircle",
+    name: "Streakly — Weight Loss Accountability",
+    short_name: "Streakly",
     description:
       "Build sustainable habits with personal goals, accountability groups, and creator challenges.",
     start_url: "/",

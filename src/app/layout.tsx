@@ -14,16 +14,16 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "SteadyCircle",
-    template: "%s · SteadyCircle",
+    default: "Streakly",
+    template: "%s · Streakly",
   },
   description:
     "Sustainable weight-loss accountability through personal goals, small groups, and creator challenges.",
-  applicationName: "SteadyCircle",
+  applicationName: "Streakly",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "SteadyCircle",
+    title: "Streakly",
   },
   formatDetection: {
     telephone: false,

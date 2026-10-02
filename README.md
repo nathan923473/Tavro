@@ -1,4 +1,4 @@
-# SteadyCircle
+# Streakly
 
 Mobile-first Progressive Web App for sustainable weight-loss accountability: personal goals, optional small groups, and creator challenges.
 
@@ -40,7 +40,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 1. Open the app in **Safari** (installation from Chrome on iOS is limited).
 2. Tap **Share** → **Add to Home Screen**.
-3. Launch **SteadyCircle** from your home screen for standalone mode.
+3. Launch **Streakly** from your home screen for standalone mode.
 
 ### Android (Chrome)
 

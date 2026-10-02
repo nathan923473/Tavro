@@ -20,7 +20,7 @@ export function ShareableAchievementCard({
       <div className="relative space-y-3">
         <div className="flex items-center gap-2 text-sm text-white/90">
           <Sparkles className="h-4 w-4" aria-hidden />
-          <span>SteadyCircle · shared voluntarily</span>
+          <span>Streakly · shared voluntarily</span>
         </div>
         <p className="text-xl font-semibold leading-tight">
           {achievement.headline}

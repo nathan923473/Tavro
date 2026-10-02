@@ -44,7 +44,7 @@ export function OnboardingFlow() {
       {step === 0 ? (
         <div className="animate-fade-up flex flex-1 flex-col">
           <h1 className="text-2xl font-semibold tracking-tight">
-            Welcome to SteadyCircle
+            Welcome to Streakly
           </h1>
           <p className="mt-2 text-muted-foreground">
             Free for everyone at launch. Pick one focus — you can change it anytime.

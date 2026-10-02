@@ -70,7 +70,7 @@ export function InstallPrompt() {
     <Card className="border-primary/20 bg-secondary/40">
       <h2 className="font-semibold">Install the app</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Add SteadyCircle to your home screen for a full-screen, app-like
+        Add Streakly to your home screen for a full-screen, app-like
         experience.
       </p>
 
@@ -86,7 +86,7 @@ export function InstallPrompt() {
             Tap Share in Safari
           </li>
           <li>Scroll and choose &quot;Add to Home Screen&quot;</li>
-          <li>Open SteadyCircle from your home screen</li>
+          <li>Open Streakly from your home screen</li>
         </ol>
       ) : (
         <p className="mt-4 text-sm text-muted-foreground">
