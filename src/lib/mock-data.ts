@@ -7,6 +7,8 @@ import type {
   DemoUser,
   GroupActivity,
   PersonalGoal,
+  WeightProgressSummary,
+  WeeklyWeighIn,
 } from "@/types";
 
 export const demoUser: DemoUser = {
@@ -190,6 +192,26 @@ export const consistencyMetrics: ConsistencySnapshot[] = [
   { label: "Goals completed this week", value: 18, target: 28 },
   { label: "Check-ins logged", value: 5, target: 7 },
   { label: "Active days (30d)", value: 22, target: 30 },
+];
+
+/** Private weekly weigh-ins — demo only; never shown on achievement cards or groups. */
+export const weightProgressSummary: WeightProgressSummary = {
+  unit: "lb",
+  startWeight: 198,
+  currentWeight: 191.2,
+  goalWeight: 180,
+};
+
+export const weeklyWeighIns: WeeklyWeighIn[] = [
+  { id: "w1", date: "2026-08-08", label: "Aug 8", weight: 198 },
+  { id: "w2", date: "2026-08-15", label: "Aug 15", weight: 197.2 },
+  { id: "w3", date: "2026-08-22", label: "Aug 22", weight: 196.8 },
+  { id: "w4", date: "2026-08-29", label: "Aug 29", weight: 195.5 },
+  { id: "w5", date: "2026-09-05", label: "Sep 5", weight: 195.1 },
+  { id: "w6", date: "2026-09-12", label: "Sep 12", weight: 194.0 },
+  { id: "w7", date: "2026-09-19", label: "Sep 19", weight: 193.4 },
+  { id: "w8", date: "2026-09-26", label: "Sep 26", weight: 192.5 },
+  { id: "w9", date: "2026-10-03", label: "Oct 3", weight: 191.2 },
 ];
 
 export const weeklyProgress = [

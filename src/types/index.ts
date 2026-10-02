@@ -80,6 +80,22 @@ export type AchievementCard = {
   generatedAt: string;
 };
 
+export type WeightUnit = "lb" | "kg";
+
+export type WeeklyWeighIn = {
+  id: string;
+  date: string;
+  label: string;
+  weight: number;
+};
+
+export type WeightProgressSummary = {
+  unit: WeightUnit;
+  startWeight: number;
+  currentWeight: number;
+  goalWeight?: number;
+};
+
 export type CreatorAnalyticsSnapshot = {
   inviteLinkClicks: number;
   signUpsFromInvites: number;

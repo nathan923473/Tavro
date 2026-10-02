@@ -2,11 +2,14 @@ import { ShareableAchievementCard } from "@/components/share/shareable-achieveme
 import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
+import { WeightProgressChart } from "@/components/progress/weight-progress-chart";
 import {
   consistencyMetrics,
   demoUser,
   latestAchievement,
   weeklyProgress,
+  weeklyWeighIns,
+  weightProgressSummary,
 } from "@/lib/mock-data";
 import { Share2 } from "lucide-react";
 
@@ -51,6 +54,16 @@ export default function ProgressPage() {
               fullWidth
             />
           </div>
+        </section>
+
+        <section aria-labelledby="weight-chart-heading">
+          <h2 id="weight-chart-heading" className="mb-2 px-1 text-base font-semibold">
+            Weight loss progress
+          </h2>
+          <WeightProgressChart
+            weighIns={weeklyWeighIns}
+            summary={weightProgressSummary}
+          />
         </section>
 
         <section aria-labelledby="week-chart-heading">
