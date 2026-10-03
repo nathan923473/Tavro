@@ -71,10 +71,32 @@ export async function signUpMember(input: {
 
   if (error) {
     const msg = error.message;
-    if (
-      msg.toLowerCase().includes("already") ||
-      msg.toLowerCase().includes("registered")
-    ) {
+    if (isAlreadyRegisteredError(msg) && process.env.NODE_ENV !== "production") {
+      const userId = await findUserIdByEmail(admin, email);
+      if (userId) {
+        const { error: updateError } = await admin.auth.admin.updateUserById(
+          userId,
+          { password, email_confirm: true },
+        );
+        if (!updateError) {
+          await admin.from("profiles").upsert(
+            {
+              id: userId,
+              display_name: displayName,
+              referral_code: randomBytes(6).toString("hex"),
+            },
+            { onConflict: "id" },
+          );
+          return { ok: true };
+        }
+      }
+      return {
+        ok: false,
+        message:
+          "That email already has an account. Use Log in with the same password, or Sign up again here to reset your dev password.",
+      };
+    }
+    if (isAlreadyRegisteredError(msg)) {
       return {
         ok: false,
         message: "That email already has an account. Try Log in instead.",

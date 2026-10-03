@@ -32,14 +32,20 @@ export function BecomeCreatorForm() {
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium">
-            Main social link (optional)
+            Primary social profile link{" "}
+            <span className="text-destructive">*</span>
           </label>
           <input
             name="social_link"
             type="url"
-            placeholder="https://instagram.com/..."
+            required
+            placeholder="https://instagram.com/yourhandle"
             className="w-full rounded-xl border border-border px-3 py-2.5 text-sm"
           />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Must be the account you control. You will verify ownership after
+            applying.
+          </p>
         </div>
         <Button type="submit" fullWidth>
           Submit for review

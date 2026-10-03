@@ -62,8 +62,8 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
         }
 
         const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: normalizedEmail,
+          password: normalizedPassword,
           options: {
             data: { display_name: displayName || email.split("@")[0] },
             emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
@@ -82,8 +82,8 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
         return;
       } else {
         const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+          email: normalizedEmail,
+          password: normalizedPassword,
         });
         if (error) throw error;
         await syncProfileAfterAuth();
@@ -102,6 +102,13 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
       ) {
         setMessage(
           "Supabase is blocking sign-ups because too many confirmation emails were sent. Fix: Supabase → Authentication → Providers → Email → turn OFF “Confirm email”, wait ~1 hour, or add your user manually under Authentication → Users (see docs/supabase-auth-setup.md).",
+        );
+      } else if (
+        raw.toLowerCase().includes("invalid login credentials") ||
+        raw.toLowerCase().includes("invalid_credentials")
+      ) {
+        setMessage(
+          "Wrong email or password for this Supabase project — or this account was never created. Try Sign up with the same email and a new password (dev mode updates the password), or in Supabase → Authentication → Users reset the password for your email.",
         );
       } else {
         setMessage(raw);

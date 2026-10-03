@@ -1,6 +1,6 @@
 # Manually approve a creator (launch process)
 
-1. Run `002_member_creator_accounts.sql` in Supabase SQL Editor.
+1. Run `002_member_creator_accounts.sql` and `005_creator_social_verification.sql` in Supabase SQL Editor.
 2. Make yourself admin (replace email):
 
 ```sql
@@ -9,18 +9,17 @@ set is_admin = true
 where id = (select id from auth.users where email = 'you@example.com');
 ```
 
-3. Find pending application:
+3. Use the admin UI: log in as admin → **Profile** → **Review creator applications** (`/admin/creator-applications`).
+
+4. Confirm social verification (bio check, DM, or **Confirm verification manually**).
+
+5. When status is **awaiting_review** and verification is **verified**, click **Approve creator**.
+
+SQL fallback (admin JWT/session required for RPC from client; in SQL editor use service role or run as postgres):
 
 ```sql
-select id, user_id, display_name, created_at
-from public.creator_applications
-where status = 'pending';
+select public.admin_confirm_verification('APPLICATION_UUID');
+select public.approve_creator_application('APPLICATION_UUID');
 ```
 
-4. Approve (as admin, in SQL editor while logged in as admin via service role, or call from app later):
-
-```sql
-select public.approve_creator_application('APPLICATION_UUID_HERE');
-```
-
-5. Creator creates community row in Studio (or insert manually), then can publish public challenges.
+6. Creator creates community row in Studio, then can publish public challenges.
