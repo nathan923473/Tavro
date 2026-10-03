@@ -17,28 +17,48 @@ function checkPort(port) {
 
 console.log("Streakly local setup check\n");
 
-if (!existsSync(`${cwd()}/package.json`)) {
-  console.error("✗ Run this from the project folder (where package.json lives).");
-  console.error(`  Current folder: ${cwd()}`);
+const root = cwd();
+if (!existsSync(`${root}/package.json`)) {
+  console.error("✗ Run this from the Streakly folder (where package.json lives).");
+  console.error(`  Current folder: ${root}`);
   process.exit(1);
 }
 console.log("✓ package.json found");
 
-const nodeVersion = process.version;
-console.log(`✓ Node ${nodeVersion}`);
+if (!existsSync(`${root}/node_modules`)) {
+  console.log("✗ node_modules missing — run:  npm install");
+} else {
+  console.log("✓ node_modules found");
+}
+
+console.log(`✓ Node ${process.version}`);
+if (parseInt(process.version.slice(1), 10) < 18) {
+  console.log("✗ Node 18+ required for Next.js 16");
+}
 
 for (const port of ports) {
   const status = await checkPort(port);
   if (status === "in_use") {
-    console.log(`• Port ${port} is IN USE — open http://localhost:${port} or free the port`);
+    console.log(`• Port ${port} is IN USE — run: npm run stop:dev`);
   } else {
-    console.log(`• Port ${port} is free — npm run dev can use it`);
+    console.log(`• Port ${port} is free`);
   }
 }
 
 console.log(`
-Next steps:
-  npm install
-  npm run dev          → http://localhost:3000
-  npm run dev:alt      → http://localhost:3456 (if 3000 is busy)
+If "failed to start server" in the terminal:
+
+  1. npm run stop:dev
+  2. npm install
+  3. npm run dev
+
+Still failing? Try:
+
+  npm run dev:alt      → http://127.0.0.1:3456
+  npm run dev:webpack  → older bundler (if Turbopack crashes)
+
+Do NOT use "npm start" until you have run "npm run build" once.
+Use "npm run dev" for daily development.
+
+Open the app at the URL shown after "Ready" (usually http://127.0.0.1:3000).
 `);

@@ -61,10 +61,34 @@ Then open **http://127.0.0.1:3000**.
 
 ---
 
+## “Failed to start server”
+
+Use the **Terminal** in Cursor (bottom panel), in the Streakly folder:
+
+```bash
+npm run stop:dev
+npm install
+npm run dev
+```
+
+Wait for **`✓ Ready`**, then open **http://127.0.0.1:3000** in Chrome or Safari.
+
+| Try this | When |
+|----------|------|
+| `npm run dev:alt` | Port 3000 is busy → use **http://127.0.0.1:3456** |
+| `npm run dev:webpack` | Turbopack error on your Mac |
+| `npm run doctor` | Check folder, Node, and ports |
+
+**Not** for daily use: `npm start` only works after `npm run build`. For development always use **`npm run dev`**.
+
+If Cursor shows “failed to start server” on a **Preview** button, ignore it and use the terminal steps above plus the browser URL.
+
+---
+
 ## Still stuck?
 
 ```bash
 npm run doctor
 ```
 
-Send a screenshot of the terminal after `npm run fresh` and the browser error page.
+Copy the **last 10 lines** from the terminal after `npm run dev` (not just the popup message).
