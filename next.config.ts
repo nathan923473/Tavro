@@ -17,7 +17,7 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
-  allowedDevOrigins: ["*.trycloudflare.com"],
+  allowedDevOrigins: ["127.0.0.1", "localhost", "*.trycloudflare.com"],
 };
 
 export default withPWA(nextConfig);
