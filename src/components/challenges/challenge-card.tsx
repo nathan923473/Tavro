@@ -4,7 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
+import { ChallengeGroupChat } from "@/components/challenges/challenge-group-chat";
 import { useDemoStore } from "@/lib/demo-store/demo-store";
+import { demoUser } from "@/lib/mock-data";
 import { challengeInvitePath } from "@/lib/site-url";
 import type { Challenge } from "@/types";
 import { CalendarRange, Gift, Users } from "lucide-react";
@@ -109,6 +111,14 @@ export function ChallengeCard({
           >
             Leave challenge
           </Button>
+          <ChallengeGroupChat
+            challengeId={challenge.id}
+            challengeTitle={challenge.title}
+            viewerName={demoUser.firstName}
+            viewerRole="member"
+            canPost
+            compact
+          />
         </div>
       ) : (
         <div className="mt-4 space-y-2">

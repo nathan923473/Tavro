@@ -7,6 +7,7 @@ import {
   demoManagedCreatorSlug,
   getCreatorCommunityBySlug,
 } from "@/lib/mock-creators";
+import { CreatorChallengeMessageHub } from "@/components/creator/creator-challenge-message-hub";
 import { PostAnnouncementButton } from "@/components/creator/post-announcement-button";
 import {
   BarChart3,
@@ -94,6 +95,19 @@ export default async function CreatorDashboardPage() {
             Invite & referral analytics
           </Link>
         </div>
+
+        <section aria-labelledby="creator-challenge-chat-heading">
+          <h2
+            id="creator-challenge-chat-heading"
+            className="mb-2 text-base font-semibold"
+          >
+            Challenge group messages
+          </h2>
+          <CreatorChallengeMessageHub
+            creatorDisplayName={community?.creatorDisplayName ?? "Creator"}
+            challenges={community?.challenges ?? []}
+          />
+        </section>
 
         <Card>
           <div className="flex items-start gap-3">

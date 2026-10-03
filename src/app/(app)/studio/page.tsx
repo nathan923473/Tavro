@@ -1,22 +1,21 @@
+import { CreatorChallengeMessageHub } from "@/components/creator/creator-challenge-message-hub";
 import { PostAnnouncementButton } from "@/components/creator/post-announcement-button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { requireApprovedCreator } from "@/lib/auth/profile";
-import { demoManagedCreatorSlug } from "@/lib/mock-creators";
 import {
-  BarChart3,
-  Megaphone,
-  Pencil,
-  PlusCircle,
-  Users,
-} from "lucide-react";
+  demoManagedCreatorSlug,
+  getCreatorCommunityBySlug,
+} from "@/lib/mock-creators";
+import { BarChart3, Pencil, PlusCircle, Users } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = { title: "Creator Studio" };
 
 export default async function CreatorStudioPage() {
   const { profile } = await requireApprovedCreator();
+  const community = getCreatorCommunityBySlug(demoManagedCreatorSlug);
 
   return (
     <div className="animate-fade-up">
@@ -67,6 +66,23 @@ export default async function CreatorStudioPage() {
             communitySlug={demoManagedCreatorSlug}
           />
         </div>
+
+        <section aria-labelledby="challenge-groups-heading">
+          <h2
+            id="challenge-groups-heading"
+            className="mb-2 text-base font-semibold"
+          >
+            Message challenge groups
+          </h2>
+          <p className="mb-3 text-sm text-muted-foreground">
+            Post encouragement to people who joined your public challenges. This
+            is separate from private member accountability groups.
+          </p>
+          <CreatorChallengeMessageHub
+            creatorDisplayName={community?.creatorDisplayName ?? "Creator"}
+            challenges={community?.challenges ?? []}
+          />
+        </section>
 
         <Link
           href={`/creator/${demoManagedCreatorSlug}`}

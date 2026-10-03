@@ -7,6 +7,7 @@ import {
 } from "@/lib/mock-data";
 import { demoFollowingSlugs } from "@/lib/mock-creators";
 import type { Challenge } from "@/types";
+import type { ChallengeChatMessage } from "@/lib/challenge-chat";
 import {
   createContext,
   useCallback,
@@ -17,7 +18,7 @@ import {
   type ReactNode,
 } from "react";
 
-const STORAGE_KEY = "streakly-demo-v1";
+const STORAGE_KEY = "streakly-demo-v2";
 
 export type DemoStoreState = {
   joinedChallengeIds: string[];
@@ -32,6 +33,7 @@ export type DemoStoreState = {
   groupChatSeen: boolean;
   weighIns: Array<{ date: string; weightLb: number }>;
   creatorAnnouncements: Record<string, string>;
+  challengeMessages: Record<string, ChallengeChatMessage[]>;
 };
 
 function todayKey() {
@@ -56,6 +58,17 @@ function defaultState(): DemoStoreState {
     groupChatSeen: false,
     weighIns: [],
     creatorAnnouncements: {},
+    challengeMessages: {
+      c1: [
+        {
+          id: "seed-c1-welcome",
+          authorName: "Coach Sarah",
+          role: "creator",
+          text: "Welcome to the group — say hi and share one small win for today.",
+          createdAt: "2026-10-01T09:00:00.000Z",
+        },
+      ],
+    },
   };
 }
 
@@ -113,6 +126,11 @@ type DemoStoreContextValue = {
   discoverChallengesList: () => Challenge[];
   setCreatorAnnouncement: (slug: string, text: string) => void;
   getCreatorAnnouncement: (slug: string, fallback: string) => string;
+  getChallengeMessages: (challengeId: string) => ChallengeChatMessage[];
+  postChallengeMessage: (
+    challengeId: string,
+    message: Omit<ChallengeChatMessage, "id" | "createdAt">,
+  ) => void;
   exportDemoData: () => string;
 };
 
@@ -251,6 +269,24 @@ export function DemoStoreProvider({ children }: { children: ReactNode }) {
         })),
       getCreatorAnnouncement: (slug, fallback) =>
         state.creatorAnnouncements[slug] ?? fallback,
+      getChallengeMessages: (challengeId) =>
+        state.challengeMessages[challengeId] ?? [],
+      postChallengeMessage: (challengeId, message) =>
+        update((s) => {
+          const entry: ChallengeChatMessage = {
+            ...message,
+            id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            createdAt: new Date().toISOString(),
+          };
+          const prev = s.challengeMessages[challengeId] ?? [];
+          return {
+            ...s,
+            challengeMessages: {
+              ...s.challengeMessages,
+              [challengeId]: [...prev, entry],
+            },
+          };
+        }),
       exportDemoData: () => JSON.stringify(state, null, 2),
     }),
     [state, hydrated, update, mergeChallenge, allChallengeSource],

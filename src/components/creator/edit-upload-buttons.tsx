@@ -30,6 +30,6 @@ export function EditUploadButtons() {
         <ImageIcon className="h-4 w-4" aria-hidden />
         Upload banner
       </Button>
-    </>
+    </div>
   );
 }
