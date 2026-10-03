@@ -25,17 +25,20 @@ src/
 
 **Cloudflare deployment:** Built as a standard Next.js app. For Cloudflare Pages, use [OpenNext for Cloudflare](https://opennext.js.org/cloudflare) or export/static hosting for marketing pages; configure `NEXT_PUBLIC_*` env vars in the Cloudflare dashboard. PWA assets live in `public/` and are emitted at build time.
 
-## Run locally
+## Run locally (your laptop — recommended)
 
-**Requirements:** [Node.js](https://nodejs.org) 20 LTS (or 18+).
+**Requirements:** [Node.js](https://nodejs.org) 20+.
+
+Clone **`nathan-stone/stride`** from Origin (see **`LAPTOP.md`**) or open this repo in Cursor, then:
 
 ```bash
-cd streakly   # folder that contains package.json
-npm install
-npm run dev
+node scripts/laptop-setup.mjs   # once
+npm run dev                     # every session
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Leave the terminal open while you use the app.
+Open **http://127.0.0.1:3000** in Chrome on the **same machine**. This does not expire like Cloud Agent preview links.
+
+Full steps: **`LAPTOP.md`**
 
 **Production-like local host** (installable PWA + service worker):
 
