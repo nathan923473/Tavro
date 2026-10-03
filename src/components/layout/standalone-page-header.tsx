@@ -1,8 +1,7 @@
-import { BackLink } from "@/components/layout/back-link";
-import {
-  backLabelForHref,
-  getBackHref,
-} from "@/lib/back-navigation";
+"use client";
+
+import { BackButton } from "@/components/layout/back-button";
+import { getBackHref } from "@/lib/back-navigation";
 
 type StandalonePageHeaderProps = {
   pathname: string;
@@ -16,16 +15,16 @@ export function StandalonePageHeader({
   title,
   backHref,
 }: StandalonePageHeaderProps) {
-  const href = backHref ?? getBackHref(pathname);
-  if (!href) return null;
+  const fallback = backHref ?? getBackHref(pathname);
+  if (!fallback) return null;
 
   return (
-    <div className="mb-4 flex items-center gap-2">
-      <BackLink href={href} label={backLabelForHref(href)} />
+    <div className="mb-4 space-y-2">
+      <BackButton fallbackHref={fallback} />
       {title ? (
-        <span className="truncate text-sm font-medium text-muted-foreground">
+        <p className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {title}
-        </span>
+        </p>
       ) : null}
     </div>
   );

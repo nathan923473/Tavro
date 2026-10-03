@@ -50,13 +50,46 @@ export function getBackHref(pathname: string): string | null {
   return `/${segments.join("/")}`;
 }
 
-export function backLabelForHref(href: string): string {
-  const labels: Record<string, string> = {
-    "/": "Back to home",
-    "/profile": "Back to profile",
-    "/challenges": "Back to challenges",
-    "/groups": "Back to groups",
-    "/studio": "Back to Creator Studio",
+/** Short destination name shown on back buttons. */
+export function shortLabelForPath(pathname: string): string {
+  if (pathname === "/") return "Home";
+
+  const exact: Record<string, string> = {
+    "/profile": "Profile",
+    "/groups": "Groups",
+    "/challenges": "Challenges",
+    "/progress": "Progress",
+    "/studio": "Creator Studio",
+    "/creator/dashboard": "Creator dashboard",
+    "/creator/analytics": "Analytics",
+    "/following": "Following",
+    "/become-creator": "Become a creator",
+    "/challenges/create": "Create challenge",
+    "/admin/creator-applications": "Admin",
+    "/login": "Log in",
+    "/signup": "Sign up",
+    "/onboarding": "Get started",
   };
-  return labels[href] ?? "Back";
+  if (exact[pathname]) return exact[pathname];
+
+  const creatorPage = pathname.match(/^\/creator\/([^/]+)$/);
+  if (creatorPage) return "Community";
+
+  const editPage = pathname.match(/^\/creator\/([^/]+)\/edit$/);
+  if (editPage) return "Edit community";
+
+  const joinPage = pathname.match(/^\/join\/[^/]+$/);
+  if (joinPage) return "Challenge invite";
+
+  const invitePage = pathname.match(/^\/invite\/group\/[^/]+$/);
+  if (invitePage) return "Group invite";
+
+  const segments = pathname.split("/").filter(Boolean);
+  const last = segments[segments.length - 1];
+  if (!last) return "Previous page";
+  return last.replace(/-/g, " ");
+}
+
+export function backLabelForHref(href: string): string {
+  return `Back to ${shortLabelForPath(href)}`;
 }

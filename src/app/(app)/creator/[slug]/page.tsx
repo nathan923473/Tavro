@@ -7,7 +7,7 @@ import {
   getCreatorCommunityBySlug,
   isDemoCommunityOwner,
 } from "@/lib/mock-creators";
-import { BackLink } from "@/components/layout/back-link";
+import { BackButton } from "@/components/layout/back-button";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -38,14 +38,21 @@ export default async function CreatorCommunityPage({
 
   return (
     <div className="pb-6">
-      <div className="sticky top-0 z-40 flex items-center gap-2 border-b border-border/50 bg-background/90 px-3 py-2 backdrop-blur-md">
-        <BackLink href="/challenges" label="Back to challenges" />
-        <span className="text-sm font-medium truncate">Creator community</span>
-        {isOwner ? (
-          <Link href="/creator/dashboard" className="ml-auto text-xs font-semibold text-primary">
-            Dashboard
-          </Link>
-        ) : null}
+      <div className="sticky top-0 z-40 space-y-2 border-b border-border/50 bg-background/90 px-3 py-3 backdrop-blur-md">
+        <BackButton fallbackHref="/challenges" />
+        <div className="flex items-center gap-2 px-1">
+          <span className="min-w-0 flex-1 truncate text-sm font-medium">
+            Creator community
+          </span>
+          {isOwner ? (
+            <Link
+              href="/creator/dashboard"
+              className="shrink-0 text-xs font-semibold text-primary"
+            >
+              Dashboard
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       <CommunityHero
