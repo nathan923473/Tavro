@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
+import { requireApprovedCreator } from "@/lib/auth/profile";
 import {
   demoCreatorDashboard,
   demoManagedCreatorSlug,
@@ -20,7 +21,8 @@ export const metadata = {
   title: "Creator dashboard",
 };
 
-export default function CreatorDashboardPage() {
+export default async function CreatorDashboardPage() {
+  await requireApprovedCreator();
   const community = getCreatorCommunityBySlug(demoManagedCreatorSlug);
   const stats = demoCreatorDashboard;
 

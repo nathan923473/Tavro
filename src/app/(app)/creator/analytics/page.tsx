@@ -1,7 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
+import { requireApprovedCreator } from "@/lib/auth/profile";
 import { demoCreatorAnalytics } from "@/lib/mock-data";
+import Link from "next/link";
 import {
   Activity,
   Link2,
@@ -46,7 +48,9 @@ const metrics = [
   },
 ] as const;
 
-export default function CreatorAnalyticsPage() {
+export default async function CreatorAnalyticsPage() {
+  await requireApprovedCreator();
+
   return (
     <div className="animate-fade-up">
       <PageHeader
@@ -54,6 +58,11 @@ export default function CreatorAnalyticsPage() {
         subtitle={demoCreatorAnalytics.periodLabel}
       />
       <div className="space-y-4 px-4 py-4">
+        <p className="text-sm text-muted-foreground">
+          <Link href="/studio" className="font-medium text-primary">
+            ← Creator Studio
+          </Link>
+        </p>
         <Card className="border-primary/20 bg-secondary/30">
           <Badge className="mb-2">Free for creators at launch</Badge>
           <p className="text-sm text-muted-foreground">

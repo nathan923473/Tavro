@@ -18,6 +18,13 @@ export default function ChallengesPage() {
         subtitle="Free creator-led habits · discover & join"
       />
       <div className="space-y-6 px-4 py-4">
+        <Link
+          href="/challenges/create"
+          className="block rounded-2xl border border-dashed border-border bg-surface px-4 py-3 text-center text-sm font-semibold text-primary"
+        >
+          + Create private invite-only challenge
+        </Link>
+
         <Card className="border-primary/20 bg-secondary/30">
           <div className="flex gap-3">
             <GiftIcon />

@@ -1,9 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  getCreatorCommunityBySlug,
-  isDemoCommunityOwner,
-} from "@/lib/mock-creators";
+import { requireApprovedCreator } from "@/lib/auth/profile";
+import { getCreatorCommunityBySlug } from "@/lib/mock-creators";
 import { ArrowLeft, ImageIcon, Palette, Link2 } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
