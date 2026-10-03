@@ -15,6 +15,13 @@ type ClientEnv = {
   isStandalone: boolean;
 };
 
+/** Stable snapshot for SSR — must not allocate a new object each call. */
+const SERVER_CLIENT_ENV: ClientEnv = { isIos: false, isStandalone: false };
+
+function getServerClientEnv() {
+  return SERVER_CLIENT_ENV;
+}
+
 function readClientEnv(): ClientEnv {
   const ua = window.navigator.userAgent.toLowerCase();
   return {
