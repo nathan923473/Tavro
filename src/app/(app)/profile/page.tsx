@@ -9,7 +9,8 @@ import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { demoUser } from "@/lib/mock-data";
 import { userReferralPath } from "@/lib/site-url";
 import Link from "next/link";
-import { Download, Shield, Users } from "lucide-react";
+import { ExportDemoDataButton } from "@/components/profile/export-demo-data-button";
+import { Shield, Users } from "lucide-react";
 
 export const metadata = {
   title: "Profile",
@@ -92,13 +93,7 @@ export default async function ProfilePage() {
           </ul>
         </Card>
 
-        <Link
-          href="#"
-          className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border text-sm font-semibold text-muted-foreground"
-        >
-          <Download className="h-4 w-4" aria-hidden />
-          Export my data (soon)
-        </Link>
+        <ExportDemoDataButton />
       </div>
     </div>
   );

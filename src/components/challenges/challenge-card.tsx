@@ -1,10 +1,14 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
+import { useDemoStore } from "@/lib/demo-store/demo-store";
 import { challengeInvitePath } from "@/lib/site-url";
 import type { Challenge } from "@/types";
 import { CalendarRange, Gift, Users } from "lucide-react";
+import { useState } from "react";
 
 type ChallengeCardProps = {
   challenge: Challenge;
@@ -12,10 +16,14 @@ type ChallengeCardProps = {
 };
 
 export function ChallengeCard({
-  challenge,
+  challenge: initialChallenge,
   showShareLink = false,
 }: ChallengeCardProps) {
+  const { mergeChallenge, joinChallenge, leaveChallenge, logChallengeActivity } =
+    useDemoStore();
+  const challenge = mergeChallenge(initialChallenge);
   const inviteUrl = challengeInvitePath(challenge.inviteSlug);
+  const [message, setMessage] = useState<string | null>(null);
 
   return (
     <Card>
@@ -69,7 +77,7 @@ export function ChallengeCard({
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full rounded-full bg-primary"
+                className="h-full rounded-full bg-primary transition-all"
                 style={{ width: `${challenge.progressPercent}%` }}
               />
             </div>
@@ -81,16 +89,46 @@ export function ChallengeCard({
               fullWidth
             />
           ) : null}
-          <Button variant="secondary" fullWidth>
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={() => {
+              logChallengeActivity(challenge.id);
+              setMessage("Logged for today — nice work.");
+            }}
+          >
             Log today&apos;s activity
+          </Button>
+          <Button
+            variant="outline"
+            fullWidth
+            onClick={() => {
+              leaveChallenge(challenge.id);
+              setMessage("You left this challenge.");
+            }}
+          >
+            Leave challenge
           </Button>
         </div>
       ) : (
         <div className="mt-4 space-y-2">
-          <Button fullWidth>Join free challenge</Button>
+          <Button
+            fullWidth
+            onClick={() => {
+              joinChallenge(challenge.id);
+              setMessage("You're in — check My challenges on Home.");
+            }}
+          >
+            Join free challenge
+          </Button>
           <CopyLinkButton url={inviteUrl} label="Share with a friend" fullWidth />
         </div>
       )}
+      {message ? (
+        <p className="mt-2 text-sm text-muted-foreground" role="status">
+          {message}
+        </p>
+      ) : null}
     </Card>
   );
 }

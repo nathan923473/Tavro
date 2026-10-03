@@ -2,21 +2,26 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
+import { useDemoStore } from "@/lib/demo-store/demo-store";
 import { Bell, UserCheck, UserPlus } from "lucide-react";
-import { useState } from "react";
 
 type FollowCommunityButtonProps = {
+  communitySlug: string;
   communityName: string;
   initiallyFollowing?: boolean;
   className?: string;
 };
 
 export function FollowCommunityButton({
+  communitySlug,
   communityName,
   initiallyFollowing = false,
   className,
 }: FollowCommunityButtonProps) {
-  const [following, setFollowing] = useState(initiallyFollowing);
+  const { isFollowing, toggleFollow, state, hydrated } = useDemoStore();
+  const following = hydrated
+    ? isFollowing(communitySlug)
+    : initiallyFollowing || state.followingSlugs.includes(communitySlug);
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -24,12 +29,7 @@ export function FollowCommunityButton({
         type="button"
         fullWidth
         variant={following ? "secondary" : "primary"}
-        onClick={() => setFollowing((f) => !f)}
-        style={
-          !following
-            ? undefined
-            : undefined
-        }
+        onClick={() => toggleFollow(communitySlug)}
       >
         {following ? (
           <UserCheck className="h-4 w-4" aria-hidden />
@@ -41,7 +41,7 @@ export function FollowCommunityButton({
       {following ? (
         <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
           <Bell className="h-3.5 w-3.5" aria-hidden />
-          Optional challenge alerts for {communityName} (demo)
+          Optional challenge alerts for {communityName}
         </p>
       ) : (
         <p className="text-center text-xs text-muted-foreground">

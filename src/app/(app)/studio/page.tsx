@@ -1,5 +1,5 @@
+import { PostAnnouncementButton } from "@/components/creator/post-announcement-button";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { requireApprovedCreator } from "@/lib/auth/profile";
@@ -63,10 +63,9 @@ export default async function CreatorStudioPage() {
             <BarChart3 className="h-4 w-4" aria-hidden />
             Creator analytics
           </Link>
-          <Button variant="secondary" fullWidth className="justify-start">
-            <Megaphone className="h-4 w-4" aria-hidden />
-            Post announcement (demo)
-          </Button>
+          <PostAnnouncementButton
+            communitySlug={demoManagedCreatorSlug}
+          />
         </div>
 
         <Link

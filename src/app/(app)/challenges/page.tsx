@@ -1,9 +1,8 @@
-import { ChallengeCard } from "@/components/challenges/challenge-card";
+import { ChallengesInteractive } from "@/components/challenges/challenges-interactive";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
-import { discoverChallenges, myChallenges } from "@/lib/mock-data";
 import { creatorCommunities } from "@/lib/mock-creators";
-import { Compass, Heart, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = {
@@ -41,22 +40,7 @@ export default function ChallengesPage() {
           </div>
         </Card>
 
-        <section aria-labelledby="my-challenges-heading">
-          <h2
-            id="my-challenges-heading"
-            className="mb-2 flex items-center gap-2 px-1 text-base font-semibold"
-          >
-            <Heart className="h-4 w-4 text-primary" aria-hidden />
-            My challenges
-          </h2>
-          <ul className="space-y-3">
-            {myChallenges.map((challenge) => (
-              <li key={challenge.id}>
-                <ChallengeCard challenge={challenge} showShareLink />
-              </li>
-            ))}
-          </ul>
-        </section>
+        <ChallengesInteractive />
 
         <section aria-labelledby="creators-heading">
           <h2
@@ -91,26 +75,6 @@ export default function ChallengesPage() {
           </ul>
         </section>
 
-        <section aria-labelledby="discover-heading">
-          <h2
-            id="discover-heading"
-            className="mb-2 flex items-center gap-2 px-1 text-base font-semibold"
-          >
-            <Compass className="h-4 w-4 text-primary" aria-hidden />
-            Discover
-          </h2>
-          <p className="mb-3 px-1 text-sm text-muted-foreground">
-            Join other creators&apos; communities — focus on encouragement and
-            consistency, not competition.
-          </p>
-          <ul className="space-y-3">
-            {discoverChallenges.map((challenge) => (
-              <li key={challenge.id}>
-                <ChallengeCard challenge={challenge} />
-              </li>
-            ))}
-          </ul>
-        </section>
       </div>
     </div>
   );

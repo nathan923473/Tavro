@@ -1,8 +1,9 @@
-import { Button } from "@/components/ui/button";
+import { EditCommunitySaveButton } from "@/components/creator/edit-community-save-button";
+import { EditUploadButtons } from "@/components/creator/edit-upload-buttons";
 import { Card } from "@/components/ui/card";
 import { requireApprovedCreator } from "@/lib/auth/profile";
 import { getCreatorCommunityBySlug } from "@/lib/mock-creators";
-import { ArrowLeft, ImageIcon, Palette, Link2 } from "lucide-react";
+import { ArrowLeft, Palette, Link2 } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
@@ -83,17 +84,8 @@ export default async function EditCommunityPage({
             <span className="text-sm tabular-nums">{community.brandColor}</span>
           </div>
         </Field>
-        <Field label="Profile picture">
-          <Button type="button" variant="outline" fullWidth className="justify-start">
-            <ImageIcon className="h-4 w-4" aria-hidden />
-            Upload avatar (coming soon)
-          </Button>
-        </Field>
-        <Field label="Banner image">
-          <Button type="button" variant="outline" fullWidth className="justify-start">
-            <ImageIcon className="h-4 w-4" aria-hidden />
-            Upload banner (coming soon)
-          </Button>
+        <Field label="Profile picture & banner">
+          <EditUploadButtons />
         </Field>
         <Field label="Shop or website link">
           <div className="flex items-center gap-2 rounded-xl border border-border px-3 py-2.5">
@@ -112,9 +104,7 @@ export default async function EditCommunityPage({
             className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm"
           />
         </Field>
-        <Button type="button" fullWidth aria-disabled>
-          Save changes (demo)
-        </Button>
+        <EditCommunitySaveButton />
       </form>
     </div>
   );

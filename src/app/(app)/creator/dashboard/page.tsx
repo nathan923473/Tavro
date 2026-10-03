@@ -1,5 +1,4 @@
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { requireApprovedCreator } from "@/lib/auth/profile";
@@ -8,6 +7,7 @@ import {
   demoManagedCreatorSlug,
   getCreatorCommunityBySlug,
 } from "@/lib/mock-creators";
+import { PostAnnouncementButton } from "@/components/creator/post-announcement-button";
 import {
   BarChart3,
   Megaphone,
@@ -79,10 +79,13 @@ export default async function CreatorDashboardPage() {
             <Pencil className="h-4 w-4" aria-hidden />
             Edit community
           </Link>
-          <Button variant="secondary" fullWidth>
+          <Link
+            href="/studio/challenges/new"
+            className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-surface text-sm font-semibold"
+          >
             <PlusCircle className="h-4 w-4" aria-hidden />
-            Create challenge (demo)
-          </Button>
+            Create challenge
+          </Link>
           <Link
             href="/creator/analytics"
             className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border text-sm font-semibold"
@@ -101,9 +104,12 @@ export default async function CreatorDashboardPage() {
                 {community?.announcement ??
                   "Share updates with followers who opt in to notifications."}
               </p>
-              <Button variant="outline" className="mt-3 min-h-9 px-3 text-xs">
-                Edit announcement (demo)
-              </Button>
+              <div className="mt-3">
+                <PostAnnouncementButton
+                  communitySlug={demoManagedCreatorSlug}
+                  defaultText={community?.announcement ?? ""}
+                />
+              </div>
             </div>
           </div>
         </Card>

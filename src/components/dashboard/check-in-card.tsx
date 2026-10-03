@@ -1,8 +1,14 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useDemoStore } from "@/lib/demo-store/demo-store";
 import { CalendarCheck2 } from "lucide-react";
 
 export function CheckInCard() {
+  const { hasCheckedInToday, checkInToday } = useDemoStore();
+  const done = hasCheckedInToday();
+
   return (
     <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-3">
@@ -16,8 +22,13 @@ export function CheckInCard() {
           </p>
         </div>
       </div>
-      <Button className="shrink-0" aria-disabled>
-        Check in today
+      <Button
+        className="shrink-0"
+        variant={done ? "secondary" : "primary"}
+        disabled={done}
+        onClick={() => checkInToday()}
+      >
+        {done ? "Checked in today ✓" : "Check in today"}
       </Button>
     </Card>
   );

@@ -1,19 +1,14 @@
 import { ChallengePreview } from "@/components/dashboard/challenge-preview";
 import { CheckInCard } from "@/components/dashboard/check-in-card";
 import { ConsistencyCard } from "@/components/dashboard/consistency-card";
-import { ReferralCard } from "@/components/dashboard/referral-card";
-import { GroupActivityPreview } from "@/components/dashboard/group-activity-preview";
-import { TodaysGoals } from "@/components/dashboard/todays-goals";
-import { WelcomeBanner } from "@/components/dashboard/welcome-banner";
-import { PageHeader } from "@/components/layout/page-header";
 import {
-  accountabilityGroup,
-  myChallenges,
-  consistencyMetrics,
-  demoUser,
-  groupFeed,
-  todaysGoals,
-} from "@/lib/mock-data";
+  HomeGroupPreview,
+  HomeWelcomeBanner,
+} from "@/components/dashboard/home-demo-sections";
+import { ReferralCard } from "@/components/dashboard/referral-card";
+import { TodaysGoals } from "@/components/dashboard/todays-goals";
+import { PageHeader } from "@/components/layout/page-header";
+import { consistencyMetrics, demoUser } from "@/lib/mock-data";
 
 export default function HomePage() {
   return (
@@ -23,17 +18,12 @@ export default function HomePage() {
         subtitle="Your daily accountability hub"
       />
       <div className="space-y-6 px-4 py-4">
-        <WelcomeBanner
-          firstName={demoUser.firstName}
-          groupName={demoUser.joinedGroup ? demoUser.groupName : undefined}
-        />
+        <HomeWelcomeBanner />
         <CheckInCard />
-        <TodaysGoals goals={todaysGoals} />
-        <ChallengePreview challenges={myChallenges} />
+        <TodaysGoals />
+        <ChallengePreview />
         <ReferralCard referralCode={demoUser.referralCode} />
-        {demoUser.joinedGroup ? (
-          <GroupActivityPreview group={accountabilityGroup} feed={groupFeed} />
-        ) : null}
+        <HomeGroupPreview />
         <ConsistencyCard metrics={consistencyMetrics} />
       </div>
     </div>

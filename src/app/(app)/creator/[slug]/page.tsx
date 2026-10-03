@@ -59,6 +59,7 @@ export default async function CreatorCommunityPage({
         showEditLink={isOwner}
         action={
           <FollowCommunityButton
+            communitySlug={slug}
             communityName={community.communityName}
             initiallyFollowing={isFollowing}
           />

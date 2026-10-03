@@ -11,8 +11,9 @@ import {
   subscribeWeightUnit,
 } from "@/lib/weight-units";
 import type { WeightProgressSummary, WeightUnit, WeeklyWeighIn } from "@/types";
+import { useDemoStore } from "@/lib/demo-store/demo-store";
 import { Lock, Scale } from "lucide-react";
-import { useMemo, useSyncExternalStore } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 
 type WeightProgressChartProps = {
   weighIns: WeeklyWeighIn[];
@@ -39,6 +40,8 @@ export function WeightProgressChart({
   weighIns,
   summary,
 }: WeightProgressChartProps) {
+  const { addWeighIn, state } = useDemoStore();
+  const [logMessage, setLogMessage] = useState<string | null>(null);
   const storageUnit = summary.unit;
 
   const displayUnit = useSyncExternalStore(
@@ -233,9 +236,36 @@ export function WeightProgressChart({
         </p>
       ) : null}
 
-      <Button className="mt-4" variant="secondary" fullWidth aria-disabled>
+      <Button
+        className="mt-4"
+        variant="secondary"
+        fullWidth
+        onClick={() => {
+          const raw = window.prompt(
+            `Enter today's weight (${displayUnit}) — private demo log`,
+            String(displaySummary.currentWeight),
+          );
+          if (raw == null) return;
+          const n = Number.parseFloat(raw);
+          if (Number.isNaN(n) || n <= 0) {
+            setLogMessage("Enter a valid number.");
+            return;
+          }
+          const lb = displayUnit === "kg" ? n / 0.453592 : n;
+          addWeighIn(lb);
+          setLogMessage(`Logged ${n.toFixed(1)} ${displayUnit} for today.`);
+        }}
+      >
         Log weekly weigh-in ({displayUnit})
       </Button>
+      {logMessage ? (
+        <p className="mt-2 text-center text-xs text-muted-foreground">{logMessage}</p>
+      ) : null}
+      {state.weighIns.length > 0 ? (
+        <p className="mt-1 text-center text-xs text-muted-foreground">
+          {state.weighIns.length} demo log(s) saved on this device
+        </p>
+      ) : null}
     </Card>
   );
 }
