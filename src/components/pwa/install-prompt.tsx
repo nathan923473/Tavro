@@ -3,26 +3,17 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Download, Share } from "lucide-react";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
-type ClientEnv = {
-  isIos: boolean;
-  isStandalone: boolean;
-};
-
-/** Stable snapshot for SSR — must not allocate a new object each call. */
-const SERVER_CLIENT_ENV: ClientEnv = { isIos: false, isStandalone: false };
-
-function getServerClientEnv() {
-  return SERVER_CLIENT_ENV;
-}
-
-function readClientEnv(): ClientEnv {
+function detectClientEnv() {
+  if (typeof window === "undefined") {
+    return { isIos: false, isStandalone: false };
+  }
   const ua = window.navigator.userAgent.toLowerCase();
   return {
     isIos: /iphone|ipad|ipod/.test(ua),
@@ -34,22 +25,24 @@ function readClientEnv(): ClientEnv {
   };
 }
 
-function subscribeToDisplayMode(onStoreChange: () => void) {
-  const mq = window.matchMedia("(display-mode: standalone)");
-  mq.addEventListener("change", onStoreChange);
-  return () => mq.removeEventListener("change", onStoreChange);
-}
-
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const [isIos, setIsIos] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
 
-  const { isIos, isStandalone } = useSyncExternalStore(
-    subscribeToDisplayMode,
-    readClientEnv,
-    () => ({ isIos: false, isStandalone: false }),
-  );
+  useEffect(() => {
+    function syncEnv() {
+      const env = detectClientEnv();
+      setIsIos(env.isIos);
+      setIsStandalone(env.isStandalone);
+    }
+    syncEnv();
+    const mq = window.matchMedia("(display-mode: standalone)");
+    mq.addEventListener("change", syncEnv);
+    return () => mq.removeEventListener("change", syncEnv);
+  }, []);
 
   useEffect(() => {
     const handler = (event: Event) => {
