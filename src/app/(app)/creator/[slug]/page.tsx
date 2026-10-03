@@ -7,7 +7,7 @@ import {
   getCreatorCommunityBySlug,
   isDemoCommunityOwner,
 } from "@/lib/mock-creators";
-import { ArrowLeft } from "lucide-react";
+import { BackLink } from "@/components/layout/back-link";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -39,13 +39,7 @@ export default async function CreatorCommunityPage({
   return (
     <div className="pb-6">
       <div className="sticky top-0 z-40 flex items-center gap-2 border-b border-border/50 bg-background/90 px-3 py-2 backdrop-blur-md">
-        <Link
-          href="/challenges"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted"
-          aria-label="Back to challenges"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Link>
+        <BackLink href="/challenges" label="Back to challenges" />
         <span className="text-sm font-medium truncate">Creator community</span>
         {isOwner ? (
           <Link href="/creator/dashboard" className="ml-auto text-xs font-semibold text-primary">

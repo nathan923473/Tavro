@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useDemoStore } from "@/lib/demo-store/demo-store";
 import { MessageCircle } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 type ChallengeGroupChatProps = {
   challengeId: string;

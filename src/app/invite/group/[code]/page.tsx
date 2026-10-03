@@ -1,3 +1,4 @@
+import { StandalonePageHeader } from "@/components/layout/standalone-page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { accountabilityGroup } from "@/lib/mock-data";
@@ -12,8 +13,12 @@ export default async function GroupInvitePage({ params }: GroupInvitePageProps) 
   const isDemoCode = code === accountabilityGroup.inviteCode;
 
   return (
-    <div className="mx-auto min-h-dvh max-w-lg bg-background px-4 py-8">
+    <div className="mx-auto min-h-dvh max-w-lg bg-background px-4 py-8 pt-[env(safe-area-inset-top)]">
       <div className="animate-fade-up space-y-4">
+        <StandalonePageHeader
+          pathname={`/invite/group/${code}`}
+          title="Group invite"
+        />
         <Card>
           <Badge tone="success" className="mb-2">
             Friend invite

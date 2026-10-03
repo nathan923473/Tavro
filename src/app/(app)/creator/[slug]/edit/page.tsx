@@ -3,8 +3,8 @@ import { EditUploadButtons } from "@/components/creator/edit-upload-buttons";
 import { Card } from "@/components/ui/card";
 import { requireApprovedCreator } from "@/lib/auth/profile";
 import { getCreatorCommunityBySlug } from "@/lib/mock-creators";
-import { ArrowLeft, Palette, Link2 } from "lucide-react";
-import Link from "next/link";
+import { BackLink } from "@/components/layout/back-link";
+import { Palette, Link2 } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -29,13 +29,7 @@ export default async function EditCommunityPage({
   return (
     <div className="animate-fade-up px-4 py-4">
       <div className="mb-4 flex items-center gap-2">
-        <Link
-          href={`/creator/${slug}`}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted"
-          aria-label="Back to community"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Link>
+        <BackLink href={`/creator/${slug}`} label="Back to community" />
         <div>
           <h1 className="text-lg font-semibold">Edit community</h1>
           <p className="text-xs text-muted-foreground">Demo UI · Supabase + storage next</p>
