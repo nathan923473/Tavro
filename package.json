@@ -9,6 +9,7 @@
     "build": "next build --webpack",
     "start": "next start -p 3000 -H 127.0.0.1",
     "doctor": "node scripts/doctor.mjs",
+    "check:auth": "node scripts/check-supabase-auth.mjs",
     "stop:dev": "node scripts/stop-dev.mjs",
     "fresh": "node scripts/stop-dev.mjs && next dev -p 3000 -H 0.0.0.0 --turbopack",
     "lint": "eslint",

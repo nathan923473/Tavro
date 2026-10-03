@@ -9,6 +9,14 @@ import { Suspense, useState } from "react";
 
 type AuthMode = "login" | "signup";
 
+async function syncProfileAfterAuth(displayName?: string) {
+  await fetch("/auth/ensure-profile", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ displayName }),
+  });
+}
+
 function AuthFormInner({ mode }: { mode: AuthMode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -28,7 +36,7 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
       const supabase = createClient();
 
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -37,6 +45,12 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
           },
         });
         if (error) throw error;
+        if (data.session) {
+          await syncProfileAfterAuth(displayName || email.split("@")[0]);
+          router.push(next);
+          router.refresh();
+          return;
+        }
         setMessage(
           "Check your email to confirm your account, then log in. (Disable email confirm in Supabase for instant dev login.)",
         );
@@ -46,11 +60,19 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
           password,
         });
         if (error) throw error;
+        await syncProfileAfterAuth();
         router.push(next);
         router.refresh();
       }
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Something went wrong");
+      const raw = e instanceof Error ? e.message : "Something went wrong";
+      if (raw.includes("Database error saving new user")) {
+        setMessage(
+          "Sign-up failed in Supabase (profile trigger). In Supabase → SQL Editor, run migration 003_fix_signup_profile_trigger.sql from this repo, then try again.",
+        );
+      } else {
+        setMessage(raw);
+      }
     } finally {
       setLoading(false);
     }

@@ -26,8 +26,10 @@ export async function SupabaseStatus() {
           <p className="mt-1 text-sm text-muted-foreground">{status.message}</p>
           {status.connected ? (
             <p className="mt-2 text-xs text-muted-foreground">
-              Run migration <code className="text-[11px]">002_member_creator_accounts.sql</code>{" "}
-              in Supabase SQL Editor if you haven&apos;t yet.
+              Run migrations <code className="text-[11px]">002</code> and{" "}
+              <code className="text-[11px]">003_fix_signup_profile_trigger.sql</code> in
+              Supabase SQL Editor if sign-up fails. See{" "}
+              <code className="text-[11px]">docs/supabase-auth-setup.md</code>.
             </p>
           ) : null}
         </div>

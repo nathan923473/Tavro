@@ -23,9 +23,7 @@ export default async function EditCommunityPage({
   const community = getCreatorCommunityBySlug(slug);
 
   if (!community) notFound();
-  if (!isDemoCommunityOwner(slug)) {
-    redirect(`/creator/${slug}`);
-  }
+  await requireApprovedCreator();
 
   return (
     <div className="animate-fade-up px-4 py-4">

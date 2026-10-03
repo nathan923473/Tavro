@@ -1,7 +1,7 @@
 -- Run once in Supabase: SQL Editor → New query → paste → Run
 -- Streakly initial schema (profiles + follows foundation)
 
-create extension if not exists "pgcrypto";
+create extension if not exists "pgcrypto" with schema extensions;
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
@@ -30,15 +30,26 @@ create policy "Users can insert own profile"
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
-security definer set search_path = public
+security definer
+set search_path = public, extensions
 as $$
+declare
+  ref_code text;
+  display text;
 begin
-  insert into public.profiles (id, display_name, referral_code)
-  values (
-    new.id,
-    coalesce(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1)),
-    encode(gen_random_bytes(6), 'hex')
+  ref_code := encode(extensions.gen_random_bytes(6), 'hex');
+  display := coalesce(
+    nullif(trim(new.raw_user_meta_data->>'display_name'), ''),
+    nullif(split_part(coalesce(new.email, ''), '@', 1), ''),
+    'Member'
   );
+
+  insert into public.profiles (id, display_name, referral_code)
+  values (new.id, display, ref_code)
+  on conflict (id) do update
+    set display_name = coalesce(public.profiles.display_name, excluded.display_name),
+        updated_at = now();
+
   return new;
 end;
 $$;
@@ -46,4 +57,4 @@ $$;
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
-  for each row execute procedure public.handle_new_user();
+  for each row execute function public.handle_new_user();
