@@ -17,7 +17,12 @@ Social verification **never** auto-approves creator privileges.
 
 ## Database
 
-Run `supabase/migrations/005_creator_social_verification.sql` after 002.
+Run after 002, **in two steps** (Supabase SQL Editor):
+
+1. `005a_application_status_enum_values.sql` — run **by itself**, click **Run**
+2. `005b_creator_social_verification.sql` — run second
+
+If you run both enum changes and functions in one paste, Postgres often errors with **unsafe use of new enum value**.
 
 ## Admin
 
