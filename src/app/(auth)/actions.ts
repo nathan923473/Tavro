@@ -1,7 +1,32 @@
 "use server";
 
 import { createAdminClient, isAdminSignupEnabled } from "@/lib/supabase/admin";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { randomBytes } from "node:crypto";
+
+async function findUserIdByEmail(
+  admin: SupabaseClient,
+  email: string,
+): Promise<string | null> {
+  let page = 1;
+  const perPage = 200;
+  while (true) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+    if (error) throw error;
+    const match = data.users.find(
+      (u) => u.email?.toLowerCase() === email.toLowerCase(),
+    );
+    if (match) return match.id;
+    if (data.users.length < perPage) break;
+    page += 1;
+  }
+  return null;
+}
+
+function isAlreadyRegisteredError(message: string) {
+  const m = message.toLowerCase();
+  return m.includes("already") && (m.includes("registered") || m.includes("exists"));
+}
 
 export type SignUpResult =
   | { ok: true }

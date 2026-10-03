@@ -35,18 +35,20 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
 
     try {
       const supabase = createClient();
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedPassword = password;
 
       if (mode === "signup") {
         const serverResult = await signUpMember({
-          email,
-          password,
-          displayName: displayName || email.split("@")[0],
+          email: normalizedEmail,
+          password: normalizedPassword,
+          displayName: displayName || normalizedEmail.split("@")[0],
         });
 
         if (serverResult.ok) {
           const { error: signInError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
+            email: normalizedEmail,
+            password: normalizedPassword,
           });
           if (signInError) throw signInError;
           await syncProfileAfterAuth(displayName || email.split("@")[0]);
