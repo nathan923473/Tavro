@@ -70,6 +70,13 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
         setMessage(
           "Sign-up failed in Supabase (profile trigger). In Supabase → SQL Editor, run migration 003_fix_signup_profile_trigger.sql from this repo, then try again.",
         );
+      } else if (
+        raw.toLowerCase().includes("rate limit") ||
+        raw.includes("over_email_send_rate_limit")
+      ) {
+        setMessage(
+          "Supabase is blocking sign-ups because too many confirmation emails were sent. Fix: Supabase → Authentication → Providers → Email → turn OFF “Confirm email”, wait ~1 hour, or add your user manually under Authentication → Users (see docs/supabase-auth-setup.md).",
+        );
       } else {
         setMessage(raw);
       }

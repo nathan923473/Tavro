@@ -25,7 +25,7 @@ if (!url || !key) {
   process.exit(1);
 }
 
-const email = `streakly-check+${Date.now()}@example.com`;
+const email = `streakly-check+${Date.now()}@mailinator.com`;
 const password = "StreaklyCheck1!";
 
 const res = await fetch(`${url}/auth/v1/signup`, {
@@ -56,6 +56,19 @@ if (String(json.msg || "").includes("Database error saving new user")) {
   console.error(`
 → Fix: Supabase Dashboard → SQL Editor → paste and run:
   supabase/migrations/003_fix_signup_profile_trigger.sql
+`);
+}
+
+if (
+  String(json.msg || "").includes("rate limit") ||
+  json.error_code === "over_email_send_rate_limit"
+) {
+  console.error(`
+→ Fix (pick one):
+  1. Supabase → Authentication → Providers → Email → turn OFF "Confirm email"
+  2. Supabase → Authentication → Rate limits → raise email limits (or wait ~1 hour)
+  3. Supabase → Authentication → Users → Add user → set password → enable "Auto confirm"
+     Then log in in the app with that email (no sign-up needed).
 `);
 }
 

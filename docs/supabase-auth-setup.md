@@ -14,6 +14,14 @@ In Supabase → **Authentication → URL configuration**:
 
 For local dev without email confirmation: **Authentication → Providers → Email** → turn off **Confirm email**.
 
+### “Email rate limit exceeded” (sign-up keeps failing)
+
+Supabase limits how many auth emails can be sent. **Using another email does not bypass this.**
+
+1. **Authentication → Providers → Email** → disable **Confirm email** → Save.
+2. **Authentication → Rate limits** → increase limits if you are testing heavily, or wait about an hour.
+3. **Fastest way to log in today:** **Authentication → Users → Add user** → enter your email and password → turn on **Auto confirm user** → Create. Then in Streakly use **Log in** (not Sign up) with that email.
+
 ## SQL migrations (run in order)
 
 1. `supabase/migrations/001_initial_schema.sql`
