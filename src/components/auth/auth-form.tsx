@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { signUpMember } from "@/app/(auth)/actions";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -36,6 +37,28 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
       const supabase = createClient();
 
       if (mode === "signup") {
+        const serverResult = await signUpMember({
+          email,
+          password,
+          displayName: displayName || email.split("@")[0],
+        });
+
+        if (serverResult.ok) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (signInError) throw signInError;
+          await syncProfileAfterAuth(displayName || email.split("@")[0]);
+          router.push(next);
+          router.refresh();
+          return;
+        }
+
+        if (!serverResult.useClientSignup) {
+          throw new Error(serverResult.message);
+        }
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -52,8 +75,9 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
           return;
         }
         setMessage(
-          "Check your email to confirm your account, then log in. (Disable email confirm in Supabase for instant dev login.)",
+          "Account created. Check your email to confirm, then log in — or turn off Confirm email in Supabase for instant access.",
         );
+        return;
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
