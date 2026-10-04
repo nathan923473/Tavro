@@ -1,7 +1,10 @@
 -- Fix: infinite recursion detected in policy for relation "accountability_groups"
 -- Cause: group_members SELECT policy queried group_members under RLS (self-recursion).
 
-create or replace function public.is_group_member(p_group_id uuid, p_user_id uuid)
+drop function if exists public.is_group_member(uuid, uuid);
+drop function if exists public.shares_group_with(uuid, uuid);
+
+create function public.is_group_member(p_group_id uuid, p_user_id uuid)
 returns boolean
 language sql
 stable
