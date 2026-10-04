@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { todayDateKey } from "@/lib/dates";
 import { revalidatePath } from "next/cache";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 
 async function requireUserId() {
   const supabase = await createClient();
@@ -275,22 +275,23 @@ export async function createAccountabilityGroup(name: string) {
   }
 
   const inviteCode = randomBytes(5).toString("hex");
-  const { data: group, error } = await supabase
+  const groupId = crypto.randomUUID();
+  const { error: groupError } = await supabase
     .from("accountability_groups")
     .insert({
+      id: groupId,
       name: name.trim() || "My accountability group",
       invite_code: inviteCode,
       created_by: userId,
-    })
-    .select("id")
-    .single();
+    });
 
-  if (error) throw new Error(error.message);
+  if (groupError) throw new Error(groupError.message);
 
-  await supabase.from("group_members").insert({
-    group_id: group.id,
+  const { error: memberError } = await supabase.from("group_members").insert({
+    group_id: groupId,
     user_id: userId,
   });
+  if (memberError) throw new Error(memberError.message);
 
   revalidatePath("/groups");
   return { inviteCode };
@@ -299,11 +300,12 @@ export async function createAccountabilityGroup(name: string) {
 export async function joinGroupByInviteCode(code: string) {
   const { supabase, userId } = await requireUserId();
 
-  const { data: group } = await supabase
-    .from("accountability_groups")
-    .select("id, max_members")
-    .eq("invite_code", code)
-    .maybeSingle();
+  const { data: rows, error: lookupError } = await supabase.rpc(
+    "get_group_by_invite_code",
+    { p_code: code.trim() },
+  );
+  if (lookupError) throw new Error(lookupError.message);
+  const group = Array.isArray(rows) ? rows[0] : rows;
   if (!group) throw new Error("Invalid group invite code.");
 
   const { count } = await supabase

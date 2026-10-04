@@ -24,14 +24,14 @@ In **SQL Editor**, run in order:
 4. `005a` + `005b` (creator verification, if using creator flows)
 5. `supabase/migrations/006_member_activity_and_messaging.sql` (**required** for goals, groups, chat, weigh-ins)
 6. If 006 errors with **`column "author_id" does not exist`**, run `006b_fix_messaging_tables.sql` (or re-run the updated 006 messaging section)
-7. **Accountability groups / group chat** — after 006, run **`007_one_shot_fix_groups.sql`** once (fixes infinite recursion on groups). Use a **single empty** SQL tab; paste the **whole file** from the top. Do not run `007_fix_group_rls_recursion.sql` separately if you use the one-shot file.
+7. **Accountability groups / group chat** — after 006, run **`007_one_shot_fix_groups.sql`**, then **`008_fix_group_rls_row_security.sql`** (required if create group still shows infinite recursion). Use a **single empty** SQL tab; paste each **whole file** from the top.
 
 ### Groups SQL mistakes
 
 | Error | Fix |
 |--------|-----|
 | `policy "Group messages readable by members" already exists` (42710) | You ran **CREATE** before **DROP** (often from a partial paste). Run `007a_emergency_drop_group_rls.sql`, then the full `007_one_shot_fix_groups.sql`. |
-| `infinite recursion detected in policy for relation "accountability_groups"` | Run the full `007_one_shot_fix_groups.sql` (not just part of it). |
+| `infinite recursion detected in policy for relation "accountability_groups"` | Run **`008_fix_group_rls_row_security.sql`** (after 007). Pull latest app code so create group does not rely on `insert().select()`. |
 | `cannot change name of input parameter "gid"` | Drop old functions first — included at the top of `007_one_shot_fix_groups.sql` and `007a_emergency_drop_group_rls.sql`. |
 | `drop: command not found` in Terminal | SQL belongs in **Supabase → SQL Editor**, not your Mac shell. |
 

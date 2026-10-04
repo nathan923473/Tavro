@@ -93,10 +93,10 @@ export async function fetchUserGroup(userId: string): Promise<{
 
 export async function fetchGroupByInviteCode(code: string) {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("accountability_groups")
-    .select("id, name, invite_code, max_members")
-    .eq("invite_code", code)
-    .maybeSingle();
-  return data;
+  const { data, error } = await supabase.rpc("get_group_by_invite_code", {
+    p_code: code.trim(),
+  });
+  if (error) return null;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row ?? null;
 }
