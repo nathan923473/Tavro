@@ -35,7 +35,7 @@ export default async function EditCommunityPage({
         <div>
           <h1 className="text-lg font-semibold">Edit community</h1>
           <p className="text-xs text-muted-foreground">
-            Saved to Supabase · image uploads coming soon
+            Saved to Supabase · upload photos below
           </p>
         </div>
       </div>
@@ -49,11 +49,14 @@ export default async function EditCommunityPage({
 
       <EditCommunityForm
         slug={community.slug}
+        ownerId={community.ownerUserId}
         communityName={community.communityName}
         bio={community.bio}
         brandColor={community.brandColor}
         shopUrl={community.shopUrl ?? ""}
         affiliateDisclosure={community.affiliateDisclosure ?? ""}
+        avatarUrl={community.avatarUrl}
+        bannerUrl={community.bannerUrl}
       />
     </div>
   );

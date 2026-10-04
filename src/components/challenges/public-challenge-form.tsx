@@ -4,17 +4,20 @@ import { createPublicChallenge } from "@/app/(app)/challenges/create/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
+import Link from "next/link";
 import { useState } from "react";
 
 export function PublicChallengeForm() {
   const [error, setError] = useState<string | null>(null);
   const [invitePath, setInvitePath] = useState<string | null>(null);
+  const [challengeId, setChallengeId] = useState<string | null>(null);
 
   async function handleSubmit(formData: FormData) {
     setError(null);
     const result = await createPublicChallenge(formData);
     if (result.ok) {
       setInvitePath(result.invitePath);
+      setChallengeId(result.challengeId);
     } else {
       setError(result.error);
     }
@@ -27,8 +30,16 @@ export function PublicChallengeForm() {
         <p className="mt-2 text-sm text-muted-foreground">
           Listed in discovery when wired to live queries. Share your invite link:
         </p>
-        <div className="mt-3">
+        <div className="mt-3 space-y-2">
           <CopyLinkButton url={invitePath} label="Copy challenge link" fullWidth />
+          {challengeId ? (
+            <Link
+              href={`/studio/challenges/${challengeId}/photos`}
+              className="flex min-h-11 w-full items-center justify-center rounded-xl border border-border bg-surface text-sm font-semibold"
+            >
+              Add cover & gallery photos
+            </Link>
+          ) : null}
         </div>
       </Card>
     );

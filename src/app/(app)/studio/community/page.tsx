@@ -22,11 +22,14 @@ export default async function StudioCommunitySetupPage() {
       />
       <EditCommunityForm
         slug=""
+        ownerId={user.id}
         communityName=""
         bio=""
         brandColor="#3d8b6e"
         shopUrl=""
         affiliateDisclosure=""
+        avatarUrl={null}
+        bannerUrl={null}
       />
     </div>
   );

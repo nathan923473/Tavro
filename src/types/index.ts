@@ -27,6 +27,8 @@ export type Challenge = {
   progressPercent: number;
   inviteSlug: string;
   focusAreas: string[];
+  coverUrl: string | null;
+  galleryPhotos: string[];
 };
 
 export type GroupMember = {

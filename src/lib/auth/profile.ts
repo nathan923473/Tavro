@@ -6,6 +6,7 @@ export type AccountRole = "guest" | "member" | "creator_pending" | "creator" | "
 export type UserProfile = {
   id: string;
   displayName: string | null;
+  avatarUrl: string | null;
   referralCode: string | null;
   creatorStatus: "none" | "pending" | "approved" | "rejected";
   isAdmin: boolean;
@@ -32,7 +33,7 @@ export async function getCurrentUserProfile(): Promise<{
   const { data: row } = await supabase
     .from("profiles")
     .select(
-      "id, display_name, referral_code, creator_status, is_admin, is_creator",
+      "id, display_name, avatar_url, referral_code, creator_status, is_admin, is_creator",
     )
     .eq("id", user.id)
     .maybeSingle();
@@ -57,6 +58,7 @@ export async function getCurrentUserProfile(): Promise<{
     profile: {
       id: row.id,
       displayName: row.display_name,
+      avatarUrl: row.avatar_url ?? null,
       referralCode: row.referral_code,
       creatorStatus,
       isAdmin: row.is_admin ?? false,

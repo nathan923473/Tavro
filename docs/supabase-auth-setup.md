@@ -25,6 +25,7 @@ In **SQL Editor**, run in order:
 5. `supabase/migrations/006_member_activity_and_messaging.sql` (**required** for goals, groups, chat, weigh-ins)
 6. If 006 errors with **`column "author_id" does not exist`**, run `006b_fix_messaging_tables.sql` (or re-run the updated 006 messaging section)
 7. **Accountability groups / group chat** — after 006, run **`007_one_shot_fix_groups.sql`**, then **`008_fix_group_rls_row_security.sql`** (required if create group still shows infinite recursion). Use a **single empty** SQL tab; paste each **whole file** from the top.
+8. **Profile & challenge photos** — run **`009_avatars_and_challenge_media.sql`** once (Storage buckets + `avatar_url` + challenge gallery table).
 
 ### Groups SQL mistakes
 

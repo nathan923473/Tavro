@@ -97,6 +97,13 @@ export default async function CreatorStudioPage() {
             Create public challenge
           </Link>
           <Link
+            href="/studio/challenges"
+            className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-surface text-sm font-semibold"
+          >
+            <Pencil className="h-4 w-4" aria-hidden />
+            Challenge photos
+          </Link>
+          <Link
             href="/creator/analytics"
             className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-surface text-sm font-semibold"
           >

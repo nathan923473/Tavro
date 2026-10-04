@@ -22,6 +22,7 @@ export type CreatorCommunityChallenge = {
   inviteSlug: string;
   timeline: ChallengeTimeline;
   coverGradient: string;
+  coverUrl: string | null;
 };
 
 export type CreatorCommunity = {
@@ -34,6 +35,8 @@ export type CreatorCommunity = {
   challengesHosted: number;
   brandColor: string;
   avatarInitials: string;
+  avatarUrl: string | null;
+  bannerUrl: string | null;
   bannerGradient: string;
   isApproved: boolean;
   ownerUserId: string;

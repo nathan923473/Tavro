@@ -1,9 +1,11 @@
+import { ProfileAvatarEditor } from "@/components/profile/profile-avatar-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import Link from "next/link";
-import { Sparkles, UserRound } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 export async function AccountExperience() {
   const { user, profile } = await getCurrentUserProfile();
@@ -45,13 +47,11 @@ export async function AccountExperience() {
   return (
     <Card>
       <div className="flex items-start gap-3">
-        <div className="rounded-xl bg-secondary p-2.5 text-secondary-foreground">
-          {profile?.role === "creator" ? (
-            <Sparkles className="h-5 w-5" aria-hidden />
-          ) : (
-            <UserRound className="h-5 w-5" aria-hidden />
-          )}
-        </div>
+        <UserAvatar
+          displayName={profile?.displayName}
+          avatarUrl={profile?.avatarUrl}
+          size="md"
+        />
         <div className="flex-1">
           <p className="font-semibold">
             {profile?.displayName ?? user.email ?? "Member"}
@@ -64,6 +64,13 @@ export async function AccountExperience() {
             server and in Supabase RLS.
           </p>
         </div>
+      </div>
+      <div className="mt-4 border-t border-border pt-4">
+        <ProfileAvatarEditor
+          userId={user.id}
+          displayName={profile?.displayName ?? null}
+          avatarUrl={profile?.avatarUrl ?? null}
+        />
       </div>
       <div className="mt-4 grid gap-2">
         {profile?.role === "admin" ? (

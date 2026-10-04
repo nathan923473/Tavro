@@ -1,7 +1,7 @@
 "use client";
 
 import { saveCommunityAction } from "@/app/(app)/member/actions";
-import { EditUploadButtons } from "@/components/creator/edit-upload-buttons";
+import { CommunityMediaUpload } from "@/components/creator/community-media-upload";
 import { Button } from "@/components/ui/button";
 import { Palette, Link2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -9,18 +9,24 @@ import { useState, useTransition } from "react";
 
 export function EditCommunityForm({
   slug,
+  ownerId,
   communityName,
   bio,
   brandColor,
   shopUrl,
   affiliateDisclosure,
+  avatarUrl,
+  bannerUrl,
 }: {
   slug: string;
+  ownerId: string;
   communityName: string;
   bio: string;
   brandColor: string;
   shopUrl: string;
   affiliateDisclosure: string;
+  avatarUrl: string | null;
+  bannerUrl: string | null;
 }) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
@@ -81,7 +87,11 @@ export function EditCommunityForm({
         </div>
       </Field>
       <Field label="Profile picture & banner">
-        <EditUploadButtons />
+        <CommunityMediaUpload
+          ownerId={ownerId}
+          avatarUrl={avatarUrl}
+          bannerUrl={bannerUrl}
+        />
       </Field>
       <Field label="Shop or website link">
         <div className="flex items-center gap-2 rounded-xl border border-border px-3 py-2.5">

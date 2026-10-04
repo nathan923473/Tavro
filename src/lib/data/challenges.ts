@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { fetchChallengeGalleryMap } from "@/lib/data/challenge-media";
 import { unwrapOne } from "@/lib/data/relations";
 import type { Challenge } from "@/types";
 
@@ -10,6 +11,7 @@ type ChallengeRow = {
   end_date: string;
   invite_slug: string;
   focus_areas: string[] | null;
+  cover_url: string | null;
   created_by: string;
   visibility: string;
   creator?: { display_name: string | null } | { display_name: string | null }[] | null;
@@ -21,6 +23,7 @@ function mapChallenge(
   userId: string | null,
   joinedIds: Set<string>,
   progress: Record<string, number>,
+  gallery: string[] = [],
 ): Challenge {
   const count = row.participants?.[0]?.count ?? 0;
   const joined = userId ? joinedIds.has(row.id) : false;
@@ -37,6 +40,8 @@ function mapChallenge(
     progressPercent: joined ? (progress[row.id] ?? 0) : 0,
     inviteSlug: row.invite_slug,
     focusAreas: row.focus_areas ?? [],
+    coverUrl: row.cover_url ?? null,
+    galleryPhotos: gallery,
   };
 }
 
@@ -51,7 +56,7 @@ export async function fetchChallengesForUser(userId: string | null): Promise<{
     .select(
       `
       id, title, description, start_date, end_date, invite_slug, focus_areas,
-      created_by, visibility,
+      cover_url, created_by, visibility,
       creator:profiles!challenges_created_by_fkey ( display_name ),
       participants:challenge_participants ( count )
     `,
@@ -76,8 +81,16 @@ export async function fetchChallengesForUser(userId: string | null): Promise<{
     }
   }
 
+  const galleryMap = await fetchChallengeGalleryMap(rows.map((r) => r.id));
+
   const all = rows.map((r) =>
-    mapChallenge(r as ChallengeRow, userId, joinedIds, progress),
+    mapChallenge(
+      r as ChallengeRow,
+      userId,
+      joinedIds,
+      progress,
+      galleryMap[r.id] ?? [],
+    ),
   );
 
   return {
@@ -96,7 +109,7 @@ export async function fetchChallengeByInviteSlug(
     .select(
       `
       id, title, description, start_date, end_date, invite_slug, focus_areas,
-      created_by, visibility,
+      cover_url, created_by, visibility,
       creator:profiles!challenges_created_by_fkey ( display_name ),
       participants:challenge_participants ( count )
     `,
@@ -121,5 +134,12 @@ export async function fetchChallengeByInviteSlug(
     }
   }
 
-  return mapChallenge(row as unknown as ChallengeRow, userId, joinedIds, progress);
+  const galleryMap = await fetchChallengeGalleryMap([row.id]);
+  return mapChallenge(
+    row as unknown as ChallengeRow,
+    userId,
+    joinedIds,
+    progress,
+    galleryMap[row.id] ?? [],
+  );
 }

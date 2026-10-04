@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { CreatorCommunityChallenge } from "@/types/creator-community";
 import { CalendarRange, Users } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 type CreatorChallengeCardProps = {
@@ -19,11 +20,23 @@ export function CreatorChallengeCard({
   return (
     <Card className="overflow-hidden p-0">
       <div
-        className="h-28 w-full"
-        style={{ background: challenge.coverGradient }}
+        className="relative h-28 w-full bg-muted"
+        style={
+          challenge.coverUrl ? undefined : { background: challenge.coverGradient }
+        }
         role="img"
         aria-label=""
-      />
+      >
+        {challenge.coverUrl ? (
+          <Image
+            src={challenge.coverUrl}
+            alt=""
+            fill
+            className="object-cover"
+            unoptimized
+          />
+        ) : null}
+      </div>
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold leading-snug">{challenge.title}</h3>

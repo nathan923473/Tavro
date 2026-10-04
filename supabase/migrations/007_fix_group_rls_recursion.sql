@@ -1,6 +1,12 @@
 -- Fix: infinite recursion detected in policy for relation "accountability_groups"
 -- Cause: group_members SELECT policy queried group_members under RLS (self-recursion).
 
+drop policy if exists "Groups readable by members" on public.accountability_groups;
+drop policy if exists "Group members readable by co-members" on public.group_members;
+drop policy if exists "Group messages readable by members" on public.group_messages;
+drop policy if exists "Group members post messages" on public.group_messages;
+drop policy if exists "Group co-members read profile names" on public.profiles;
+
 drop function if exists public.is_group_member(uuid, uuid);
 drop function if exists public.shares_group_with(uuid, uuid);
 
@@ -21,11 +27,6 @@ $$;
 
 revoke all on function public.is_group_member(uuid, uuid) from public;
 grant execute on function public.is_group_member(uuid, uuid) to authenticated;
-
-drop policy if exists "Groups readable by members" on public.accountability_groups;
-drop policy if exists "Group members readable by co-members" on public.group_members;
-drop policy if exists "Group messages readable by members" on public.group_messages;
-drop policy if exists "Group members post messages" on public.group_messages;
 
 create policy "Groups readable by members"
   on public.accountability_groups for select
@@ -69,8 +70,6 @@ $$;
 
 revoke all on function public.shares_group_with(uuid, uuid) from public;
 grant execute on function public.shares_group_with(uuid, uuid) to authenticated;
-
-drop policy if exists "Group co-members read profile names" on public.profiles;
 
 create policy "Group co-members read profile names"
   on public.profiles for select

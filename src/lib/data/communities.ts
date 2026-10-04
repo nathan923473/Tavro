@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { fetchChallengeGalleryMap } from "@/lib/data/challenge-media";
 import { unwrapOne } from "@/lib/data/relations";
 import type { CreatorCommunity, CreatorCommunityChallenge } from "@/types/creator-community";
 
@@ -42,13 +43,17 @@ export async function fetchCommunityBySlug(
     .from("challenges")
     .select(
       `
-      id, title, description, start_date, end_date, invite_slug,
+      id, title, description, start_date, end_date, invite_slug, cover_url,
       participants:challenge_participants ( count )
     `,
     )
     .eq("community_id", row.id)
     .eq("visibility", "public")
     .order("start_date", { ascending: false });
+
+  const challengeIds = (challenges ?? []).map((c) => c.id);
+  const galleryMap = await fetchChallengeGalleryMap(challengeIds);
+  const brand = row.brand_color ?? "#3d8b6e";
 
   const mappedChallenges: CreatorCommunityChallenge[] = (challenges ?? []).map(
     (c) => ({
@@ -60,7 +65,8 @@ export async function fetchCommunityBySlug(
       participants: c.participants?.[0]?.count ?? 0,
       inviteSlug: c.invite_slug,
       timeline: challengeTimeline(c.start_date, c.end_date),
-      coverGradient: `linear-gradient(145deg, ${row.brand_color ?? "#3d8b6e"}, #2f6f58)`,
+      coverGradient: `linear-gradient(145deg, ${brand}, #2f6f58)`,
+      coverUrl: c.cover_url ?? galleryMap[c.id]?.[0] ?? null,
     }),
   );
 
@@ -93,6 +99,8 @@ export async function fetchCommunityBySlug(
     challengesHosted: mappedChallenges.length,
     brandColor: row.brand_color ?? "#3d8b6e",
     avatarInitials: initials,
+    avatarUrl: row.avatar_url ?? null,
+    bannerUrl: row.banner_url ?? null,
     bannerGradient: `linear-gradient(135deg, ${row.brand_color ?? "#3d8b6e"} 0%, #2f6f58 100%)`,
     isApproved: true,
     ownerUserId: row.owner_id,

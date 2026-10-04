@@ -89,16 +89,20 @@ export async function createPublicChallenge(formData: FormData) {
 
   const inviteSlug = slugify(title);
 
-  const { error } = await supabase.from("challenges").insert({
-    created_by: user.id,
-    community_id: community.id,
-    title,
-    description,
-    start_date: startDate,
-    end_date: endDate,
-    visibility: "public",
-    invite_slug: inviteSlug,
-  });
+  const { data: created, error } = await supabase
+    .from("challenges")
+    .insert({
+      created_by: user.id,
+      community_id: community.id,
+      title,
+      description,
+      start_date: startDate,
+      end_date: endDate,
+      visibility: "public",
+      invite_slug: inviteSlug,
+    })
+    .select("id, invite_slug")
+    .single();
 
   if (error) {
     return { ok: false as const, error: error.message };
@@ -106,5 +110,9 @@ export async function createPublicChallenge(formData: FormData) {
 
   revalidatePath("/challenges");
   revalidatePath("/studio");
-  return { ok: true as const, invitePath: `/join/${inviteSlug}` };
+  return {
+    ok: true as const,
+    invitePath: `/join/${created.invite_slug}`,
+    challengeId: created.id,
+  };
 }

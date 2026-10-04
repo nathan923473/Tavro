@@ -275,7 +275,7 @@ export async function createAccountabilityGroup(name: string) {
   }
 
   const inviteCode = randomBytes(5).toString("hex");
-  const groupId = crypto.randomUUID();
+  const groupId = randomUUID();
   const { error: groupError } = await supabase
     .from("accountability_groups")
     .insert({

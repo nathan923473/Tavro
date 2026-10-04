@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import type { CreatorCommunity } from "@/types/creator-community";
 import type { ReactNode } from "react";
 import { Globe, Link2, Share2, Video } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 const iconMap = {
@@ -26,8 +27,22 @@ export function CommunityHero({
     <div className="animate-fade-up">
       <div
         className="relative h-40 w-full"
-        style={{ background: community.bannerGradient }}
+        style={
+          community.bannerUrl
+            ? undefined
+            : { background: community.bannerGradient }
+        }
       >
+        {community.bannerUrl ? (
+          <Image
+            src={community.bannerUrl}
+            alt=""
+            fill
+            className="object-cover"
+            priority
+            unoptimized
+          />
+        ) : null}
         <div className="absolute inset-0 bg-black/10" />
         {showEditLink ? (
           <Link
@@ -39,11 +54,24 @@ export function CommunityHero({
         ) : null}
       </div>
       <div className="relative px-4 pb-2">
-        <div
-          className="-mt-12 flex h-24 w-24 items-center justify-center rounded-2xl border-4 border-background text-2xl font-bold text-white shadow-md"
-          style={{ backgroundColor: community.brandColor }}
-        >
-          {community.avatarInitials}
+        <div className="-mt-12 h-24 w-24 overflow-hidden rounded-2xl border-4 border-background bg-muted shadow-md">
+          {community.avatarUrl ? (
+            <Image
+              src={community.avatarUrl}
+              alt=""
+              width={96}
+              height={96}
+              className="h-full w-full object-cover"
+              unoptimized
+            />
+          ) : (
+            <div
+              className="flex h-full w-full items-center justify-center text-2xl font-bold text-white"
+              style={{ backgroundColor: community.brandColor }}
+            >
+              {community.avatarInitials}
+            </div>
+          )}
         </div>
         <div className="mt-3">
           <h1 className="text-xl font-semibold tracking-tight">

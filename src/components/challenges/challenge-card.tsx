@@ -14,6 +14,7 @@ import type { ChallengeChatMessage } from "@/lib/challenge-chat";
 import { challengeInvitePath } from "@/lib/site-url";
 import type { Challenge } from "@/types";
 import { CalendarRange, Gift, Users } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -52,7 +53,19 @@ export function ChallengeCard({
   }
 
   return (
-    <Card>
+    <Card className="overflow-hidden p-0">
+      {challenge.coverUrl ? (
+        <div className="relative aspect-[2/1] w-full bg-muted">
+          <Image
+            src={challenge.coverUrl}
+            alt=""
+            fill
+            className="object-cover"
+            unoptimized
+          />
+        </div>
+      ) : null}
+      <div className="p-4">
       <div className="flex items-start justify-between gap-2">
         <div>
           <h2 className="font-semibold">{challenge.title}</h2>
@@ -75,6 +88,15 @@ export function ChallengeCard({
       <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
         {challenge.description}
       </p>
+      {challenge.galleryPhotos.length > 0 ? (
+        <ul className="mt-3 grid grid-cols-3 gap-1.5">
+          {challenge.galleryPhotos.slice(0, 6).map((url) => (
+            <li key={url} className="relative aspect-square overflow-hidden rounded-lg bg-muted">
+              <Image src={url} alt="" fill className="object-cover" unoptimized />
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <div className="mt-2 flex flex-wrap gap-1.5">
         {challenge.focusAreas.map((area) => (
           <Badge key={area} tone="muted">
@@ -171,6 +193,7 @@ export function ChallengeCard({
           {message}
         </p>
       ) : null}
+      </div>
     </Card>
   );
 }
