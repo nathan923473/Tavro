@@ -125,14 +125,28 @@ create policy "Users manage own weigh-ins"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+-- Helper defined in 007_fix_group_rls_recursion.sql (or run 007 after 006)
+create or replace function public.is_group_member(p_group_id uuid, p_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.group_members gm
+    where gm.group_id = p_group_id and gm.user_id = p_user_id
+  );
+$$;
+
+revoke all on function public.is_group_member(uuid, uuid) from public;
+grant execute on function public.is_group_member(uuid, uuid) to authenticated;
+
 create policy "Groups readable by members"
   on public.accountability_groups for select
   using (
-    exists (
-      select 1 from public.group_members gm
-      where gm.group_id = id and gm.user_id = auth.uid()
-    )
-    or created_by = auth.uid()
+    created_by = auth.uid()
+    or public.is_group_member(id, auth.uid())
   );
 
 create policy "Authenticated create groups"
@@ -142,10 +156,8 @@ create policy "Authenticated create groups"
 create policy "Group members readable by co-members"
   on public.group_members for select
   using (
-    exists (
-      select 1 from public.group_members gm
-      where gm.group_id = group_id and gm.user_id = auth.uid()
-    )
+    user_id = auth.uid()
+    or public.is_group_member(group_id, auth.uid())
   );
 
 create policy "Users join groups"
@@ -158,21 +170,13 @@ create policy "Users leave own membership"
 
 create policy "Group messages readable by members"
   on public.group_messages for select
-  using (
-    exists (
-      select 1 from public.group_members gm
-      where gm.group_id = group_id and gm.user_id = auth.uid()
-    )
-  );
+  using (public.is_group_member(group_id, auth.uid()));
 
 create policy "Group members post messages"
   on public.group_messages for insert
   with check (
     auth.uid() = author_id
-    and exists (
-      select 1 from public.group_members gm
-      where gm.group_id = group_id and gm.user_id = auth.uid()
-    )
+    and public.is_group_member(group_id, auth.uid())
   );
 
 create policy "Challenge messages readable by participants"
@@ -205,18 +209,29 @@ create policy "Challenge messages post by participants"
   );
 
 -- Co-members can read display names (for group UI)
+create or replace function public.shares_group_with(p_other_user_id uuid, p_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.group_members a
+    join public.group_members b on a.group_id = b.group_id
+    where a.user_id = p_user_id and b.user_id = p_other_user_id
+  );
+$$;
+
+revoke all on function public.shares_group_with(uuid, uuid) from public;
+grant execute on function public.shares_group_with(uuid, uuid) to authenticated;
+
 create policy "Group co-members read profile names"
   on public.profiles for select
   using (
     auth.uid() = id
-    or exists (
-      select 1
-      from public.group_members gm_self
-      join public.group_members gm_other
-        on gm_self.group_id = gm_other.group_id
-      where gm_self.user_id = auth.uid()
-        and gm_other.user_id = profiles.id
-    )
+    or public.shares_group_with(id, auth.uid())
   );
 
 -- Participants can leave challenges

@@ -37,21 +37,13 @@ alter table public.challenge_messages enable row level security;
 
 create policy "Group messages readable by members"
   on public.group_messages for select
-  using (
-    exists (
-      select 1 from public.group_members gm
-      where gm.group_id = group_id and gm.user_id = auth.uid()
-    )
-  );
+  using (public.is_group_member(group_id, auth.uid()));
 
 create policy "Group members post messages"
   on public.group_messages for insert
   with check (
     auth.uid() = author_id
-    and exists (
-      select 1 from public.group_members gm
-      where gm.group_id = group_id and gm.user_id = auth.uid()
-    )
+    and public.is_group_member(group_id, auth.uid())
   );
 
 create policy "Challenge messages readable by participants"
