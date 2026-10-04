@@ -64,7 +64,15 @@ create table if not exists public.group_members (
   primary key (group_id, user_id)
 );
 
-create table if not exists public.group_messages (
+-- Drop stale partial tables (old schema without author_id) before recreate
+drop policy if exists "Group messages readable by members" on public.group_messages;
+drop policy if exists "Group members post messages" on public.group_messages;
+drop policy if exists "Challenge messages readable by participants" on public.challenge_messages;
+drop policy if exists "Challenge messages post by participants" on public.challenge_messages;
+drop table if exists public.challenge_messages cascade;
+drop table if exists public.group_messages cascade;
+
+create table public.group_messages (
   id uuid primary key default gen_random_uuid(),
   group_id uuid not null references public.accountability_groups (id) on delete cascade,
   author_id uuid not null references public.profiles (id) on delete cascade,
@@ -72,10 +80,10 @@ create table if not exists public.group_messages (
   created_at timestamptz not null default now()
 );
 
-create index if not exists group_messages_group_idx
+create index group_messages_group_idx
   on public.group_messages (group_id, created_at desc);
 
-create table if not exists public.challenge_messages (
+create table public.challenge_messages (
   id uuid primary key default gen_random_uuid(),
   challenge_id uuid not null references public.challenges (id) on delete cascade,
   author_id uuid not null references public.profiles (id) on delete cascade,
@@ -84,7 +92,7 @@ create table if not exists public.challenge_messages (
   created_at timestamptz not null default now()
 );
 
-create index if not exists challenge_messages_challenge_idx
+create index challenge_messages_challenge_idx
   on public.challenge_messages (challenge_id, created_at asc);
 
 -- RLS
