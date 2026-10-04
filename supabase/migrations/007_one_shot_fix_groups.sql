@@ -39,6 +39,12 @@ grant execute on function public.is_group_member(uuid, uuid) to authenticated;
 revoke all on function public.shares_group_with(uuid, uuid) from public;
 grant execute on function public.shares_group_with(uuid, uuid) to authenticated;
 
+drop policy if exists "Groups readable by members" on public.accountability_groups;
+drop policy if exists "Group members readable by co-members" on public.group_members;
+drop policy if exists "Group messages readable by members" on public.group_messages;
+drop policy if exists "Group members post messages" on public.group_messages;
+drop policy if exists "Group co-members read profile names" on public.profiles;
+
 create policy "Groups readable by members"
   on public.accountability_groups for select
   using (
