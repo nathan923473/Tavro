@@ -52,7 +52,7 @@ create policy "Group members post messages"
     and public.is_group_member(group_id, auth.uid())
   );
 
-create or replace function public.shares_group_with(p_other_user_id uuid, p_user_id uuid)
+create function public.shares_group_with(p_other_user_id uuid, p_user_id uuid)
 returns boolean
 language sql
 stable
