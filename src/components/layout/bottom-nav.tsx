@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/cn";
+import { ACCOUNTABILITY_GROUP_SHORT } from "@/lib/copy/accountability-groups";
 import {
   Home,
   Trophy,
@@ -13,7 +14,7 @@ import { usePathname } from "next/navigation";
 
 const tabs = [
   { href: "/", label: "Home", icon: Home },
-  { href: "/groups", label: "Groups", icon: Users },
+  { href: "/groups", label: ACCOUNTABILITY_GROUP_SHORT, icon: Users },
   { href: "/challenges", label: "Challenges", icon: Trophy },
   { href: "/progress", label: "Progress", icon: TrendingUp },
   { href: "/profile", label: "Profile", icon: UserRound },

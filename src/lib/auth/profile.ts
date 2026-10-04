@@ -30,13 +30,24 @@ export async function getCurrentUserProfile(): Promise<{
     return { user: null, profile: null };
   }
 
-  const { data: row } = await supabase
+  const fullSelect =
+    "id, display_name, avatar_url, referral_code, creator_status, is_admin, is_creator";
+  const legacySelect =
+    "id, display_name, referral_code, creator_status, is_admin, is_creator";
+
+  let { data: row, error } = await supabase
     .from("profiles")
-    .select(
-      "id, display_name, avatar_url, referral_code, creator_status, is_admin, is_creator",
-    )
+    .select(fullSelect)
     .eq("id", user.id)
     .maybeSingle();
+
+  if (error && /avatar_url|schema cache/i.test(error.message)) {
+    ({ data: row } = await supabase
+      .from("profiles")
+      .select(legacySelect)
+      .eq("id", user.id)
+      .maybeSingle());
+  }
 
   if (!row) {
     return {
@@ -44,6 +55,11 @@ export async function getCurrentUserProfile(): Promise<{
       profile: null,
     };
   }
+
+  const avatarUrl =
+    "avatar_url" in row && typeof row.avatar_url === "string"
+      ? row.avatar_url
+      : null;
 
   const creatorStatus = (row.creator_status ??
     "none") as UserProfile["creatorStatus"];
@@ -58,7 +74,7 @@ export async function getCurrentUserProfile(): Promise<{
     profile: {
       id: row.id,
       displayName: row.display_name,
-      avatarUrl: row.avatar_url ?? null,
+      avatarUrl,
       referralCode: row.referral_code,
       creatorStatus,
       isAdmin: row.is_admin ?? false,

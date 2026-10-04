@@ -83,7 +83,8 @@ export default async function ProfilePage() {
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li className="flex items-center gap-2">
               <Shield className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-              Creators never see private weigh-ins or private group chats
+              Creators never see private weigh-ins or private accountability
+              group chats
             </li>
             <li>
               <Link href="/onboarding" className="font-medium text-primary">

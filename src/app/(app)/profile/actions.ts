@@ -16,7 +16,14 @@ export async function setProfileAvatarUrlAction(avatarUrl: string) {
     .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
     .eq("id", userId);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (/avatar_url|schema cache/i.test(error.message)) {
+      throw new Error(
+        "Profile photos need Supabase migration 009b_one_shot_fix_media.sql — run it in SQL Editor, then try again.",
+      );
+    }
+    throw new Error(error.message);
+  }
 
   revalidatePath("/profile");
   revalidatePath("/groups");

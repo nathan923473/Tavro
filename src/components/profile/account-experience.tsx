@@ -1,3 +1,4 @@
+import { ProfileAvatarEditor } from "@/components/profile/profile-avatar-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -63,12 +64,33 @@ export async function AccountExperience() {
           </p>
         </div>
       </div>
-      <Link
-        href="#profile-photo"
-        className="mt-3 inline-block text-sm font-semibold text-primary"
-      >
-        Change profile picture ↓
-      </Link>
+
+      <div className="mt-4 rounded-xl border-2 border-primary/25 bg-primary/5 p-4">
+        <h3 className="text-base font-semibold">Profile picture</h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Upload a photo or pick a style below.
+        </p>
+        <div className="mt-3">
+          <ProfileAvatarEditor
+            userId={user.id}
+            displayName={profile?.displayName ?? null}
+            avatarUrl={profile?.avatarUrl ?? null}
+          />
+        </div>
+      </div>
+
+      {profile?.role === "creator" || profile?.role === "admin" ? (
+        <div className="mt-4 rounded-xl border border-border p-3 text-sm">
+          <p className="font-medium">Creator photos</p>
+          <p className="mt-1 text-muted-foreground">
+            Community banner & challenge images live in Creator Studio.
+          </p>
+          <Link href="/studio" className="mt-2 inline-block font-semibold text-primary">
+            Open Creator Studio →
+          </Link>
+        </div>
+      ) : null}
+
       <div className="mt-4 grid gap-2">
         {profile?.role === "admin" ? (
           <Link

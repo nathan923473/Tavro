@@ -3,7 +3,12 @@ import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchUserGroup } from "@/lib/data/groups";
 
-export const metadata = { title: "Groups" };
+import {
+  ACCOUNTABILITY_GROUP_PLURAL,
+  ACCOUNTABILITY_GROUP_SINGULAR,
+} from "@/lib/copy/accountability-groups";
+
+export const metadata = { title: "Private accountability groups" };
 
 export default async function GroupsPage() {
   const { user } = await getCurrentUserProfile();
@@ -15,8 +20,8 @@ export default async function GroupsPage() {
   return (
     <div className="animate-fade-up">
       <PageHeader
-        title="Groups"
-        subtitle="Small private circles · optional"
+        title="Private accountability groups"
+        subtitle={`Optional ${ACCOUNTABILITY_GROUP_PLURAL} · 4–8 people · creators never see these chats`}
       />
       <div className="space-y-4 px-4 py-4">
         <GroupsInteractive

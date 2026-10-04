@@ -1,5 +1,9 @@
 -- Profile avatars, community images, challenge cover + gallery, Supabase Storage buckets.
 -- Run once in Supabase SQL Editor (empty tab, full file).
+-- If you get policy "already exists" (42710), run 009b_one_shot_fix_media.sql instead.
+
+drop policy if exists "Challenge photos readable with challenge" on public.challenge_photos;
+drop policy if exists "Creators manage challenge photos" on public.challenge_photos;
 
 alter table public.profiles
   add column if not exists avatar_url text;

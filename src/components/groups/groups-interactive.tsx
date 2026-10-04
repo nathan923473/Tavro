@@ -11,6 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
 import type { AccountabilityGroup, GroupActivity } from "@/types";
+import {
+  ACCOUNTABILITY_GROUP_PLURAL,
+  ACCOUNTABILITY_GROUP_SINGULAR,
+} from "@/lib/copy/accountability-groups";
 import { groupInvitePath } from "@/lib/site-url";
 import { Heart, MessageCircle, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -34,9 +38,9 @@ export function GroupsInteractive({
   if (!loggedIn) {
     return (
       <Card>
-        <h2 className="font-semibold">Accountability groups</h2>
+        <h2 className="font-semibold">{ACCOUNTABILITY_GROUP_PLURAL}</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Log in to create or join a private group (4–8 people).
+          Log in to create or join a {ACCOUNTABILITY_GROUP_SINGULAR} (4–8 people).
         </p>
       </Card>
     );
@@ -45,9 +49,12 @@ export function GroupsInteractive({
   if (!group) {
     return (
       <Card>
-        <h2 className="font-semibold">You&apos;re not in a group</h2>
+        <h2 className="font-semibold">
+          You&apos;re not in a {ACCOUNTABILITY_GROUP_SINGULAR} yet
+        </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Start a small circle or join with an invite code from a friend.
+          Start a {ACCOUNTABILITY_GROUP_SINGULAR} or join with an invite code from
+          a friend.
         </p>
         <div className="mt-4 space-y-2">
           <Button
@@ -57,7 +64,9 @@ export function GroupsInteractive({
               startTransition(async () => {
                 try {
                   await createAccountabilityGroup("My accountability group");
-                  setStatus("Group created — invite friends with your link.");
+                  setStatus(
+                    "Private accountability group created — invite friends with your link.",
+                  );
                   router.refresh();
                 } catch (e) {
                   setStatus(e instanceof Error ? e.message : "Failed");
@@ -65,7 +74,7 @@ export function GroupsInteractive({
               })
             }
           >
-            Start a group
+            Start a private accountability group
           </Button>
           <div className="flex gap-2">
             <input
@@ -81,7 +90,7 @@ export function GroupsInteractive({
                 startTransition(async () => {
                   try {
                     await joinGroupByInviteCode(joinCode.trim());
-                    setStatus("Joined group.");
+                    setStatus("Joined private accountability group.");
                     router.refresh();
                   } catch (e) {
                     setStatus(e instanceof Error ? e.message : "Failed");
@@ -123,7 +132,7 @@ export function GroupsInteractive({
         <div className="mt-4 space-y-2">
           <CopyLinkButton
             url={groupInvitePath(group.inviteCode)}
-            label="Copy group invite link"
+            label="Copy accountability group invite link"
             fullWidth
           />
           <Button
@@ -137,13 +146,13 @@ export function GroupsInteractive({
               })
             }
           >
-            Leave group
+            Leave accountability group
           </Button>
         </div>
       </Card>
 
       <Card>
-        <h3 className="font-semibold">Group chat</h3>
+        <h3 className="font-semibold">Accountability group chat</h3>
         <ul className="mt-3 max-h-48 space-y-2 overflow-y-auto text-sm">
           {feed.length === 0 ? (
             <li className="text-muted-foreground">No messages yet.</li>
