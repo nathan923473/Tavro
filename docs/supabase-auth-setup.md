@@ -24,6 +24,16 @@ In **SQL Editor**, run in order:
 4. `005a` + `005b` (creator verification, if using creator flows)
 5. `supabase/migrations/006_member_activity_and_messaging.sql` (**required** for goals, groups, chat, weigh-ins)
 6. If 006 errors with **`column "author_id" does not exist`**, run `006b_fix_messaging_tables.sql` (or re-run the updated 006 messaging section)
+7. **Accountability groups / group chat** — after 006, run **`007_one_shot_fix_groups.sql`** once (fixes infinite recursion on groups). Use a **single empty** SQL tab; paste the **whole file** from the top. Do not run `007_fix_group_rls_recursion.sql` separately if you use the one-shot file.
+
+### Groups SQL mistakes
+
+| Error | Fix |
+|--------|-----|
+| `policy "Group messages readable by members" already exists` (42710) | You ran **CREATE** before **DROP** (often from a partial paste). Run `007a_emergency_drop_group_rls.sql`, then the full `007_one_shot_fix_groups.sql`. |
+| `infinite recursion detected in policy for relation "accountability_groups"` | Run the full `007_one_shot_fix_groups.sql` (not just part of it). |
+| `cannot change name of input parameter "gid"` | Drop old functions first — included at the top of `007_one_shot_fix_groups.sql` and `007a_emergency_drop_group_rls.sql`. |
+| `drop: command not found` in Terminal | SQL belongs in **Supabase → SQL Editor**, not your Mac shell. |
 
 ## 3. Auth settings in Supabase
 
@@ -67,3 +77,4 @@ npm run check:auth
 | Email rate limit exceeded | Add **service role** key, or disable confirm email + wait |
 | Invalid login credentials | Sign up first, or reset password in **Authentication → Users** |
 | User already registered | Use **Log in** |
+| Groups create/join fails (RLS) | Run migrations **006** then **`007_one_shot_fix_groups.sql`** (see step 7 above) |
