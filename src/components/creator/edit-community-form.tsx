@@ -51,6 +51,13 @@ export function EditCommunityForm({
       }}
     >
       <input type="hidden" name="slug" value={slug} />
+      <Field label="Photos (shown on your public page)">
+        <CommunityMediaUpload
+          ownerId={ownerId}
+          avatarUrl={avatarUrl}
+          bannerUrl={bannerUrl}
+        />
+      </Field>
       <Field label="Community URL slug">
         <input
           readOnly
@@ -85,13 +92,6 @@ export function EditCommunityForm({
             className="h-10 w-14 cursor-pointer rounded-lg border border-border"
           />
         </div>
-      </Field>
-      <Field label="Profile picture & banner">
-        <CommunityMediaUpload
-          ownerId={ownerId}
-          avatarUrl={avatarUrl}
-          bannerUrl={bannerUrl}
-        />
       </Field>
       <Field label="Shop or website link">
         <div className="flex items-center gap-2 rounded-xl border border-border px-3 py-2.5">

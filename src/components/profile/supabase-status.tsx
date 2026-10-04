@@ -1,10 +1,14 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { checkMediaDatabaseSetup } from "@/lib/data/media-setup";
 import { checkSupabaseConnection } from "@/lib/supabase/server";
 import { Database } from "lucide-react";
 
 export async function SupabaseStatus() {
-  const status = await checkSupabaseConnection();
+  const [status, media] = await Promise.all([
+    checkSupabaseConnection(),
+    checkMediaDatabaseSetup(),
+  ]);
 
   return (
     <Card>
@@ -26,10 +30,20 @@ export async function SupabaseStatus() {
           <p className="mt-1 text-sm text-muted-foreground">{status.message}</p>
           {status.connected ? (
             <p className="mt-2 text-xs text-muted-foreground">
-              Run migrations <code className="text-[11px]">002</code> and{" "}
-              <code className="text-[11px]">003_fix_signup_profile_trigger.sql</code> in
-              Supabase SQL Editor if sign-up fails. See{" "}
-              <code className="text-[11px]">docs/supabase-auth-setup.md</code>.
+              {media.ok ? (
+                <>
+                  Profile & challenge photo uploads:{" "}
+                  <span className="font-medium text-foreground">enabled</span>.
+                  Use the <strong>Profile picture</strong> card above, or Creator
+                  tools for branding.
+                </>
+              ) : (
+                <>
+                  Photo uploads need migration{" "}
+                  <code className="text-[11px]">009_avatars_and_challenge_media.sql</code>{" "}
+                  in Supabase SQL Editor. {media.message}
+                </>
+              )}
             </p>
           ) : null}
         </div>

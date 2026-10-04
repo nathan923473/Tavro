@@ -47,6 +47,11 @@ export function PublicChallengeForm() {
 
   return (
     <Card>
+      <p className="mb-3 text-sm text-muted-foreground">
+        After you publish, use{" "}
+        <strong className="text-foreground">Add cover & gallery photos</strong> on
+        the next screen (or Studio → Challenge photos).
+      </p>
       <form action={handleSubmit} className="space-y-3">
         <Field label="Challenge name" name="title" required />
         <Field label="Description" name="description" textarea />

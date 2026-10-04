@@ -1,11 +1,9 @@
-import { ProfileAvatarEditor } from "@/components/profile/profile-avatar-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
 
 export async function AccountExperience() {
   const { user, profile } = await getCurrentUserProfile();
@@ -65,13 +63,12 @@ export async function AccountExperience() {
           </p>
         </div>
       </div>
-      <div className="mt-4 border-t border-border pt-4">
-        <ProfileAvatarEditor
-          userId={user.id}
-          displayName={profile?.displayName ?? null}
-          avatarUrl={profile?.avatarUrl ?? null}
-        />
-      </div>
+      <Link
+        href="#profile-photo"
+        className="mt-3 inline-block text-sm font-semibold text-primary"
+      >
+        Change profile picture ↓
+      </Link>
       <div className="mt-4 grid gap-2">
         {profile?.role === "admin" ? (
           <Link

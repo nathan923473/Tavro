@@ -2,6 +2,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { AccountExperience } from "@/components/profile/account-experience";
+import { CreatorMediaCard } from "@/components/profile/creator-media-card";
+import { ProfilePhotoCard } from "@/components/profile/profile-photo-card";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { SupabaseStatus } from "@/components/profile/supabase-status";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
@@ -22,6 +24,8 @@ export default async function ProfilePage() {
     <div className="animate-fade-up">
       <PageHeader title="Profile" subtitle="Member or creator · one account" />
       <div className="space-y-4 px-4 py-4">
+        <ProfilePhotoCard />
+        <CreatorMediaCard />
         <AccountExperience />
 
         <Card>

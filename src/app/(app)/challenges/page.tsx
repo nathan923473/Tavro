@@ -44,6 +44,16 @@ export default async function ChallengesPage() {
           + Create private invite-only challenge
         </Link>
 
+        {profile?.role === "creator" || profile?.role === "admin" ? (
+          <Link
+            href="/studio/challenges"
+            className="flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-primary/30 bg-secondary/40 px-4 text-sm font-semibold text-primary"
+          >
+            <Sparkles className="h-4 w-4" aria-hidden />
+            Add photos to your public challenges
+          </Link>
+        ) : null}
+
         <Card className="border-primary/20 bg-secondary/30">
           <div className="flex gap-3">
             <GiftIcon />

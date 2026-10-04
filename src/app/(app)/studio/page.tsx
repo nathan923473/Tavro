@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { requireApprovedCreator } from "@/lib/auth/profile";
 import { fetchCommunityBySlug, fetchOwnerCommunity } from "@/lib/data/communities";
-import { BarChart3, Pencil, PlusCircle, Users } from "lucide-react";
+import { BarChart3, ImageIcon, Palette, Pencil, PlusCircle, Users } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = { title: "Creator Studio" };
@@ -34,6 +34,36 @@ export default async function CreatorStudioPage() {
             You have all member features plus public community tools. Private
             member data is never visible here.
           </p>
+        </Card>
+
+        <Card className="border-2 border-primary/30">
+          <h2 className="flex items-center gap-2 font-semibold">
+            <ImageIcon className="h-5 w-5 text-primary" aria-hidden />
+            Photos & branding
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Upload images for your public creator page and challenge invite links.
+          </p>
+          <div className="mt-3 grid gap-2">
+            <Link
+              href={
+                community
+                  ? `/creator/${community.slug}/edit`
+                  : "/studio/community"
+              }
+              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+            >
+              <Palette className="h-4 w-4" aria-hidden />
+              Community avatar & banner
+            </Link>
+            <Link
+              href="/studio/challenges"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-surface text-sm font-semibold"
+            >
+              <ImageIcon className="h-4 w-4" aria-hidden />
+              Challenge cover & gallery
+            </Link>
+          </div>
         </Card>
 
         {!community ? (
