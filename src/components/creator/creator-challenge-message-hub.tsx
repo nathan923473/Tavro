@@ -1,8 +1,5 @@
-"use client";
-
 import { ChallengeGroupChat } from "@/components/challenges/challenge-group-chat";
-import { Card } from "@/components/ui/card";
-import { getChallengeIdByInviteSlug } from "@/lib/challenge-chat";
+import { fetchChallengeMessages } from "@/lib/data/messages";
 import type { CreatorCommunityChallenge } from "@/types/creator-community";
 
 type CreatorChallengeMessageHubProps = {
@@ -10,7 +7,7 @@ type CreatorChallengeMessageHubProps = {
   challenges: CreatorCommunityChallenge[];
 };
 
-export function CreatorChallengeMessageHub({
+export async function CreatorChallengeMessageHub({
   creatorDisplayName,
   challenges,
 }: CreatorChallengeMessageHubProps) {
@@ -18,41 +15,30 @@ export function CreatorChallengeMessageHub({
 
   if (active.length === 0) {
     return (
-      <Card>
-        <p className="text-sm text-muted-foreground">
-          No active challenges to message. Create one from Creator Studio.
-        </p>
-      </Card>
+      <p className="text-sm text-muted-foreground">
+        No active challenges to message. Create one from Creator Studio.
+      </p>
     );
   }
 
   return (
     <div className="space-y-4">
-      {active.map((challenge) => {
-        const challengeId = getChallengeIdByInviteSlug(challenge.inviteSlug);
-        if (!challengeId) {
+      {await Promise.all(
+        active.map(async (challenge) => {
+          const messages = await fetchChallengeMessages(challenge.id);
           return (
-            <Card key={challenge.id}>
-              <p className="font-semibold">{challenge.title}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Group chat is not wired for this challenge slug yet (
-                {challenge.inviteSlug}).
-              </p>
-            </Card>
+            <ChallengeGroupChat
+              key={challenge.id}
+              challengeId={challenge.id}
+              challengeTitle={challenge.title}
+              viewerName={creatorDisplayName}
+              viewerRole="creator"
+              canPost
+              messages={messages}
+            />
           );
-        }
-
-        return (
-          <ChallengeGroupChat
-            key={challenge.id}
-            challengeId={challengeId}
-            challengeTitle={challenge.title}
-            viewerName={creatorDisplayName}
-            viewerRole="creator"
-            canPost
-          />
-        );
-      })}
+        }),
+      )}
     </div>
   );
 }

@@ -21,6 +21,8 @@ In **SQL Editor**, run in order:
 1. `supabase/migrations/001_initial_schema.sql`
 2. `supabase/migrations/002_member_creator_accounts.sql` (creators/challenges)
 3. `supabase/migrations/003_fix_signup_profile_trigger.sql` (**required** for sign-up)
+4. `005a` + `005b` (creator verification, if using creator flows)
+5. `supabase/migrations/006_member_activity_and_messaging.sql` (**required** for goals, groups, chat, weigh-ins)
 
 ## 3. Auth settings in Supabase
 

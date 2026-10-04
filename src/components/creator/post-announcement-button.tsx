@@ -1,19 +1,21 @@
 "use client";
 
+import { updateCommunityAnnouncementAction } from "@/app/(app)/member/actions";
 import { Button } from "@/components/ui/button";
-import { useDemoStore } from "@/lib/demo-store/demo-store";
 import { Megaphone } from "lucide-react";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 
 export function PostAnnouncementButton({
-  communitySlug,
+  communityId,
   defaultText = "",
 }: {
-  communitySlug: string;
+  communityId: string;
   defaultText?: string;
 }) {
-  const { setCreatorAnnouncement, getCreatorAnnouncement } = useDemoStore();
+  const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
   return (
     <div className="w-full">
@@ -21,14 +23,22 @@ export function PostAnnouncementButton({
         variant="secondary"
         fullWidth
         className="justify-start"
+        disabled={pending}
         onClick={() => {
           const text = window.prompt(
-            "Announcement for your community (demo — saved on this device)",
-            getCreatorAnnouncement(communitySlug, defaultText),
+            "Announcement for your community",
+            defaultText,
           );
           if (text == null) return;
-          setCreatorAnnouncement(communitySlug, text);
-          setMessage("Announcement saved (demo).");
+          startTransition(async () => {
+            try {
+              await updateCommunityAnnouncementAction(communityId, text);
+              setMessage("Announcement saved.");
+              router.refresh();
+            } catch (e) {
+              setMessage(e instanceof Error ? e.message : "Save failed.");
+            }
+          });
         }}
       >
         <Megaphone className="h-4 w-4" aria-hidden />

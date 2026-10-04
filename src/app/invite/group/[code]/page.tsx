@@ -1,7 +1,7 @@
 import { StandalonePageHeader } from "@/components/layout/standalone-page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { accountabilityGroup } from "@/lib/mock-data";
+import { fetchGroupByInviteCode } from "@/lib/data/groups";
 import Link from "next/link";
 
 type GroupInvitePageProps = {
@@ -10,7 +10,7 @@ type GroupInvitePageProps = {
 
 export default async function GroupInvitePage({ params }: GroupInvitePageProps) {
   const { code } = await params;
-  const isDemoCode = code === accountabilityGroup.inviteCode;
+  const group = await fetchGroupByInviteCode(code);
 
   return (
     <div className="mx-auto min-h-dvh max-w-lg bg-background px-4 py-8 pt-[env(safe-area-inset-top)]">
@@ -24,31 +24,25 @@ export default async function GroupInvitePage({ params }: GroupInvitePageProps) 
             Friend invite
           </Badge>
           <h1 className="text-xl font-semibold">
-            {isDemoCode ? accountabilityGroup.name : "Accountability group"}
+            {group?.name ?? "Accountability group"}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Small private group (4–8 people). Share encouragement — never required
             to post weight or measurements.
           </p>
-          {isDemoCode ? (
-            <p className="mt-3 text-sm">
-              <span className="font-medium">{accountabilityGroup.memberCount}</span>{" "}
-              of {accountabilityGroup.maxMembers} spots filled
-            </p>
-          ) : null}
         </Card>
         <Link
-          href="/onboarding?group=1"
+          href={`/onboarding?group=1&code=${encodeURIComponent(code)}`}
           className="flex min-h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
         >
           Join group — free
         </Link>
-        <p className="text-center text-sm text-muted-foreground">
-          <Link href="/" className="font-medium text-primary">
-            Skip for now
-          </Link>{" "}
-          and use Streakly solo
-        </p>
+        <Link
+          href="/login"
+          className="flex min-h-11 w-full items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold"
+        >
+          Log in first
+        </Link>
       </div>
     </div>
   );

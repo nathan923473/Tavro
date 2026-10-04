@@ -4,24 +4,25 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { requireApprovedCreator } from "@/lib/auth/profile";
-import {
-  demoManagedCreatorSlug,
-  getCreatorCommunityBySlug,
-} from "@/lib/mock-creators";
+import { fetchCommunityBySlug, fetchOwnerCommunity } from "@/lib/data/communities";
 import { BarChart3, Pencil, PlusCircle, Users } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = { title: "Creator Studio" };
 
 export default async function CreatorStudioPage() {
-  const { profile } = await requireApprovedCreator();
-  const community = getCreatorCommunityBySlug(demoManagedCreatorSlug);
+  const { user, profile } = await requireApprovedCreator();
+  const ownerRow = await fetchOwnerCommunity(user.id);
+
+  const { community } = ownerRow
+    ? await fetchCommunityBySlug(ownerRow.slug, user.id)
+    : { community: null };
 
   return (
     <div className="animate-fade-up">
       <PageHeader
         title="Creator Studio"
-        subtitle={`Hi ${profile.displayName ?? "creator"} · backend-verified access`}
+        subtitle={`Hi ${profile.displayName ?? "creator"} · Supabase-backed`}
       />
       <div className="space-y-4 px-4 py-4">
         <Card className="border-primary/20 bg-secondary/30">
@@ -30,24 +31,64 @@ export default async function CreatorStudioPage() {
             {profile.isAdmin ? <Badge tone="muted">Admin</Badge> : null}
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            You have all member features plus public community tools. Private member
-            data is never visible here.
+            You have all member features plus public community tools. Private
+            member data is never visible here.
           </p>
         </Card>
 
+        {!community ? (
+          <Card className="border-dashed">
+            <p className="text-sm text-muted-foreground">
+              Set up your public community page first — required before publishing
+              challenges.
+            </p>
+            <Link
+              href="/studio/community"
+              className="mt-3 inline-block text-sm font-semibold text-primary"
+            >
+              Create community →
+            </Link>
+          </Card>
+        ) : null}
+
         <ul className="grid grid-cols-2 gap-2">
-          <MiniStat icon={Users} label="Followers" value="Demo" />
-          <MiniStat icon={PlusCircle} label="Active challenges" value="Demo" />
+          <MiniStat
+            icon={Users}
+            label="Followers"
+            value={community ? String(community.memberCount) : "—"}
+          />
+          <MiniStat
+            icon={PlusCircle}
+            label="Active challenges"
+            value={
+              community
+                ? String(
+                    community.challenges.filter((c) => c.timeline !== "previous")
+                      .length,
+                  )
+                : "—"
+            }
+          />
         </ul>
 
         <div className="grid gap-2">
-          <Link
-            href={`/creator/${demoManagedCreatorSlug}/edit`}
-            className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
-          >
-            <Pencil className="h-4 w-4" aria-hidden />
-            Edit community & branding
-          </Link>
+          {community ? (
+            <Link
+              href={`/creator/${community.slug}/edit`}
+              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+            >
+              <Pencil className="h-4 w-4" aria-hidden />
+              Edit community & branding
+            </Link>
+          ) : (
+            <Link
+              href="/studio/community"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+            >
+              <Pencil className="h-4 w-4" aria-hidden />
+              Create community page
+            </Link>
+          )}
           <Link
             href="/studio/challenges/new"
             className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-surface text-sm font-semibold"
@@ -62,34 +103,37 @@ export default async function CreatorStudioPage() {
             <BarChart3 className="h-4 w-4" aria-hidden />
             Creator analytics
           </Link>
-          <PostAnnouncementButton
-            communitySlug={demoManagedCreatorSlug}
-          />
+          {community ? (
+            <PostAnnouncementButton
+              communityId={community.id}
+              defaultText={community.announcement ?? ""}
+            />
+          ) : null}
         </div>
 
-        <section aria-labelledby="challenge-groups-heading">
-          <h2
-            id="challenge-groups-heading"
-            className="mb-2 text-base font-semibold"
-          >
-            Message challenge groups
-          </h2>
-          <p className="mb-3 text-sm text-muted-foreground">
-            Post encouragement to people who joined your public challenges. This
-            is separate from private member accountability groups.
-          </p>
-          <CreatorChallengeMessageHub
-            creatorDisplayName={community?.creatorDisplayName ?? "Creator"}
-            challenges={community?.challenges ?? []}
-          />
-        </section>
+        {community ? (
+          <section aria-labelledby="challenge-groups-heading">
+            <h2
+              id="challenge-groups-heading"
+              className="mb-2 text-base font-semibold"
+            >
+              Message challenge groups
+            </h2>
+            <CreatorChallengeMessageHub
+              creatorDisplayName={community.creatorDisplayName}
+              challenges={community.challenges}
+            />
+          </section>
+        ) : null}
 
-        <Link
-          href={`/creator/${demoManagedCreatorSlug}`}
-          className="block text-center text-sm font-medium text-primary"
-        >
-          View public community page →
-        </Link>
+        {community ? (
+          <Link
+            href={`/creator/${community.slug}`}
+            className="block text-center text-sm font-medium text-primary"
+          >
+            View public community page →
+          </Link>
+        ) : null}
       </div>
     </div>
   );

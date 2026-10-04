@@ -1,74 +1,83 @@
 "use client";
 
+import { toggleGoalAction } from "@/app/(app)/member/actions";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { useDemoStore } from "@/lib/demo-store/demo-store";
 import type { PersonalGoal } from "@/types";
-import { CheckCircle2, Circle } from "lucide-react";
+import { Target } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 
-const categoryLabel: Record<PersonalGoal["category"], string> = {
-  movement: "Movement",
-  nutrition: "Nutrition",
-  mindfulness: "Mindfulness",
-  routine: "Routine",
-};
+export function TodaysGoals({
+  goals,
+  loggedIn,
+}: {
+  goals: PersonalGoal[];
+  loggedIn: boolean;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
 
-export function TodaysGoals() {
-  const { getGoals, toggleGoal } = useDemoStore();
-  const goals = getGoals();
-  const completed = goals.filter((g) => g.completedToday).length;
+  if (!loggedIn) {
+    return (
+      <Card>
+        <h2 className="font-semibold">Today&apos;s goals</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Log in to track goals saved to your account.
+        </p>
+      </Card>
+    );
+  }
+
+  if (goals.length === 0) {
+    return (
+      <Card>
+        <h2 className="font-semibold">Today&apos;s goals</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Complete onboarding or add goals from Progress to get started.
+        </p>
+      </Card>
+    );
+  }
 
   return (
-    <section className="space-y-3" aria-labelledby="todays-goals-heading">
-      <div className="flex items-end justify-between px-1">
-        <div>
-          <h2 id="todays-goals-heading" className="text-base font-semibold">
-            Today&apos;s goals
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {completed} of {goals.length} complete · tap to toggle
-          </p>
-        </div>
-      </div>
+    <section aria-labelledby="goals-heading">
+      <h2
+        id="goals-heading"
+        className="mb-2 flex items-center gap-2 px-1 text-base font-semibold"
+      >
+        <Target className="h-4 w-4 text-primary" aria-hidden />
+        Today&apos;s goals
+      </h2>
       <ul className="space-y-2">
         {goals.map((goal) => (
           <li key={goal.id}>
-            <button
-              type="button"
-              className="w-full text-left"
-              onClick={() => toggleGoal(goal.id)}
-            >
-              <Card
-                className={
-                  goal.completedToday
-                    ? "border-emerald-200/80 bg-emerald-50/50"
-                    : undefined
+            <Card padding="sm">
+              <button
+                type="button"
+                disabled={pending}
+                className="flex w-full items-center justify-between gap-3 text-left"
+                onClick={() =>
+                  startTransition(async () => {
+                    await toggleGoalAction(goal.id);
+                    router.refresh();
+                  })
                 }
               >
-                <div className="flex items-start gap-3">
-                  {goal.completedToday ? (
-                    <CheckCircle2
-                      className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600"
-                      aria-label="Completed"
-                    />
-                  ) : (
-                    <Circle
-                      className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground/50"
-                      aria-label="Not completed"
-                    />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium leading-snug">{goal.title}</p>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <Badge tone="muted">{categoryLabel[goal.category]}</Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {goal.streakDays}-day streak
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </button>
+                <span
+                  className={
+                    goal.completedToday
+                      ? "text-sm font-medium line-through opacity-70"
+                      : "text-sm font-medium"
+                  }
+                >
+                  {goal.title}
+                </span>
+                <Badge tone={goal.completedToday ? "success" : "muted"}>
+                  {goal.completedToday ? "Done" : "Tap to complete"}
+                </Badge>
+              </button>
+            </Card>
           </li>
         ))}
       </ul>

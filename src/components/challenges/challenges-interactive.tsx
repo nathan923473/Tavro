@@ -1,14 +1,25 @@
 "use client";
 
 import { ChallengeCard } from "@/components/challenges/challenge-card";
-import { useDemoStore } from "@/lib/demo-store/demo-store";
+import type { ChallengeChatMessage } from "@/lib/challenge-chat";
+import type { Challenge } from "@/types";
 import { Compass, Heart } from "lucide-react";
 
-export function ChallengesInteractive() {
-  const { myChallengesList, discoverChallengesList } = useDemoStore();
-  const mine = myChallengesList();
-  const discover = discoverChallengesList();
+type ChallengesInteractiveProps = {
+  mine: Challenge[];
+  discover: Challenge[];
+  viewerName: string;
+  loggedIn: boolean;
+  challengeMessages: Record<string, ChallengeChatMessage[]>;
+};
 
+export function ChallengesInteractive({
+  mine,
+  discover,
+  viewerName,
+  loggedIn,
+  challengeMessages,
+}: ChallengesInteractiveProps) {
   return (
     <>
       <section aria-labelledby="my-challenges-heading">
@@ -27,7 +38,14 @@ export function ChallengesInteractive() {
           <ul className="space-y-3">
             {mine.map((challenge) => (
               <li key={challenge.id}>
-                <ChallengeCard challenge={challenge} showShareLink />
+                <ChallengeCard
+                  challenge={challenge}
+                  showShareLink
+                  viewerName={viewerName}
+                  viewerRole="member"
+                  loggedIn={loggedIn}
+                  messages={challengeMessages[challenge.id] ?? []}
+                />
               </li>
             ))}
           </ul>
@@ -43,15 +61,28 @@ export function ChallengesInteractive() {
           Discover
         </h2>
         <p className="mb-3 px-1 text-sm text-muted-foreground">
-          Join creator challenges — encouragement and consistency, not competition.
+          Join creator challenges — encouragement and consistency, not
+          competition.
         </p>
-        <ul className="space-y-3">
-          {discover.map((challenge) => (
-            <li key={challenge.id}>
-              <ChallengeCard challenge={challenge} />
-            </li>
-          ))}
-        </ul>
+        {discover.length === 0 ? (
+          <p className="px-1 text-sm text-muted-foreground">
+            No public challenges yet. Approved creators can publish from Creator
+            Studio.
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {discover.map((challenge) => (
+              <li key={challenge.id}>
+                <ChallengeCard
+                  challenge={challenge}
+                  viewerName={viewerName}
+                  viewerRole="member"
+                  loggedIn={loggedIn}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </>
   );

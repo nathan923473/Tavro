@@ -1,31 +1,55 @@
 "use client";
 
+import { ChallengeGroupChat } from "@/components/challenges/challenge-group-chat";
+import {
+  joinChallengeAction,
+  leaveChallengeAction,
+  logChallengeActivityAction,
+} from "@/app/(app)/member/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
-import { ChallengeGroupChat } from "@/components/challenges/challenge-group-chat";
-import { useDemoStore } from "@/lib/demo-store/demo-store";
-import { demoUser } from "@/lib/mock-data";
+import type { ChallengeChatMessage } from "@/lib/challenge-chat";
 import { challengeInvitePath } from "@/lib/site-url";
 import type { Challenge } from "@/types";
 import { CalendarRange, Gift, Users } from "lucide-react";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 
 type ChallengeCardProps = {
   challenge: Challenge;
   showShareLink?: boolean;
+  viewerName: string;
+  viewerRole: "creator" | "member";
+  messages?: ChallengeChatMessage[];
+  loggedIn: boolean;
 };
 
 export function ChallengeCard({
-  challenge: initialChallenge,
+  challenge,
   showShareLink = false,
+  viewerName,
+  viewerRole,
+  messages = [],
+  loggedIn,
 }: ChallengeCardProps) {
-  const { mergeChallenge, joinChallenge, leaveChallenge, logChallengeActivity } =
-    useDemoStore();
-  const challenge = mergeChallenge(initialChallenge);
-  const inviteUrl = challengeInvitePath(challenge.inviteSlug);
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
+  const inviteUrl = challengeInvitePath(challenge.inviteSlug);
+
+  function run(action: () => Promise<void>, success: string) {
+    startTransition(async () => {
+      try {
+        await action();
+        setMessage(success);
+        router.refresh();
+      } catch (e) {
+        setMessage(e instanceof Error ? e.message : "Something went wrong");
+      }
+    });
+  }
 
   return (
     <Card>
@@ -73,9 +97,7 @@ export function ChallengeCard({
           <div>
             <div className="mb-2 flex justify-between text-sm">
               <span className="text-muted-foreground">Your consistency</span>
-              <span className="font-semibold">
-                {challenge.progressPercent}%
-              </span>
+              <span className="font-semibold">{challenge.progressPercent}%</span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-muted">
               <div
@@ -94,29 +116,36 @@ export function ChallengeCard({
           <Button
             variant="secondary"
             fullWidth
-            onClick={() => {
-              logChallengeActivity(challenge.id);
-              setMessage("Logged for today — nice work.");
-            }}
+            disabled={pending || !loggedIn}
+            onClick={() =>
+              run(
+                () => logChallengeActivityAction(challenge.id),
+                "Logged for today — nice work.",
+              )
+            }
           >
             Log today&apos;s activity
           </Button>
           <Button
             variant="outline"
             fullWidth
-            onClick={() => {
-              leaveChallenge(challenge.id);
-              setMessage("You left this challenge.");
-            }}
+            disabled={pending || !loggedIn}
+            onClick={() =>
+              run(
+                () => leaveChallengeAction(challenge.id),
+                "You left this challenge.",
+              )
+            }
           >
             Leave challenge
           </Button>
           <ChallengeGroupChat
             challengeId={challenge.id}
             challengeTitle={challenge.title}
-            viewerName={demoUser.firstName}
-            viewerRole="member"
-            canPost
+            viewerName={viewerName}
+            viewerRole={viewerRole}
+            canPost={loggedIn}
+            messages={messages}
             compact
           />
         </div>
@@ -124,12 +153,15 @@ export function ChallengeCard({
         <div className="mt-4 space-y-2">
           <Button
             fullWidth
-            onClick={() => {
-              joinChallenge(challenge.id);
-              setMessage("You're in — check My challenges on Home.");
-            }}
+            disabled={pending || !loggedIn}
+            onClick={() =>
+              run(
+                () => joinChallengeAction(challenge.id),
+                "You're in — check My challenges on Home.",
+              )
+            }
           >
-            Join free challenge
+            {loggedIn ? "Join free challenge" : "Log in to join"}
           </Button>
           <CopyLinkButton url={inviteUrl} label="Share with a friend" fullWidth />
         </div>

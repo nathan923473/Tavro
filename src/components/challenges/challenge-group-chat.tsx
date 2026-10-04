@@ -1,19 +1,21 @@
 "use client";
 
+import { postChallengeMessageAction } from "@/app/(app)/member/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useDemoStore } from "@/lib/demo-store/demo-store";
+import type { ChallengeChatMessage } from "@/lib/challenge-chat";
 import { MessageCircle } from "lucide-react";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 
 type ChallengeGroupChatProps = {
   challengeId: string;
   challengeTitle: string;
   viewerName: string;
   viewerRole: "creator" | "member";
-  /** Members must join the challenge before posting. Creators can always post. */
   canPost: boolean;
+  messages: ChallengeChatMessage[];
   compact?: boolean;
 };
 
@@ -33,31 +35,33 @@ function formatTime(iso: string) {
 export function ChallengeGroupChat({
   challengeId,
   challengeTitle,
-  viewerName,
   viewerRole,
   canPost,
+  messages,
   compact = false,
 }: ChallengeGroupChatProps) {
-  const { state, postChallengeMessage } = useDemoStore();
+  const router = useRouter();
   const [draft, setDraft] = useState("");
   const [status, setStatus] = useState<string | null>(null);
-
-  const messages = state.challengeMessages[challengeId] ?? [];
+  const [pending, startTransition] = useTransition();
 
   function handleSend() {
     const text = draft.trim();
-    if (!text) return;
-    if (!canPost) {
-      setStatus("Join this challenge to post in the group.");
-      return;
-    }
-    postChallengeMessage(challengeId, {
-      authorName: viewerName,
-      role: viewerRole,
-      text,
+    if (!text || !canPost) return;
+    startTransition(async () => {
+      try {
+        await postChallengeMessageAction({
+          challengeId,
+          body: text,
+          role: viewerRole,
+        });
+        setDraft("");
+        setStatus("Message sent.");
+        router.refresh();
+      } catch (e) {
+        setStatus(e instanceof Error ? e.message : "Could not send message.");
+      }
     });
-    setDraft("");
-    setStatus("Message sent.");
   }
 
   return (
@@ -69,8 +73,7 @@ export function ChallengeGroupChat({
             {compact ? "Challenge group" : `${challengeTitle} — group chat`}
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            Demo chat saved on this device. Creators message participants here —
-            not private accountability groups.
+            Messages sync to your Supabase project for all participants.
           </p>
         </div>
       </div>
@@ -81,7 +84,7 @@ export function ChallengeGroupChat({
       >
         {messages.length === 0 ? (
           <li className="text-sm text-muted-foreground">
-            No messages yet. {viewerRole === "creator" ? "Post the first update." : "Check back soon."}
+            No messages yet. Be the first to encourage the group.
           </li>
         ) : (
           messages.map((msg) => (
@@ -111,7 +114,7 @@ export function ChallengeGroupChat({
           id={`challenge-chat-${challengeId}`}
           rows={2}
           value={draft}
-          disabled={!canPost}
+          disabled={!canPost || pending}
           placeholder={
             canPost
               ? viewerRole === "creator"
@@ -125,7 +128,7 @@ export function ChallengeGroupChat({
         <Button
           type="button"
           fullWidth
-          disabled={!canPost || !draft.trim()}
+          disabled={!canPost || pending || !draft.trim()}
           onClick={handleSend}
         >
           Send to group

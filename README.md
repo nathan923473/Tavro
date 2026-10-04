@@ -2,7 +2,7 @@
 
 Mobile-first Progressive Web App for sustainable weight-loss accountability: personal goals, optional small groups, and creator challenges.
 
-**Current phase:** UI shell + demo data + installable PWA. Supabase auth and live data come next.
+**Current phase:** Supabase-backed member + creator features (no localStorage demo mode). Run migration **006** for goals, groups, messaging, and weigh-ins.
 
 **Launch business model:** The app is **100% free** for users and fitness creators — no subscriptions, payments, or paid challenges yet. Growth is **creator-led** (challenge invite links) and **referral-led** (member invite links). Messaging emphasizes sustainable habits and encouragement, not competitive weight loss.
 

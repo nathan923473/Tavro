@@ -6,19 +6,17 @@ import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { SupabaseStatus } from "@/components/profile/supabase-status";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
-import { demoUser } from "@/lib/mock-data";
+import { fetchMemberGoals } from "@/lib/data/member";
 import { userReferralPath } from "@/lib/site-url";
 import Link from "next/link";
-import { ExportDemoDataButton } from "@/components/profile/export-demo-data-button";
 import { Shield, Users } from "lucide-react";
 
-export const metadata = {
-  title: "Profile",
-};
+export const metadata = { title: "Profile" };
 
 export default async function ProfilePage() {
-  const { profile } = await getCurrentUserProfile();
-  const referralCode = profile?.referralCode ?? demoUser.referralCode;
+  const { user, profile } = await getCurrentUserProfile();
+  const referralCode = profile?.referralCode ?? "sign-in-for-code";
+  const goals = user ? await fetchMemberGoals(user.id) : [];
 
   return (
     <div className="animate-fade-up">
@@ -52,23 +50,21 @@ export default async function ProfilePage() {
               Communities I follow
             </Link>
             <Link
-              href="/creator/sarahfitness"
+              href="/challenges"
               className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface text-sm font-semibold"
             >
-              Explore a creator community
+              Explore creator communities
             </Link>
           </div>
         </Card>
 
-        {!profile ? (
+        {profile && goals.length > 0 ? (
           <Card>
-            <p className="text-sm text-muted-foreground">
-              Demo habits preview (log in for your real profile):
-            </p>
+            <p className="text-sm font-medium">Your active goals</p>
             <div className="mt-2 flex flex-wrap gap-2">
-              {demoUser.habits.map((habit) => (
-                <Badge key={habit} tone="muted">
-                  {habit}
+              {goals.map((g) => (
+                <Badge key={g.id} tone="muted">
+                  {g.title}
                 </Badge>
               ))}
             </div>
@@ -83,7 +79,7 @@ export default async function ProfilePage() {
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li className="flex items-center gap-2">
               <Shield className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-              Creators never see private weigh-ins or group chats
+              Creators never see private weigh-ins or private group chats
             </li>
             <li>
               <Link href="/onboarding" className="font-medium text-primary">
@@ -92,8 +88,6 @@ export default async function ProfilePage() {
             </li>
           </ul>
         </Card>
-
-        <ExportDemoDataButton />
       </div>
     </div>
   );

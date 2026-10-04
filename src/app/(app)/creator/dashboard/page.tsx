@@ -1,31 +1,23 @@
+import { CreatorChallengeMessageHub } from "@/components/creator/creator-challenge-message-hub";
+import { PostAnnouncementButton } from "@/components/creator/post-announcement-button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { requireApprovedCreator } from "@/lib/auth/profile";
-import {
-  demoCreatorDashboard,
-  demoManagedCreatorSlug,
-  getCreatorCommunityBySlug,
-} from "@/lib/mock-creators";
-import { CreatorChallengeMessageHub } from "@/components/creator/creator-challenge-message-hub";
-import { PostAnnouncementButton } from "@/components/creator/post-announcement-button";
-import {
-  BarChart3,
-  Megaphone,
-  Pencil,
-  PlusCircle,
-  Users,
-} from "lucide-react";
+import { fetchCommunityBySlug, fetchOwnerCommunity } from "@/lib/data/communities";
+import { fetchCreatorDashboardStats } from "@/lib/data/creator-stats";
+import { BarChart3, Megaphone, Pencil, PlusCircle, Users } from "lucide-react";
 import Link from "next/link";
 
-export const metadata = {
-  title: "Creator dashboard",
-};
+export const metadata = { title: "Creator dashboard" };
 
 export default async function CreatorDashboardPage() {
-  await requireApprovedCreator();
-  const community = getCreatorCommunityBySlug(demoManagedCreatorSlug);
-  const stats = demoCreatorDashboard;
+  const { user } = await requireApprovedCreator();
+  const ownerRow = await fetchOwnerCommunity(user.id);
+  const stats = await fetchCreatorDashboardStats(user.id);
+  const { community } = ownerRow
+    ? await fetchCommunityBySlug(ownerRow.slug, user.id)
+    : { community: null };
 
   return (
     <div className="animate-fade-up">
@@ -37,16 +29,24 @@ export default async function CreatorDashboardPage() {
         <Card className="border-primary/20 bg-secondary/30">
           <Badge className="mb-2">Approved creator</Badge>
           <p className="text-sm text-muted-foreground">
-            Manage {community?.communityName ?? "your community"}, free
-            challenges, and announcements. Participant counts are aggregate only
-            — never private weigh-ins or group chats.
+            Manage {community?.communityName ?? "your community"}, challenges, and
+            announcements. Participant counts are aggregate only.
           </p>
-          <Link
-            href={`/creator/${demoManagedCreatorSlug}`}
-            className="mt-3 inline-block text-sm font-semibold text-primary"
-          >
-            View public community page →
-          </Link>
+          {community ? (
+            <Link
+              href={`/creator/${community.slug}`}
+              className="mt-3 inline-block text-sm font-semibold text-primary"
+            >
+              View public community page →
+            </Link>
+          ) : (
+            <Link
+              href="/studio/community"
+              className="mt-3 inline-block text-sm font-semibold text-primary"
+            >
+              Create community page →
+            </Link>
+          )}
         </Card>
 
         <ul className="grid grid-cols-2 gap-2">
@@ -73,13 +73,23 @@ export default async function CreatorDashboardPage() {
         </ul>
 
         <div className="grid gap-2">
-          <Link
-            href={`/creator/${demoManagedCreatorSlug}/edit`}
-            className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
-          >
-            <Pencil className="h-4 w-4" aria-hidden />
-            Edit community
-          </Link>
+          {community ? (
+            <Link
+              href={`/creator/${community.slug}/edit`}
+              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+            >
+              <Pencil className="h-4 w-4" aria-hidden />
+              Edit community
+            </Link>
+          ) : (
+            <Link
+              href="/studio/community"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+            >
+              <Pencil className="h-4 w-4" aria-hidden />
+              Create community
+            </Link>
+          )}
           <Link
             href="/studio/challenges/new"
             className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-surface text-sm font-semibold"
@@ -96,37 +106,41 @@ export default async function CreatorDashboardPage() {
           </Link>
         </div>
 
-        <section aria-labelledby="creator-challenge-chat-heading">
-          <h2
-            id="creator-challenge-chat-heading"
-            className="mb-2 text-base font-semibold"
-          >
-            Challenge group messages
-          </h2>
-          <CreatorChallengeMessageHub
-            creatorDisplayName={community?.creatorDisplayName ?? "Creator"}
-            challenges={community?.challenges ?? []}
-          />
-        </section>
+        {community ? (
+          <>
+            <section aria-labelledby="creator-challenge-chat-heading">
+              <h2
+                id="creator-challenge-chat-heading"
+                className="mb-2 text-base font-semibold"
+              >
+                Challenge group messages
+              </h2>
+              <CreatorChallengeMessageHub
+                creatorDisplayName={community.creatorDisplayName}
+                challenges={community.challenges}
+              />
+            </section>
 
-        <Card>
-          <div className="flex items-start gap-3">
-            <Megaphone className="mt-0.5 h-5 w-5 text-primary" aria-hidden />
-            <div className="flex-1">
-              <h2 className="font-semibold">Community announcement</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {community?.announcement ??
-                  "Share updates with followers who opt in to notifications."}
-              </p>
-              <div className="mt-3">
-                <PostAnnouncementButton
-                  communitySlug={demoManagedCreatorSlug}
-                  defaultText={community?.announcement ?? ""}
-                />
+            <Card>
+              <div className="flex items-start gap-3">
+                <Megaphone className="mt-0.5 h-5 w-5 text-primary" aria-hidden />
+                <div className="flex-1">
+                  <h2 className="font-semibold">Community announcement</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {community.announcement ??
+                      "Share updates with followers who opt in to notifications."}
+                  </p>
+                  <div className="mt-3">
+                    <PostAnnouncementButton
+                      communityId={community.id}
+                      defaultText={community.announcement ?? ""}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </Card>
+            </Card>
+          </>
+        ) : null}
       </div>
     </div>
   );

@@ -1,12 +1,12 @@
 "use client";
 
+import { completeOnboarding } from "@/app/(app)/member/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import { ArrowRight, Check, Users } from "lucide-react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useTransition } from "react";
 
 const goalOptions = [
   "Move more consistently",
@@ -15,17 +15,43 @@ const goalOptions = [
   "Stay accountable with friends",
 ];
 
-const habitOptions = ["Daily walk", "Water goal", "Strength or mobility", "Evening wind-down"];
+const habitOptions = [
+  "Daily walk",
+  "Water goal",
+  "Strength or mobility",
+  "Evening wind-down",
+];
 
 export function OnboardingFlow() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const invitedToGroup = searchParams.get("group") === "1";
+  const inviteCode = searchParams.get("code") ?? undefined;
   const [step, setStep] = useState(0);
   const [selectedGoal, setSelectedGoal] = useState(goalOptions[0]);
   const [selectedHabit, setSelectedHabit] = useState(habitOptions[0]);
   const [wantsGroup, setWantsGroup] = useState(invitedToGroup);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   const totalSteps = 3;
+
+  function finish() {
+    startTransition(async () => {
+      try {
+        await completeOnboarding({
+          focusGoal: selectedGoal,
+          habit: selectedHabit,
+          createGroup: wantsGroup && !inviteCode,
+          inviteCode,
+        });
+        router.push("/");
+        router.refresh();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Could not save onboarding.");
+      }
+    });
+  }
 
   return (
     <div className="flex min-h-dvh flex-col px-4 py-6">
@@ -47,7 +73,7 @@ export function OnboardingFlow() {
             Welcome to Streakly
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Free for everyone at launch. Pick one focus — you can change it anytime.
+            Pick one focus — saved to your account.
           </p>
           <ul className="mt-6 space-y-2">
             {goalOptions.map((goal) => (
@@ -74,8 +100,7 @@ export function OnboardingFlow() {
         <div className="animate-fade-up flex flex-1 flex-col">
           <h1 className="text-2xl font-semibold">One habit to start</h1>
           <p className="mt-2 text-muted-foreground">
-            Small steps beat extreme plans. Skip days without losing your progress
-            story.
+            Small steps beat extreme plans.
           </p>
           <ul className="mt-6 space-y-2">
             {habitOptions.map((habit) => (
@@ -102,21 +127,18 @@ export function OnboardingFlow() {
         <div className="animate-fade-up flex flex-1 flex-col">
           <h1 className="text-2xl font-semibold">Accountability (optional)</h1>
           <p className="mt-2 text-muted-foreground">
-            Join a small group or stay solo — both are fully supported.
+            Join a small group or stay solo — both work.
           </p>
           <Card className="mt-6">
             <button
               type="button"
-              className={cn(
-                "flex w-full items-start gap-3 text-left",
-                wantsGroup && "opacity-100",
-              )}
+              className="flex w-full items-start gap-3 text-left"
               onClick={() => setWantsGroup(true)}
             >
               <Users className="mt-0.5 h-5 w-5 text-primary" aria-hidden />
               <div>
                 <p className="font-medium">
-                  {invitedToGroup ? "Join my friend’s group" : "Find or create a group"}
+                  {invitedToGroup ? "Join my friend’s group" : "Start a group"}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   4–8 members · invite link for friends
@@ -144,14 +166,17 @@ export function OnboardingFlow() {
             <ArrowRight className="h-4 w-4" aria-hidden />
           </Button>
         ) : (
-          <Link href="/" className="block">
-            <Button fullWidth>Go to my dashboard</Button>
-          </Link>
+          <Button fullWidth disabled={pending} onClick={finish}>
+            {pending ? "Saving…" : "Go to my dashboard"}
+          </Button>
         )}
         {step > 0 ? (
           <Button variant="ghost" fullWidth onClick={() => setStep((s) => s - 1)}>
             Back
           </Button>
+        ) : null}
+        {error ? (
+          <p className="text-center text-sm text-red-600">{error}</p>
         ) : null}
       </div>
     </div>

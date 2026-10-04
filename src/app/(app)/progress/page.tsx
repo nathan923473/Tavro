@@ -2,22 +2,54 @@ import { ShareableAchievementCard } from "@/components/share/shareable-achieveme
 import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
+import { LogWeighInCard } from "@/components/progress/log-weigh-in-card";
 import { WeightProgressChart } from "@/components/progress/weight-progress-chart";
+import { getCurrentUserProfile } from "@/lib/auth/profile";
 import {
-  consistencyMetrics,
-  demoUser,
-  latestAchievement,
-  weeklyProgress,
-  weeklyWeighIns,
-  weightProgressSummary,
-} from "@/lib/mock-data";
+  fetchConsistencyMetrics,
+  fetchWeeklyProgress,
+  fetchWeighIns,
+  fetchWeightSummary,
+} from "@/lib/data/member";
+import type { AchievementCard } from "@/types";
 import { Share2 } from "lucide-react";
 
-export const metadata = {
-  title: "Progress",
-};
+export const metadata = { title: "Progress" };
 
-export default function ProgressPage() {
+export default async function ProgressPage() {
+  const { user, profile } = await getCurrentUserProfile();
+  const userId = user?.id;
+  const firstName =
+    profile?.displayName?.split(/\s+/)[0] ??
+    user?.email?.split("@")[0] ??
+    "Member";
+
+  const [weighIns, summary, weeklyProgress, consistency] = userId
+    ? await Promise.all([
+        fetchWeighIns(userId),
+        fetchWeightSummary(userId),
+        fetchWeeklyProgress(userId),
+        fetchConsistencyMetrics(userId),
+      ])
+    : [[], null, [], []];
+
+  const checkInMetric = consistency.find((m) =>
+    m.label.includes("Check-in"),
+  );
+  const achievement: AchievementCard = {
+    id: "live",
+    headline: `${checkInMetric?.value ?? 0} check-ins this week`,
+    subline: "Showing up at your pace — progress over perfection",
+    streakDays: checkInMetric?.value ?? 0,
+    consistencyPercent: Math.min(
+      100,
+      Math.round(
+        ((checkInMetric?.value ?? 0) / (checkInMetric?.target ?? 7)) * 100,
+      ),
+    ),
+    generatedAt: new Date().toISOString().slice(0, 10),
+  };
+
   return (
     <div className="animate-fade-up">
       <PageHeader
@@ -41,29 +73,36 @@ export default function ProgressPage() {
             Shareable achievement
           </h2>
           <ShareableAchievementCard
-            achievement={latestAchievement}
-            userName={demoUser.firstName}
+            achievement={achievement}
+            userName={firstName}
           />
-          <p className="mt-2 px-1 text-xs text-muted-foreground">
-            Screenshot this card or copy a link for Instagram — totally optional.
-          </p>
           <div className="mt-3">
             <CopyLinkButton
               url="/progress"
-              label="Copy link to my progress (demo)"
+              label="Copy link to my progress"
               fullWidth
             />
           </div>
         </section>
 
         <section aria-labelledby="weight-chart-heading">
-          <h2 id="weight-chart-heading" className="mb-2 px-1 text-base font-semibold">
+          <h2
+            id="weight-chart-heading"
+            className="mb-2 px-1 text-base font-semibold"
+          >
             Weight loss progress
           </h2>
-          <WeightProgressChart
-            weighIns={weeklyWeighIns}
-            summary={weightProgressSummary}
-          />
+          {userId && summary && weighIns.length > 0 ? (
+            <WeightProgressChart weighIns={weighIns} summary={summary} />
+          ) : userId ? (
+            <LogWeighInCard />
+          ) : (
+            <Card>
+              <p className="text-sm text-muted-foreground">
+                Log in to track private weigh-ins on your account.
+              </p>
+            </Card>
+          )}
         </section>
 
         <section aria-labelledby="week-chart-heading">
@@ -104,7 +143,7 @@ export default function ProgressPage() {
             Consistency metrics
           </h2>
           <ul className="space-y-2">
-            {consistencyMetrics.map((metric) => (
+            {consistency.map((metric) => (
               <li key={metric.label}>
                 <Card padding="sm">
                   <div className="flex items-center justify-between text-sm">

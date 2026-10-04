@@ -1,7 +1,10 @@
 import { ChallengesInteractive } from "@/components/challenges/challenges-interactive";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
-import { creatorCommunities } from "@/lib/mock-creators";
+import { getCurrentUserProfile } from "@/lib/auth/profile";
+import { fetchChallengesForUser } from "@/lib/data/challenges";
+import { fetchCommunitiesList } from "@/lib/data/communities";
+import { fetchChallengeMessages } from "@/lib/data/messages";
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
 
@@ -9,7 +12,24 @@ export const metadata = {
   title: "Challenges",
 };
 
-export default function ChallengesPage() {
+export default async function ChallengesPage() {
+  const { user, profile } = await getCurrentUserProfile();
+  const userId = user?.id ?? null;
+  const viewerName =
+    profile?.displayName?.split(/\s+/)[0] ??
+    user?.email?.split("@")[0] ??
+    "Member";
+
+  const [{ mine, discover }, communities] = await Promise.all([
+    fetchChallengesForUser(userId),
+    fetchCommunitiesList(),
+  ]);
+
+  const challengeMessages: Record<string, Awaited<ReturnType<typeof fetchChallengeMessages>>> = {};
+  for (const c of mine) {
+    challengeMessages[c.id] = await fetchChallengeMessages(c.id);
+  }
+
   return (
     <div className="animate-fade-up">
       <PageHeader
@@ -28,19 +48,22 @@ export default function ChallengesPage() {
           <div className="flex gap-3">
             <GiftIcon />
             <div className="text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">
-                100% free at launch
-              </p>
+              <p className="font-medium text-foreground">100% free at launch</p>
               <p className="mt-1">
-                Creators host challenges at no cost. Every challenge has a unique
-                invite link for Instagram, email, or DMs. No paid tiers or shops
-                in this version.
+                Creators host public challenges from Creator Studio. Every
+                challenge has a unique invite link.
               </p>
             </div>
           </div>
         </Card>
 
-        <ChallengesInteractive />
+        <ChallengesInteractive
+          mine={mine}
+          discover={discover}
+          viewerName={viewerName}
+          loggedIn={Boolean(userId)}
+          challengeMessages={challengeMessages}
+        />
 
         <section aria-labelledby="creators-heading">
           <h2
@@ -50,31 +73,36 @@ export default function ChallengesPage() {
             <Sparkles className="h-4 w-4 text-primary" aria-hidden />
             Creator communities
           </h2>
-          <ul className="mb-6 space-y-2">
-            {creatorCommunities.map((c) => (
-              <li key={c.id}>
-                <Link href={`/creator/${c.slug}`}>
-                  <Card className="flex items-center gap-3 p-3 transition-colors hover:bg-muted/40">
-                    <div
-                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white"
-                      style={{ backgroundColor: c.brandColor }}
-                    >
-                      {c.avatarInitials}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium">{c.communityName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {c.memberCount.toLocaleString()} members ·{" "}
-                        {c.challengesHosted} challenges
-                      </p>
-                    </div>
-                  </Card>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {communities.length === 0 ? (
+            <p className="px-1 text-sm text-muted-foreground">
+              No creator communities yet. Approved creators publish from Studio.
+            </p>
+          ) : (
+            <ul className="mb-6 space-y-2">
+              {communities.map((c) => (
+                <li key={c.id}>
+                  <Link href={`/creator/${c.slug}`}>
+                    <Card className="flex items-center gap-3 p-3 transition-colors hover:bg-muted/40">
+                      <div
+                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white"
+                        style={{ backgroundColor: c.brandColor }}
+                      >
+                        {c.avatarInitials}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium">{c.communityName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {c.memberCount.toLocaleString()} followers ·{" "}
+                          {c.challengesHosted} challenges
+                        </p>
+                      </div>
+                    </Card>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
-
       </div>
     </div>
   );

@@ -2,12 +2,9 @@ import { ChallengeTimelineSection } from "@/components/creator/challenge-timelin
 import { CommunityHero } from "@/components/creator/community-hero";
 import { CreatorShopSection } from "@/components/creator/creator-shop-section";
 import { FollowCommunityButton } from "@/components/creator/follow-community-button";
-import {
-  demoFollowingSlugs,
-  getCreatorCommunityBySlug,
-  isDemoCommunityOwner,
-} from "@/lib/mock-creators";
 import { BackButton } from "@/components/layout/back-button";
+import { getCurrentUserProfile } from "@/lib/auth/profile";
+import { fetchCommunityBySlug } from "@/lib/data/communities";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -17,7 +14,7 @@ type CreatorCommunityPageProps = {
 
 export async function generateMetadata({ params }: CreatorCommunityPageProps) {
   const { slug } = await params;
-  const community = getCreatorCommunityBySlug(slug);
+  const { community } = await fetchCommunityBySlug(slug, null);
   return {
     title: community?.communityName ?? "Creator community",
   };
@@ -27,14 +24,15 @@ export default async function CreatorCommunityPage({
   params,
 }: CreatorCommunityPageProps) {
   const { slug } = await params;
-  const community = getCreatorCommunityBySlug(slug);
+  const { user } = await getCurrentUserProfile();
+  const { community, isFollowing, isOwner } = await fetchCommunityBySlug(
+    slug,
+    user?.id ?? null,
+  );
 
-  if (!community || !community.isApproved) {
+  if (!community) {
     notFound();
   }
-
-  const isFollowing = demoFollowingSlugs.includes(slug);
-  const isOwner = isDemoCommunityOwner(slug);
 
   return (
     <div className="pb-6">
@@ -60,40 +58,30 @@ export default async function CreatorCommunityPage({
         showEditLink={isOwner}
         action={
           <FollowCommunityButton
-            communitySlug={slug}
-            communityName={community.communityName}
-            initiallyFollowing={isFollowing}
+            communityId={community.id}
+            initialFollowing={isFollowing}
+            loggedIn={Boolean(user)}
           />
         }
       />
 
-      <div className="mt-6 space-y-6">
-        <ChallengeTimelineSection
-          title="Current challenges"
-          timeline="current"
-          challenges={community.challenges}
-        />
-        <ChallengeTimelineSection
-          title="Upcoming challenges"
-          timeline="upcoming"
-          challenges={community.challenges}
-        />
-        <ChallengeTimelineSection
-          title="Previous challenges"
-          timeline="previous"
-          challenges={community.challenges}
-        />
-        <CreatorShopSection community={community} />
-      </div>
+      <CreatorShopSection community={community} />
 
-      <div className="mt-6 px-4">
-        <Link
-          href={`/join/${community.challenges.find((c) => c.timeline === "current")?.inviteSlug ?? "gentle-reset-riley"}`}
-          className="flex min-h-11 w-full items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold"
-        >
-          Join a free challenge
-        </Link>
-      </div>
+      <ChallengeTimelineSection
+        title="Current & upcoming"
+        timeline="current"
+        challenges={community.challenges}
+      />
+      <ChallengeTimelineSection
+        title="Upcoming"
+        timeline="upcoming"
+        challenges={community.challenges}
+      />
+      <ChallengeTimelineSection
+        title="Past challenges"
+        timeline="previous"
+        challenges={community.challenges}
+      />
     </div>
   );
 }

@@ -1,57 +1,40 @@
-"use client";
-
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { useDemoStore } from "@/lib/demo-store/demo-store";
+import { ChallengeCard } from "@/components/challenges/challenge-card";
+import type { Challenge } from "@/types";
 import Link from "next/link";
 
-export function ChallengePreview() {
-  const { myChallengesList } = useDemoStore();
-  const joined = myChallengesList();
-
+export function ChallengePreview({
+  challenges,
+  viewerName,
+  loggedIn,
+}: {
+  challenges: Challenge[];
+  viewerName: string;
+  loggedIn: boolean;
+}) {
   return (
-    <section className="space-y-3" aria-labelledby="challenges-preview-heading">
-      <div className="flex items-center justify-between px-1">
-        <h2 id="challenges-preview-heading" className="text-base font-semibold">
-          Your challenges
+    <section aria-labelledby="home-challenges-heading">
+      <div className="mb-2 flex items-center justify-between px-1">
+        <h2 id="home-challenges-heading" className="text-base font-semibold">
+          My challenges
         </h2>
         <Link href="/challenges" className="text-sm font-medium text-primary">
           See all
         </Link>
       </div>
-      {joined.length === 0 ? (
-        <Card>
-          <p className="text-sm text-muted-foreground">
-            No challenges yet — join one from the Challenges tab.
-          </p>
-          <Link href="/challenges" className="mt-2 inline-block text-sm font-semibold text-primary">
-            Discover challenges
-          </Link>
-        </Card>
+      {challenges.length === 0 ? (
+        <p className="px-1 text-sm text-muted-foreground">
+          Join a challenge from the Challenges tab.
+        </p>
       ) : (
-        <ul className="space-y-2">
-          {joined.map((challenge) => (
-            <li key={challenge.id}>
-              <Card>
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium">{challenge.title}</p>
-                    <p className="mt-0.5 text-sm text-muted-foreground">
-                      with {challenge.creatorName}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <Badge>{challenge.progressPercent}%</Badge>
-                    <Badge tone="muted">Free</Badge>
-                  </div>
-                </div>
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-500"
-                    style={{ width: `${challenge.progressPercent}%` }}
-                  />
-                </div>
-              </Card>
+        <ul className="space-y-3">
+          {challenges.slice(0, 2).map((c) => (
+            <li key={c.id}>
+              <ChallengeCard
+                challenge={c}
+                viewerName={viewerName}
+                viewerRole="member"
+                loggedIn={loggedIn}
+              />
             </li>
           ))}
         </ul>
