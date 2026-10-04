@@ -16,7 +16,7 @@ src/
     manifest.ts     # Web app manifest (Next.js)
   components/       # UI + layout + dashboard sections
   lib/
-    mock-data.ts    # Demo content (replace with Supabase queries)
+    data/           # Supabase read helpers (challenges, groups, member activity)
     push-notifications.ts  # Opt-in push stub for later
   types/            # Shared domain types (API-ready for future mobile apps)
 ```

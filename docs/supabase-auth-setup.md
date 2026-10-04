@@ -23,6 +23,7 @@ In **SQL Editor**, run in order:
 3. `supabase/migrations/003_fix_signup_profile_trigger.sql` (**required** for sign-up)
 4. `005a` + `005b` (creator verification, if using creator flows)
 5. `supabase/migrations/006_member_activity_and_messaging.sql` (**required** for goals, groups, chat, weigh-ins)
+6. If 006 errors with **`column "author_id" does not exist`**, run `006b_fix_messaging_tables.sql` (or re-run the updated 006 messaging section)
 
 ## 3. Auth settings in Supabase
 
