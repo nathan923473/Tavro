@@ -84,3 +84,5 @@ npm run check:auth
 | Invalid login credentials | Sign up first, or reset password in **Authentication → Users** |
 | User already registered | Use **Log in** |
 | Groups create/join fails (RLS) | Run migrations **006** then **`007_one_shot_fix_groups.sql`** (see step 7 above) |
+| **Log in doesn’t work** / invalid credentials | Same email must exist under **Authentication → Users** for **this** project. Try **Sign up** first, or reset password in Supabase. Check `.env.local` URL/key match that project. Run `npm run check:auth`. Turn off **Confirm email**. After changing `.env.local`, restart `npm run dev`. |
+| Log in spins then nothing | Restart dev server; use **http://127.0.0.1:3456** (same port as terminal). Clear site cookies for localhost. |

@@ -1,6 +1,8 @@
 "use server";
 
+import { ensureUserProfile } from "@/lib/auth/ensure-profile";
 import { createAdminClient, isAdminSignupEnabled } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { randomBytes } from "node:crypto";
 
@@ -124,5 +126,28 @@ export async function signUpMember(input: {
     );
   }
 
+  return { ok: true };
+}
+
+/** Server-side log in so auth cookies are set reliably in Next.js. */
+export async function loginMember(input: {
+  email: string;
+  password: string;
+}): Promise<{ ok: true } | { ok: false; message: string }> {
+  const email = input.email.trim().toLowerCase();
+  const password = input.password;
+
+  if (!email || password.length < 8) {
+    return { ok: false, message: "Enter your email and password (8+ characters)." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  await ensureUserProfile();
   return { ok: true };
 }

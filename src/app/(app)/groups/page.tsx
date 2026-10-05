@@ -3,10 +3,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchUserGroup } from "@/lib/data/groups";
 
-import {
-  ACCOUNTABILITY_GROUP_PLURAL,
-  ACCOUNTABILITY_GROUP_SINGULAR,
-} from "@/lib/copy/accountability-groups";
+import { ACCOUNTABILITY_GROUP_PLURAL } from "@/lib/copy/accountability-groups";
 
 export const metadata = { title: "Private accountability groups" };
 

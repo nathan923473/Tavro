@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { signUpMember } from "@/app/(auth)/actions";
+import { loginMember, signUpMember } from "@/app/(auth)/actions";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -81,12 +81,11 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
         );
         return;
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const result = await loginMember({
           email: normalizedEmail,
           password: normalizedPassword,
         });
-        if (error) throw error;
-        await syncProfileAfterAuth();
+        if (!result.ok) throw new Error(result.message);
         router.push(next);
         router.refresh();
       }
@@ -163,7 +162,7 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
           />
         </Field>
         {message ? (
-          <p className="text-sm text-muted-foreground" role="status">
+          <p className="text-sm text-red-600" role="alert">
             {message}
           </p>
         ) : null}
