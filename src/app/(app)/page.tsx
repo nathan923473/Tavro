@@ -1,20 +1,23 @@
-import { ChallengePreview } from "@/components/dashboard/challenge-preview";
-import { CheckInCard } from "@/components/dashboard/check-in-card";
-import { ConsistencyCard } from "@/components/dashboard/consistency-card";
+import { ChallengeHabitActivity } from "@/components/dashboard/challenge-habit-activity";
+import { DailyCheckInCard } from "@/components/dashboard/daily-check-in-card";
 import {
   HomeGroupPreview,
   HomeWelcomeBanner,
 } from "@/components/dashboard/home-sections";
-import { ReferralCard } from "@/components/dashboard/referral-card";
-import { TodaysGoals } from "@/components/dashboard/todays-goals";
+import { TodaysHabits } from "@/components/dashboard/todays-habits";
+import { WeeklyConsistencyHome } from "@/components/dashboard/weekly-consistency-home";
 import { PageHeader } from "@/components/layout/page-header";
+import { Card } from "@/components/ui/card";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchChallengesForUser } from "@/lib/data/challenges";
 import { fetchUserGroup } from "@/lib/data/groups";
 import {
-  fetchConsistencyMetrics,
+  fetchLinkedChallengeHabits,
   fetchMemberGoals,
-  hasCheckedInToday,
+  fetchMilestones,
+  fetchTodayCheckIn,
+  fetchWeeklyConsistencySummary,
+  fetchWeeklyProgress,
 } from "@/lib/data/member";
 
 export default async function HomePage() {
@@ -25,19 +28,34 @@ export default async function HomePage() {
     user?.email?.split("@")[0] ??
     "there";
 
-  const [goals, checkedIn, consistency, challenges, groupData] =
-    await Promise.all([
-      userId ? fetchMemberGoals(userId) : Promise.resolve([]),
-      userId ? hasCheckedInToday(userId) : Promise.resolve(false),
-      userId
-        ? fetchConsistencyMetrics(userId)
-        : Promise.resolve([
-            { label: "Check-ins this week", value: 0, target: 7 },
-            { label: "Goals completed", value: 0, target: 1 },
-          ]),
-      fetchChallengesForUser(userId),
-      userId ? fetchUserGroup(userId) : Promise.resolve({ group: null, feed: [] }),
-    ]);
+  const [
+    goals,
+    checkIn,
+    consistency,
+    weekDays,
+    challenges,
+    groupData,
+    linkedHabits,
+    milestones,
+  ] = await Promise.all([
+    userId ? fetchMemberGoals(userId) : Promise.resolve([]),
+    userId
+      ? fetchTodayCheckIn(userId)
+      : Promise.resolve({ checkedIn: false, mood: null, reflection: null }),
+    userId
+      ? fetchWeeklyConsistencySummary(userId)
+      : Promise.resolve({
+          planned: 0,
+          completed: 0,
+          percent: 0,
+          message: "Log in to track consistency.",
+        }),
+    userId ? fetchWeeklyProgress(userId) : Promise.resolve([]),
+    fetchChallengesForUser(userId),
+    userId ? fetchUserGroup(userId) : Promise.resolve({ group: null, feed: [] }),
+    userId ? fetchLinkedChallengeHabits(userId) : Promise.resolve([]),
+    userId ? fetchMilestones(userId) : Promise.resolve([]),
+  ]);
 
   return (
     <div className="animate-fade-up">
@@ -47,18 +65,27 @@ export default async function HomePage() {
           firstName={firstName}
           groupName={groupData.group?.name}
         />
-        <CheckInCard checkedIn={checkedIn} loggedIn={Boolean(userId)} />
-        <TodaysGoals goals={goals} loggedIn={Boolean(userId)} />
-        <ChallengePreview
-          challenges={challenges.mine}
-          viewerName={firstName}
+        <TodaysHabits goals={goals} loggedIn={Boolean(userId)} />
+        <DailyCheckInCard
+          checkedIn={checkIn.checkedIn}
+          mood={checkIn.mood}
           loggedIn={Boolean(userId)}
         />
-        <ReferralCard
-          referralCode={profile?.referralCode ?? "sign-in-for-code"}
+        <ChallengeHabitActivity
+          challenges={challenges.mine}
+          linkedHabits={linkedHabits}
+          loggedIn={Boolean(userId)}
         />
         <HomeGroupPreview group={groupData.group} feed={groupData.feed} />
-        <ConsistencyCard metrics={consistency} />
+        <WeeklyConsistencyHome summary={consistency} weekDays={weekDays} />
+        {milestones[0] ? (
+          <Card>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Recent milestone
+            </p>
+            <p className="mt-1 font-semibold">{milestones[0].label}</p>
+          </Card>
+        ) : null}
       </div>
     </div>
   );

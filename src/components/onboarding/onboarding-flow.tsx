@@ -5,6 +5,7 @@ import { ProfileAvatarEditor } from "@/components/profile/profile-avatar-editor"
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
+import { HABIT_PRESETS } from "@/lib/habits/presets";
 import { ArrowRight, Check, Users } from "lucide-react";
 import {
   ACCOUNTABILITY_GROUP_PLURAL,
@@ -20,12 +21,7 @@ const goalOptions = [
   "Stay accountable with friends",
 ];
 
-const habitOptions = [
-  "Daily walk",
-  "Water goal",
-  "Strength or mobility",
-  "Evening wind-down",
-];
+const onboardingHabits = HABIT_PRESETS.slice(0, 8).map((p) => p.label);
 
 export function OnboardingFlow({
   userId,
@@ -42,7 +38,10 @@ export function OnboardingFlow({
   const inviteCode = searchParams.get("code") ?? undefined;
   const [step, setStep] = useState(0);
   const [selectedGoal, setSelectedGoal] = useState(goalOptions[0]);
-  const [selectedHabit, setSelectedHabit] = useState(habitOptions[0]);
+  const [selectedHabits, setSelectedHabits] = useState<string[]>([
+    onboardingHabits[0],
+    onboardingHabits[4],
+  ]);
   const [wantsGroup, setWantsGroup] = useState(invitedToGroup);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +53,7 @@ export function OnboardingFlow({
       try {
         await completeOnboarding({
           focusGoal: selectedGoal,
-          habit: selectedHabit,
+          habits: selectedHabits.slice(0, 5),
           createGroup: wantsGroup && !inviteCode,
           inviteCode,
         });
@@ -111,28 +110,43 @@ export function OnboardingFlow({
 
       {step === 1 ? (
         <div className="animate-fade-up flex flex-1 flex-col">
-          <h1 className="text-2xl font-semibold">One habit to start</h1>
+          <h1 className="text-2xl font-semibold">Choose a few habits</h1>
           <p className="mt-2 text-muted-foreground">
-            Small steps beat extreme plans.
+            Pick 3–5 healthy habits — you can edit these anytime on Progress.
           </p>
           <ul className="mt-6 space-y-2">
-            {habitOptions.map((habit) => (
-              <li key={habit}>
-                <button
-                  type="button"
-                  onClick={() => setSelectedHabit(habit)}
-                  className={cn(
-                    "w-full rounded-xl border px-4 py-3 text-left text-sm transition-colors",
-                    selectedHabit === habit
-                      ? "border-primary bg-secondary/60 font-medium"
-                      : "border-border bg-surface",
-                  )}
-                >
-                  {habit}
-                </button>
-              </li>
-            ))}
+            {onboardingHabits.map((habit) => {
+              const selected = selectedHabits.includes(habit);
+              return (
+                <li key={habit}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedHabits((prev) => {
+                        if (selected) return prev.filter((h) => h !== habit);
+                        if (prev.length >= 5) return prev;
+                        return [...prev, habit];
+                      })
+                    }
+                    className={cn(
+                      "flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left text-sm transition-colors",
+                      selected
+                        ? "border-primary bg-secondary/60 font-medium"
+                        : "border-border bg-surface",
+                    )}
+                  >
+                    {habit}
+                    {selected ? (
+                      <Check className="h-4 w-4 text-primary" aria-hidden />
+                    ) : null}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {selectedHabits.length}/5 selected
+          </p>
         </div>
       ) : null}
 

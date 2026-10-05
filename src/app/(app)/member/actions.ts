@@ -24,30 +24,39 @@ function slugify(text: string) {
 
 export async function completeOnboarding(input: {
   focusGoal: string;
-  habit: string;
+  habits: string[];
   createGroup: boolean;
   inviteCode?: string;
 }) {
   const { supabase, userId } = await requireUserId();
 
-  const goals = [
-    { title: input.habit, category: "routine", sort_order: 0 },
-    {
-      title: input.focusGoal,
+  const habitTitles = input.habits.length
+    ? input.habits.slice(0, 5)
+    : ["Daily movement"];
+
+  const goals = habitTitles.map((title, i) => ({
+    title,
+    category: i === 0 ? "movement" : "routine",
+    sort_order: i,
+    user_id: userId,
+  }));
+
+  if (input.focusGoal.trim()) {
+    goals.push({
+      title: input.focusGoal.trim(),
       category: "mindfulness",
-      sort_order: 1,
-    },
-  ];
+      sort_order: goals.length,
+      user_id: userId,
+    });
+  }
 
   await supabase.from("member_goals").delete().eq("user_id", userId);
-  await supabase.from("member_goals").insert(
-    goals.map((g) => ({ ...g, user_id: userId })),
-  );
+  await supabase.from("member_goals").insert(goals);
 
   if (input.inviteCode?.trim()) {
     await joinGroupByInviteCode(input.inviteCode.trim());
   } else if (input.createGroup) {
-    await createAccountabilityGroup(`${input.habit} circle`);
+    await createAccountabilityGroup(`${habitTitles[0] ?? "My"} circle`);
   }
 
   revalidatePath("/");
@@ -55,11 +64,34 @@ export async function completeOnboarding(input: {
 }
 
 export async function checkInTodayAction() {
+  return submitDailyCheckInAction({});
+}
+
+export async function submitDailyCheckInAction(input: {
+  mood?: "rough" | "okay" | "good" | "great";
+  reflection?: string;
+}) {
   const { supabase, userId } = await requireUserId();
-  const { error } = await supabase.from("daily_check_ins").upsert(
-    { user_id: userId, check_in_date: todayDateKey() },
-    { onConflict: "user_id,check_in_date" },
-  );
+  const reflection = input.reflection?.trim().slice(0, 500) ?? null;
+
+  const row: Record<string, unknown> = {
+    user_id: userId,
+    check_in_date: todayDateKey(),
+  };
+  if (input.mood) row.mood = input.mood;
+  if (reflection) row.reflection = reflection;
+
+  let { error } = await supabase.from("daily_check_ins").upsert(row, {
+    onConflict: "user_id,check_in_date",
+  });
+
+  if (error && /mood|reflection|schema cache/i.test(error.message)) {
+    ({ error } = await supabase.from("daily_check_ins").upsert(
+      { user_id: userId, check_in_date: todayDateKey() },
+      { onConflict: "user_id,check_in_date" },
+    ));
+  }
+
   if (error) throw new Error(error.message);
   revalidatePath("/");
   revalidatePath("/progress");
@@ -90,9 +122,67 @@ export async function toggleGoalAction(goalId: string) {
       user_id: userId,
       completion_date: today,
     });
+
+    const { data: habit } = await supabase
+      .from("member_goals")
+      .select("linked_challenge_id, title, template_key")
+      .eq("id", goalId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (habit?.linked_challenge_id) {
+      const { data: row } = await supabase
+        .from("challenge_participants")
+        .select("progress_percent")
+        .eq("challenge_id", habit.linked_challenge_id)
+        .eq("user_id", userId)
+        .maybeSingle();
+      const next = Math.min(100, (row?.progress_percent ?? 0) + 8);
+      await supabase
+        .from("challenge_participants")
+        .update({
+          progress_percent: next,
+          last_activity_date: today,
+        })
+        .eq("challenge_id", habit.linked_challenge_id)
+        .eq("user_id", userId);
+    }
+
+    await maybeUnlockHabitMilestones(supabase, userId, habit?.template_key ?? null);
   }
   revalidatePath("/");
   revalidatePath("/progress");
+  revalidatePath("/challenges");
+}
+
+async function maybeUnlockHabitMilestones(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  templateKey: string | null,
+) {
+  const { count: totalCompletions } = await supabase
+    .from("goal_completions")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  const unlock = async (key: string) => {
+    await supabase.from("member_milestones").upsert(
+      { user_id: userId, milestone_key: key },
+      { onConflict: "user_id,milestone_key", ignoreDuplicates: true },
+    );
+  };
+
+  if ((totalCompletions ?? 0) >= 7) await unlock("first_week");
+  if ((totalCompletions ?? 0) >= 30) await unlock("consistency_30d");
+  if (templateKey === "walk" && (totalCompletions ?? 0) >= 10) {
+    await unlock("walks_10");
+  }
+  if (
+    (templateKey === "gym" || templateKey === "run") &&
+    (totalCompletions ?? 0) >= 25
+  ) {
+    await unlock("workouts_25");
+  }
 }
 
 export async function joinChallengeAction(challengeId: string) {

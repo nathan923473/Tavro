@@ -4,6 +4,8 @@ export type GoalCategory =
   | "mindfulness"
   | "routine";
 
+export type HabitFrequencyType = "daily" | "times_per_week";
+
 export type PersonalGoal = {
   id: string;
   title: string;
@@ -11,6 +13,19 @@ export type PersonalGoal = {
   completedToday: boolean;
   streakDays: number;
   weeklyCompletion: number;
+  templateKey: string | null;
+  frequencyType: HabitFrequencyType;
+  frequencyTarget: number;
+  paused: boolean;
+  linkedChallengeId: string | null;
+};
+
+export type DailyCheckInMood = "rough" | "okay" | "good" | "great";
+
+export type MemberMilestone = {
+  key: string;
+  label: string;
+  unlockedAt: string;
 };
 
 /** Launch model: all challenges are free; no paid tiers in MVP. */
