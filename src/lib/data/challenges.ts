@@ -64,16 +64,23 @@ export async function fetchChallengesForUser(userId: string | null): Promise<{
       participants:challenge_participants ( count )
     `;
 
-  let { data: rows, error } = await supabase
+  let rows: ChallengeRow[] | null = null;
+  let error: { message: string } | null = null;
+
+  const full = await supabase
     .from("challenges")
     .select(selectFull)
     .order("start_date", { ascending: false });
+  rows = (full.data ?? null) as ChallengeRow[] | null;
+  error = full.error;
 
   if (error && /focus_areas|schema cache/i.test(error.message)) {
-    ({ data: rows, error } = await supabase
+    const legacy = await supabase
       .from("challenges")
       .select(selectLegacy)
-      .order("start_date", { ascending: false }));
+      .order("start_date", { ascending: false });
+    rows = (legacy.data ?? null) as ChallengeRow[] | null;
+    error = legacy.error;
   }
 
   if (error || !rows) {
