@@ -28,13 +28,24 @@ export async function createHabitAction(input: {
   const frequencyTarget =
     input.frequencyTarget ?? preset?.frequencyTarget ?? (frequencyType === "daily" ? 7 : 3);
 
-  const { count } = await supabase
+  let activeCount = 0;
+  const countRes = await supabase
     .from("member_goals")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId)
     .eq("active", true);
 
-  if ((count ?? 0) >= 10) {
+  if (countRes.error && /active|schema cache/i.test(countRes.error.message)) {
+    const legacyCount = await supabase
+      .from("member_goals")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId);
+    activeCount = legacyCount.count ?? 0;
+  } else {
+    activeCount = countRes.count ?? 0;
+  }
+
+  if (activeCount >= 10) {
     throw new Error("Keep it focused — pause or remove a habit first (max 10).");
   }
 
@@ -42,7 +53,8 @@ export async function createHabitAction(input: {
     user_id: userId,
     title: preset?.label ?? title,
     category: input.category ?? preset?.category ?? "routine",
-    sort_order: count ?? 0,
+    active: true,
+    sort_order: activeCount,
     template_key: input.templateKey ?? CUSTOM_HABIT_PRESET_KEY,
     frequency_type: frequencyType,
     frequency_target: Math.min(7, Math.max(1, frequencyTarget)),

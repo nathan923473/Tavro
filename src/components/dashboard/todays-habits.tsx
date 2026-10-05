@@ -1,7 +1,9 @@
 "use client";
 
 import { toggleGoalAction } from "@/app/(app)/member/actions";
+import { HabitQuickAdd } from "@/components/progress/habit-quick-add";
 import { Card } from "@/components/ui/card";
+import Link from "next/link";
 import { habitsCompletedToday } from "@/lib/progress/consistency";
 import type { PersonalGoal } from "@/types";
 import { Check, Circle } from "lucide-react";
@@ -34,12 +36,22 @@ export function TodaysHabits({
 
   if (active.length === 0) {
     return (
-      <Card>
-        <h2 className="font-semibold">Today&apos;s habits</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Add habits on the Progress tab or finish onboarding to get started.
-        </p>
-      </Card>
+      <section aria-labelledby="habits-empty-heading">
+        <h2 id="habits-empty-heading" className="mb-2 px-1 text-base font-semibold">
+          Today&apos;s habits
+        </h2>
+        <Card className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Create goals here — they show up on Home each day. You can also pick
+            habits in{" "}
+            <Link href="/onboarding" className="font-medium text-primary">
+              onboarding
+            </Link>
+            .
+          </p>
+          <HabitQuickAdd compact showProgressLink />
+        </Card>
+      </section>
     );
   }
 
@@ -63,6 +75,14 @@ export function TodaysHabits({
           />
         </div>
       </div>
+      <p className="mb-2 px-1">
+        <Link
+          href="/progress#habits-manage-heading"
+          className="text-sm font-medium text-primary"
+        >
+          Add or edit goals
+        </Link>
+      </p>
       <ul className="space-y-2">
         {active.map((goal) => (
           <li key={goal.id}>

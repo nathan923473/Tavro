@@ -62,16 +62,30 @@ export default async function ProfilePage() {
           </div>
         </Card>
 
-        {profile && goals.length > 0 ? (
+        {profile ? (
           <Card>
             <p className="text-sm font-medium">Your active goals</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {goals.map((g) => (
-                <Badge key={g.id} tone="muted">
-                  {g.title}
-                </Badge>
-              ))}
-            </div>
+            {goals.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {goals.map((g) => (
+                  <Badge key={g.id} tone="muted">
+                    {g.title}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">
+                No goals yet — add them on{" "}
+                <Link href="/" className="font-medium text-primary">
+                  Home
+                </Link>{" "}
+                or{" "}
+                <Link href="/progress#habits-manage-heading" className="font-medium text-primary">
+                  Progress
+                </Link>
+                .
+              </p>
+            )}
           </Card>
         ) : null}
 

@@ -72,6 +72,10 @@ export default async function ProgressPage() {
           </p>
         </Card>
 
+        {userId ? (
+          <HabitManager habits={habits} joinedChallenges={joined} />
+        ) : null}
+
         <section aria-labelledby="this-week-heading">
           <h2 id="this-week-heading" className="mb-2 px-1 text-base font-semibold">
             This week
@@ -121,10 +125,6 @@ export default async function ProgressPage() {
             </div>
           </Card>
         </section>
-
-        {userId ? (
-          <HabitManager habits={habits} joinedChallenges={joined} />
-        ) : null}
 
         <section aria-labelledby="habit-progress-heading">
           <h2 id="habit-progress-heading" className="mb-2 px-1 text-base font-semibold">
