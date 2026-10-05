@@ -1,32 +1,21 @@
-import { PageHeader } from "@/components/layout/page-header";
-import { PublicChallengeForm } from "@/components/challenges/public-challenge-form";
-import { Card } from "@/components/ui/card";
+import { ChallengeBuilderWizard } from "@/components/creator/studio/challenge-builder-wizard";
+import { StudioLayout } from "@/components/creator/studio/studio-layout";
 import { requireApprovedCreator } from "@/lib/auth/profile";
+import { Suspense } from "react";
 
-export const metadata = { title: "New public challenge" };
+export const metadata = { title: "Create challenge" };
 
-export default async function NewPublicChallengePage() {
+export default async function NewChallengePage() {
   await requireApprovedCreator();
 
   return (
-    <div className="animate-fade-up">
-      <PageHeader
-        title="Public challenge"
-        subtitle="Published to discovery · free to join"
-      />
-      <div className="space-y-4 px-4 py-4">
-        <Card className="border-dashed">
-          <p className="text-sm text-muted-foreground">
-            Only approved creators can publish here (enforced by database RLS).
-            Members can create{" "}
-            <a href="/challenges/create" className="font-medium text-primary">
-              private challenges
-            </a>{" "}
-            instead.
-          </p>
-        </Card>
-        <PublicChallengeForm />
-      </div>
-    </div>
+    <StudioLayout
+      title="Create challenge"
+      subtitle="Free · ~5–10 minutes once your content is ready"
+    >
+      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+        <ChallengeBuilderWizard />
+      </Suspense>
+    </StudioLayout>
   );
 }

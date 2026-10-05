@@ -1,6 +1,8 @@
 import { ChallengeTimelineSection } from "@/components/creator/challenge-timeline-section";
 import { CommunityHero } from "@/components/creator/community-hero";
+import { CreatorLinksSection } from "@/components/creator/creator-links-section";
 import { CreatorShopSection } from "@/components/creator/creator-shop-section";
+import { fetchCreatorLinks } from "@/lib/data/creator-studio";
 import { FollowCommunityButton } from "@/components/creator/follow-community-button";
 import { BackButton } from "@/components/layout/back-button";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
@@ -34,6 +36,8 @@ export default async function CreatorCommunityPage({
     notFound();
   }
 
+  const creatorLinks = await fetchCreatorLinks(community.id);
+
   return (
     <div className="pb-6">
       <div className="sticky top-0 z-40 space-y-2 border-b border-border/50 bg-background/90 px-3 py-3 backdrop-blur-md">
@@ -44,10 +48,10 @@ export default async function CreatorCommunityPage({
           </span>
           {isOwner ? (
             <Link
-              href="/creator/dashboard"
+              href="/studio"
               className="shrink-0 text-xs font-semibold text-primary"
             >
-              Dashboard
+              Studio
             </Link>
           ) : null}
         </div>
@@ -66,6 +70,7 @@ export default async function CreatorCommunityPage({
       />
 
       <CreatorShopSection community={community} />
+      <CreatorLinksSection links={creatorLinks} />
 
       <ChallengeTimelineSection
         title="Current & upcoming"

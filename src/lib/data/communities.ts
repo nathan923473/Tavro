@@ -64,17 +64,50 @@ export async function fetchCommunityBySlug(
     return { community: null, isFollowing: false, isOwner: false };
   }
 
-  const { data: challenges } = await supabase
+  type ChallengeListRow = {
+    id: string;
+    title: string;
+    description: string | null;
+    start_date: string;
+    end_date: string;
+    invite_slug: string;
+    cover_url: string | null;
+    publish_status?: string | null;
+    participants?: { count: number }[] | null;
+  };
+
+  let challenges: ChallengeListRow[] | null = null;
+  let chErr: { message: string } | null = null;
+
+  const fullCh = await supabase
     .from("challenges")
     .select(
       `
-      id, title, description, start_date, end_date, invite_slug, cover_url,
+      id, title, description, start_date, end_date, invite_slug, cover_url, publish_status,
       participants:challenge_participants ( count )
     `,
     )
     .eq("community_id", row.id)
     .eq("visibility", "public")
+    .neq("publish_status", "draft")
     .order("start_date", { ascending: false });
+  challenges = (fullCh.data ?? null) as ChallengeListRow[] | null;
+  chErr = fullCh.error;
+
+  if (chErr && /publish_status|schema cache/i.test(chErr.message)) {
+    const legacyCh = await supabase
+      .from("challenges")
+      .select(
+        `
+        id, title, description, start_date, end_date, invite_slug, cover_url,
+        participants:challenge_participants ( count )
+      `,
+      )
+      .eq("community_id", row.id)
+      .eq("visibility", "public")
+      .order("start_date", { ascending: false });
+    challenges = (legacyCh.data ?? null) as ChallengeListRow[] | null;
+  }
 
   const challengeIds = (challenges ?? []).map((c) => c.id);
   const galleryMap = await fetchChallengeGalleryMap(challengeIds);

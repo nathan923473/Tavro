@@ -1,11 +1,13 @@
 import { CreatorChallengeMessageHub } from "@/components/creator/creator-challenge-message-hub";
-import { PostAnnouncementButton } from "@/components/creator/post-announcement-button";
+import { StudioLayout } from "@/components/creator/studio/studio-layout";
+import { QuickActionsGrid } from "@/components/creator/studio/quick-actions-grid";
+import { CurrentChallengeCard } from "@/components/creator/studio/current-challenge-card";
+import { CommunityGrowthChart } from "@/components/creator/studio/community-growth-chart";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { PageHeader } from "@/components/layout/page-header";
 import { requireApprovedCreator } from "@/lib/auth/profile";
 import { fetchCommunityBySlug, fetchOwnerCommunity } from "@/lib/data/communities";
-import { BarChart3, ImageIcon, Palette, Pencil, PlusCircle, Users } from "lucide-react";
+import { fetchCreatorStudioOverview } from "@/lib/data/creator-studio";
 import Link from "next/link";
 
 export const metadata = { title: "Creator Studio" };
@@ -13,183 +15,142 @@ export const metadata = { title: "Creator Studio" };
 export default async function CreatorStudioPage() {
   const { user, profile } = await requireApprovedCreator();
   const ownerRow = await fetchOwnerCommunity(user.id);
+  const overview = await fetchCreatorStudioOverview(user.id);
 
   const { community } = ownerRow
     ? await fetchCommunityBySlug(ownerRow.slug, user.id)
     : { community: null };
 
   return (
-    <div className="animate-fade-up">
-      <PageHeader
-        title="Creator Studio"
-        subtitle={`Hi ${profile.displayName ?? "creator"} · Supabase-backed`}
-      />
-      <div className="space-y-4 px-4 py-4">
-        <Card className="border-primary/20 bg-secondary/30">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone="success">Approved creator</Badge>
-            {profile.isAdmin ? <Badge tone="muted">Admin</Badge> : null}
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            You have all member features plus public community tools. Private
-            member data is never visible here.
-          </p>
-        </Card>
+    <StudioLayout
+      title="Creator Studio"
+      subtitle={`Hi ${profile.displayName ?? "creator"} · free challenges only`}
+    >
+      <Card className="border-primary/20 bg-secondary/30">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge tone="success">Approved creator</Badge>
+          {profile.isAdmin ? <Badge tone="muted">Admin</Badge> : null}
+        </div>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Aggregate community stats only — no private member health data.
+        </p>
+      </Card>
 
-        <Card className="border-2 border-primary/30">
-          <h2 className="flex items-center gap-2 font-semibold">
-            <ImageIcon className="h-5 w-5 text-primary" aria-hidden />
-            Photos & branding
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Upload images for your public creator page and challenge invite links.
-          </p>
-          <div className="mt-3 grid gap-2">
-            <Link
-              href={
-                community
-                  ? `/creator/${community.slug}/edit`
-                  : "/studio/community"
-              }
-              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
-            >
-              <Palette className="h-4 w-4" aria-hidden />
-              Community avatar & banner
-            </Link>
-            <Link
-              href="/studio/challenges"
-              className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-surface text-sm font-semibold"
-            >
-              <ImageIcon className="h-4 w-4" aria-hidden />
-              Challenge cover & gallery
-            </Link>
-          </div>
+      <section aria-labelledby="your-community-heading">
+        <h2 id="your-community-heading" className="mb-2 text-base font-semibold">
+          Your community
+        </h2>
+        <Card className="space-y-1">
+          {overview.communityName ? (
+            <>
+              <p className="text-3xl font-semibold tabular-nums">
+                {overview.totalFollowers.toLocaleString()} members
+              </p>
+              <p className="text-sm text-primary">
+                +{overview.newFollowersThisMonth} this month
+              </p>
+              <p className="text-xs text-muted-foreground">
+                +{overview.newFollowersThisWeek} this week ·{" "}
+                {overview.activeChallengeCount} active challenge
+                {overview.activeChallengeCount === 1 ? "" : "s"}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Set up your permanent community page first.
+              </p>
+              <Link href="/studio/community/setup" className="text-sm font-semibold text-primary">
+                Create community →
+              </Link>
+            </>
+          )}
         </Card>
+      </section>
 
-        {!community ? (
-          <Card className="border-dashed">
-            <p className="text-sm text-muted-foreground">
-              Set up your public community page first — required before publishing
-              challenges.
-            </p>
+      <section aria-labelledby="current-challenge-heading">
+        <h2 id="current-challenge-heading" className="mb-2 text-base font-semibold">
+          Current challenge
+        </h2>
+        {overview.currentChallenge ? (
+          <div className="space-y-2">
+            <CurrentChallengeCard
+              challenge={overview.currentChallenge}
+              communitySlug={overview.communitySlug}
+            />
+            {overview.otherActiveChallenges.map((c) => (
+              <CurrentChallengeCard
+                key={c.id}
+                challenge={c}
+                communitySlug={overview.communitySlug}
+                compact
+              />
+            ))}
+          </div>
+        ) : (
+          <Card className="border-dashed text-center">
+            <p className="text-sm text-muted-foreground">No active challenge</p>
             <Link
-              href="/studio/community"
-              className="mt-3 inline-block text-sm font-semibold text-primary"
+              href="/studio/challenges/new"
+              className="mt-3 inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
             >
-              Create community →
+              Create challenge
             </Link>
           </Card>
-        ) : null}
+        )}
+      </section>
 
-        <ul className="grid grid-cols-2 gap-2">
-          <MiniStat
-            icon={Users}
-            label="Followers"
-            value={community ? String(community.memberCount) : "—"}
+      <QuickActionsGrid hasCommunity={Boolean(community)} communitySlug={overview.communitySlug} />
+
+      {overview.growthByWeek.some((w) => w.count > 0) ? (
+        <section aria-labelledby="growth-heading">
+          <h2 id="growth-heading" className="mb-2 text-base font-semibold">
+            Community growth
+          </h2>
+          <CommunityGrowthChart data={overview.growthByWeek} />
+        </section>
+      ) : null}
+
+      {overview.recentActivity.length > 0 ? (
+        <section aria-labelledby="recent-activity-heading">
+          <h2 id="recent-activity-heading" className="mb-2 text-base font-semibold">
+            Recent activity
+          </h2>
+          <ul className="space-y-2">
+            {overview.recentActivity.map((item) => (
+              <li key={item.id}>
+                <Card padding="sm">
+                  <p className="text-sm">{item.label}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(item.at).toLocaleString()}
+                  </p>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {community ? (
+        <section aria-labelledby="challenge-groups-heading">
+          <h2 id="challenge-groups-heading" className="mb-2 text-base font-semibold">
+            Message challenge groups
+          </h2>
+          <CreatorChallengeMessageHub
+            creatorDisplayName={community.creatorDisplayName}
+            challenges={community.challenges}
           />
-          <MiniStat
-            icon={PlusCircle}
-            label="Active challenges"
-            value={
-              community
-                ? String(
-                    community.challenges.filter((c) => c.timeline !== "previous")
-                      .length,
-                  )
-                : "—"
-            }
-          />
-        </ul>
+        </section>
+      ) : null}
 
-        <div className="grid gap-2">
-          {community ? (
-            <Link
-              href={`/creator/${community.slug}/edit`}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
-            >
-              <Pencil className="h-4 w-4" aria-hidden />
-              Edit community & branding
-            </Link>
-          ) : (
-            <Link
-              href="/studio/community"
-              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
-            >
-              <Pencil className="h-4 w-4" aria-hidden />
-              Create community page
-            </Link>
-          )}
-          <Link
-            href="/studio/challenges/new"
-            className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-surface text-sm font-semibold"
-          >
-            <PlusCircle className="h-4 w-4" aria-hidden />
-            Create public challenge
-          </Link>
-          <Link
-            href="/studio/challenges"
-            className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-surface text-sm font-semibold"
-          >
-            <Pencil className="h-4 w-4" aria-hidden />
-            Challenge photos
-          </Link>
-          <Link
-            href="/creator/analytics"
-            className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-surface text-sm font-semibold"
-          >
-            <BarChart3 className="h-4 w-4" aria-hidden />
-            Creator analytics
-          </Link>
-          {community ? (
-            <PostAnnouncementButton
-              communityId={community.id}
-              defaultText={community.announcement ?? ""}
-            />
-          ) : null}
-        </div>
-
-        {community ? (
-          <section aria-labelledby="challenge-groups-heading">
-            <h2
-              id="challenge-groups-heading"
-              className="mb-2 text-base font-semibold"
-            >
-              Message challenge groups
-            </h2>
-            <CreatorChallengeMessageHub
-              creatorDisplayName={community.creatorDisplayName}
-              challenges={community.challenges}
-            />
-          </section>
-        ) : null}
-
-        {community ? (
-          <Link
-            href={`/creator/${community.slug}`}
-            className="block text-center text-sm font-medium text-primary"
-          >
-            View public community page →
-          </Link>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function MiniStat({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  icon: typeof Users;
-}) {
-  return (
-    <Card padding="sm">
-      <Icon className="h-4 w-4 text-primary" aria-hidden />
-      <p className="mt-1 text-xs text-muted-foreground">{label}</p>
-      <p className="font-semibold">{value}</p>
-    </Card>
+      {community ? (
+        <Link
+          href={`/creator/${community.slug}`}
+          className="block text-center text-sm font-medium text-primary"
+        >
+          View public community page →
+        </Link>
+      ) : null}
+    </StudioLayout>
   );
 }

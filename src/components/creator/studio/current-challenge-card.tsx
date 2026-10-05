@@ -1,0 +1,59 @@
+import { Card } from "@/components/ui/card";
+import { creatorChallengePath } from "@/lib/data/creator-studio";
+import type { CreatorStudioChallenge } from "@/types/creator-studio";
+import Link from "next/link";
+
+export function CurrentChallengeCard({
+  challenge,
+  communitySlug,
+  compact,
+}: {
+  challenge: CreatorStudioChallenge;
+  communitySlug: string | null;
+  compact?: boolean;
+}) {
+  const manageHref = `/studio/challenges/${challenge.id}`;
+  const shareHref =
+    communitySlug != null
+      ? creatorChallengePath(communitySlug, challenge.inviteSlug)
+      : `/join/${challenge.inviteSlug}`;
+
+  return (
+    <Card className={compact ? "border-dashed" : undefined}>
+      {challenge.coverUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={challenge.coverUrl}
+          alt=""
+          className="mb-3 h-32 w-full rounded-xl object-cover"
+        />
+      ) : null}
+      <p className={compact ? "text-sm font-semibold" : "text-lg font-semibold"}>
+        {challenge.title}
+      </p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {challenge.participantCount} participants · {challenge.activeThisWeek} active
+        this week
+      </p>
+      <p className="text-xs text-muted-foreground">
+        {challenge.startDate} → {challenge.endDate}
+      </p>
+      <div className="mt-3 grid gap-2">
+        <Link
+          href={manageHref}
+          className="flex min-h-10 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+        >
+          Manage challenge
+        </Link>
+        {!compact ? (
+          <Link
+            href={shareHref}
+            className="text-center text-xs font-medium text-primary"
+          >
+            View public challenge page →
+          </Link>
+        ) : null}
+      </div>
+    </Card>
+  );
+}
