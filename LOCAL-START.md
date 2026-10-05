@@ -119,6 +119,27 @@ On the Log in page, read the **red text** under the button — it tells you wron
 
 ---
 
+## Demo people in your accountability group
+
+To preview a full group (members, check-ins, chat) on **your** Supabase project:
+
+1. **Fix group chat schema** (once) — Supabase → **SQL Editor** → paste and run:
+   `supabase/scripts/fix-group-messages.sql`
+2. Ensure **`.env.local`** includes **`SUPABASE_SERVICE_ROLE_KEY`** (same API page as the anon key; keep it secret).
+3. In the stride folder terminal:
+
+```bash
+npm run seed:demo-group -- XL9BAZ
+```
+
+Use your real invite code instead of `XL9BAZ` if different (shown on the Groups page).
+
+4. Hard refresh **http://127.0.0.1:3456/groups**.
+
+If chat still says **`user_id` column**, your app code is old — in `src/app/(app)/member/actions.ts`, group messages must use **`author_id`**, not `user_id`.
+
+---
+
 ## Still stuck?
 
 ```bash

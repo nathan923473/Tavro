@@ -13,6 +13,7 @@
     "verify:env": "node scripts/verify-env.mjs",
     "check:branding": "node scripts/check-branding.mjs",
     "apply:branding": "node scripts/apply-pag-branding.mjs",
+    "seed:demo-group": "node scripts/seed-demo-group.mjs",
     "test:creator-security": "node scripts/test-creator-security.mjs",
     "stop:dev": "node scripts/stop-dev.mjs",
     "fresh": "node scripts/stop-dev.mjs && next dev -p 3000 -H 0.0.0.0 --turbopack",
