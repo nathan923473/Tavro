@@ -25,7 +25,7 @@ export async function fetchCreatorChallengeForPhotos(
   const supabase = await createClient();
   const { data: challenge } = await supabase
     .from("challenges")
-    .select("id, title, cover_url, created_by")
+    .select("id, title, cover_url, invite_slug, created_by")
     .eq("id", challengeId)
     .eq("created_by", userId)
     .maybeSingle();

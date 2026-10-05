@@ -6,7 +6,10 @@ import {
   setChallengeCoverUrlAction,
 } from "@/app/(app)/studio/media-actions";
 import { Button } from "@/components/ui/button";
+import { CopyLinkButton } from "@/components/share/copy-link-button";
+import { challengeInvitePath } from "@/lib/site-url";
 import { uploadChallengeMediaFile } from "@/lib/storage/upload-client";
+import Link from "next/link";
 import { ImagePlus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -18,12 +21,14 @@ export function ChallengePhotosEditor({
   challengeId,
   creatorId,
   title,
+  inviteSlug,
   coverUrl,
   photos,
 }: {
   challengeId: string;
   creatorId: string;
   title: string;
+  inviteSlug?: string;
   coverUrl: string | null;
   photos: Photo[];
 }) {
@@ -100,6 +105,28 @@ export function ChallengePhotosEditor({
           if (file) uploadGallery(file);
         }}
       />
+
+      {inviteSlug ? (
+        <div className="space-y-2 rounded-xl border border-dashed border-border p-3">
+          <p className="text-xs text-muted-foreground">
+            Cover and gallery show on the <strong className="text-foreground">public invite page</strong>{" "}
+            (not on Profile or Home unless someone opens this link).
+          </p>
+          <CopyLinkButton
+            url={challengeInvitePath(inviteSlug)}
+            label="Copy public invite link"
+            fullWidth
+          />
+          <Link
+            href={challengeInvitePath(inviteSlug)}
+            className="flex min-h-10 w-full items-center justify-center rounded-xl border border-border text-sm font-semibold text-primary"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Preview invite page
+          </Link>
+        </div>
+      ) : null}
 
       <div className="grid gap-2">
         <Button

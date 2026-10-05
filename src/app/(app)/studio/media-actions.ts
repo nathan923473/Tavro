@@ -69,9 +69,28 @@ export async function setChallengeCoverUrlAction(challengeId: string, coverUrl: 
     throw new Error(error.message);
   }
 
+  const { data: row } = await supabase
+    .from("challenges")
+    .select("invite_slug, community_id")
+    .eq("id", challengeId)
+    .maybeSingle();
+
   revalidatePath("/studio");
   revalidatePath(`/studio/challenges/${challengeId}/photos`);
   revalidatePath("/challenges");
+  if (row?.invite_slug) {
+    revalidatePath(`/join/${row.invite_slug}`);
+  }
+  if (row?.community_id) {
+    const { data: community } = await supabase
+      .from("creator_communities")
+      .select("slug")
+      .eq("id", row.community_id)
+      .maybeSingle();
+    if (community?.slug) {
+      revalidatePath(`/creator/${community.slug}`);
+    }
+  }
 }
 
 export async function addChallengePhotoAction(challengeId: string, imageUrl: string) {

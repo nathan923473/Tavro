@@ -27,6 +27,7 @@ export default async function ChallengePhotosPage({ params }: Props) {
           challengeId={data.challenge.id}
           creatorId={user.id}
           title={data.challenge.title}
+          inviteSlug={data.challenge.invite_slug}
           coverUrl={data.challenge.cover_url}
           photos={data.photos}
         />
