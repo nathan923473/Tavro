@@ -18,7 +18,7 @@ export default async function GroupsPage() {
     <div className="animate-fade-up">
       <PageHeader
         title="Private accountability groups"
-        subtitle={`Optional ${ACCOUNTABILITY_GROUP_PLURAL} · 4–8 people · creators never see these chats`}
+        subtitle={`Member-only ${ACCOUNTABILITY_GROUP_PLURAL} · 4–8 people · not visible to creators`}
       />
       <div className="space-y-4 px-4 py-4">
         <GroupsInteractive

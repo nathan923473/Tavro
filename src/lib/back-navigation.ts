@@ -56,7 +56,7 @@ export function shortLabelForPath(pathname: string): string {
 
   const exact: Record<string, string> = {
     "/profile": "Profile",
-    "/groups": "Groups",
+    "/groups": "Private accountability groups",
     "/challenges": "Challenges",
     "/progress": "Progress",
     "/studio": "Creator Studio",
@@ -82,7 +82,7 @@ export function shortLabelForPath(pathname: string): string {
   if (joinPage) return "Challenge invite";
 
   const invitePage = pathname.match(/^\/invite\/group\/[^/]+$/);
-  if (invitePage) return "Group invite";
+  if (invitePage) return "Private accountability group invite";
 
   const segments = pathname.split("/").filter(Boolean);
   const last = segments[segments.length - 1];

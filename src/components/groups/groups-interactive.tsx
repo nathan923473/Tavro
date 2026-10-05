@@ -10,11 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
-import type { AccountabilityGroup, GroupActivity } from "@/types";
 import {
   ACCOUNTABILITY_GROUP_PLURAL,
   ACCOUNTABILITY_GROUP_SINGULAR,
+  ACCOUNTABILITY_GROUP_TAGLINE,
 } from "@/lib/copy/accountability-groups";
+import type { AccountabilityGroup, GroupActivity } from "@/types";
 import { groupInvitePath } from "@/lib/site-url";
 import { Heart, MessageCircle, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -34,36 +35,50 @@ export function GroupsInteractive({
   const [status, setStatus] = useState<string | null>(null);
   const [chatDraft, setChatDraft] = useState("");
   const [joinCode, setJoinCode] = useState("");
+  const [newGroupName, setNewGroupName] = useState("");
 
   if (!loggedIn) {
     return (
-      <Card>
-        <h2 className="font-semibold">{ACCOUNTABILITY_GROUP_PLURAL}</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Log in to create or join a {ACCOUNTABILITY_GROUP_SINGULAR} (4–8 people).
-        </p>
-      </Card>
+      <>
+        <Card className="border-dashed">
+          <p className="text-sm text-muted-foreground">{ACCOUNTABILITY_GROUP_TAGLINE}</p>
+        </Card>
+        <Card>
+          <h2 className="font-semibold capitalize">{ACCOUNTABILITY_GROUP_PLURAL}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Log in to create or join a {ACCOUNTABILITY_GROUP_SINGULAR} (4–8 people).
+          </p>
+        </Card>
+      </>
     );
   }
 
   if (!group) {
     return (
-      <Card>
-        <h2 className="font-semibold">
-          You&apos;re not in a {ACCOUNTABILITY_GROUP_SINGULAR} yet
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Start a {ACCOUNTABILITY_GROUP_SINGULAR} or join with an invite code from
-          a friend.
-        </p>
-        <div className="mt-4 space-y-2">
+      <>
+        <Card className="border-dashed">
+          <p className="text-sm text-muted-foreground">{ACCOUNTABILITY_GROUP_TAGLINE}</p>
+        </Card>
+
+        <Card>
+          <h2 className="font-semibold">Create a {ACCOUNTABILITY_GROUP_SINGULAR}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">4–8 friends · private invite code</p>
+          <input
+            value={newGroupName}
+            onChange={(e) => setNewGroupName(e.target.value)}
+            placeholder="Morning Momentum"
+            className="mt-3 w-full rounded-xl border border-border px-3 py-2.5 text-sm"
+          />
           <Button
+            className="mt-3"
             fullWidth
             disabled={pending}
             onClick={() =>
               startTransition(async () => {
                 try {
-                  await createAccountabilityGroup("My accountability group");
+                  const name =
+                    newGroupName.trim() || "My private accountability group";
+                  await createAccountabilityGroup(name);
                   setStatus(
                     "Private accountability group created — invite friends with your link.",
                   );
@@ -74,13 +89,18 @@ export function GroupsInteractive({
               })
             }
           >
-            Start a private accountability group
+            Create {ACCOUNTABILITY_GROUP_SINGULAR}
           </Button>
-          <div className="flex gap-2">
+        </Card>
+
+        <Card>
+          <h2 className="font-semibold">Join a {ACCOUNTABILITY_GROUP_SINGULAR}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Use an invite code from a friend</p>
+          <div className="mt-3 flex gap-2">
             <input
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value)}
-              placeholder="Invite code"
+              placeholder="ABC123"
               className="flex-1 rounded-xl border border-border px-3 py-2 text-sm"
             />
             <Button
@@ -90,7 +110,7 @@ export function GroupsInteractive({
                 startTransition(async () => {
                   try {
                     await joinGroupByInviteCode(joinCode.trim());
-                    setStatus("Joined private accountability group.");
+                    setStatus("Joined your private accountability group.");
                     router.refresh();
                   } catch (e) {
                     setStatus(e instanceof Error ? e.message : "Failed");
@@ -98,14 +118,17 @@ export function GroupsInteractive({
                 })
               }
             >
-              Join
+              Join {ACCOUNTABILITY_GROUP_SINGULAR}
             </Button>
           </div>
-        </div>
+        </Card>
+
         {status ? (
-          <p className="mt-2 text-sm text-muted-foreground">{status}</p>
+          <p className="text-sm text-red-600" role="alert">
+            {status}
+          </p>
         ) : null}
-      </Card>
+      </>
     );
   }
 
@@ -113,12 +136,19 @@ export function GroupsInteractive({
 
   return (
     <>
+      <Card className="border-dashed">
+        <p className="text-sm text-muted-foreground">{ACCOUNTABILITY_GROUP_TAGLINE}</p>
+      </Card>
+
       <Card>
         <div className="flex items-start gap-3">
           <div className="rounded-xl bg-secondary p-2.5 text-secondary-foreground">
             <Users className="h-5 w-5" aria-hidden />
           </div>
           <div className="flex-1">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {ACCOUNTABILITY_GROUP_SINGULAR}
+            </p>
             <h2 className="text-lg font-semibold">{group.name}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {group.memberCount}/{group.maxMembers} members · invite friends ·
@@ -132,7 +162,7 @@ export function GroupsInteractive({
         <div className="mt-4 space-y-2">
           <CopyLinkButton
             url={groupInvitePath(group.inviteCode)}
-            label="Copy accountability group invite link"
+            label={`Copy ${ACCOUNTABILITY_GROUP_SINGULAR} invite link`}
             fullWidth
           />
           <Button
@@ -146,13 +176,15 @@ export function GroupsInteractive({
               })
             }
           >
-            Leave accountability group
+            Leave {ACCOUNTABILITY_GROUP_SINGULAR}
           </Button>
         </div>
       </Card>
 
       <Card>
-        <h3 className="font-semibold">Accountability group chat</h3>
+        <h3 className="font-semibold capitalize">
+          {ACCOUNTABILITY_GROUP_SINGULAR} chat
+        </h3>
         <ul className="mt-3 max-h-48 space-y-2 overflow-y-auto text-sm">
           {feed.length === 0 ? (
             <li className="text-muted-foreground">No messages yet.</li>
@@ -170,7 +202,7 @@ export function GroupsInteractive({
           value={chatDraft}
           onChange={(e) => setChatDraft(e.target.value)}
           className="mt-3 w-full rounded-xl border border-border px-3 py-2 text-sm"
-          placeholder="Encourage your group…"
+          placeholder={`Encourage your ${ACCOUNTABILITY_GROUP_SINGULAR}…`}
         />
         <Button
           className="mt-2"
@@ -195,7 +227,7 @@ export function GroupsInteractive({
 
       <section aria-labelledby="members-heading">
         <h2 id="members-heading" className="mb-2 px-1 text-base font-semibold">
-          Members
+          Members of your {ACCOUNTABILITY_GROUP_SINGULAR}
         </h2>
         <ul className="grid grid-cols-2 gap-2">
           {group.members.map((member) => (

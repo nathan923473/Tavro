@@ -5,6 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import { ArrowRight, Check, Users } from "lucide-react";
+import {
+  ACCOUNTABILITY_GROUP_PLURAL,
+  ACCOUNTABILITY_GROUP_SINGULAR,
+} from "@/lib/copy/accountability-groups";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -125,9 +129,11 @@ export function OnboardingFlow() {
 
       {step === 2 ? (
         <div className="animate-fade-up flex flex-1 flex-col">
-          <h1 className="text-2xl font-semibold">Accountability (optional)</h1>
+          <h1 className="text-2xl font-semibold capitalize">
+            {ACCOUNTABILITY_GROUP_PLURAL} (optional)
+          </h1>
           <p className="mt-2 text-muted-foreground">
-            Join a small group or stay solo — both work.
+            Join a {ACCOUNTABILITY_GROUP_SINGULAR} or stay solo — both work.
           </p>
           <Card className="mt-6">
             <button
@@ -138,10 +144,12 @@ export function OnboardingFlow() {
               <Users className="mt-0.5 h-5 w-5 text-primary" aria-hidden />
               <div>
                 <p className="font-medium">
-                  {invitedToGroup ? "Join my friend’s group" : "Start a group"}
+                  {invitedToGroup
+                    ? `Join my friend’s ${ACCOUNTABILITY_GROUP_SINGULAR}`
+                    : `Start a ${ACCOUNTABILITY_GROUP_SINGULAR}`}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  4–8 members · invite link for friends
+                  4–8 members · private invite link
                 </p>
               </div>
               {wantsGroup ? (

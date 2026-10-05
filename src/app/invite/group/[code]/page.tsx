@@ -1,6 +1,10 @@
 import { StandalonePageHeader } from "@/components/layout/standalone-page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import {
+  ACCOUNTABILITY_GROUP_SINGULAR,
+  ACCOUNTABILITY_GROUP_TAGLINE,
+} from "@/lib/copy/accountability-groups";
 import { fetchGroupByInviteCode } from "@/lib/data/groups";
 import Link from "next/link";
 
@@ -17,25 +21,25 @@ export default async function GroupInvitePage({ params }: GroupInvitePageProps) 
       <div className="animate-fade-up space-y-4">
         <StandalonePageHeader
           pathname={`/invite/group/${code}`}
-          title="Group invite"
+          title="Private accountability group invite"
         />
         <Card>
           <Badge tone="success" className="mb-2">
             Friend invite
           </Badge>
           <h1 className="text-xl font-semibold">
-            {group?.name ?? "Accountability group"}
+            {group?.name ?? `Join a ${ACCOUNTABILITY_GROUP_SINGULAR}`}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Small private group (4–8 people). Share encouragement — never required
-            to post weight or measurements.
+            {ACCOUNTABILITY_GROUP_TAGLINE} Share encouragement — never required to
+            post weight or measurements.
           </p>
         </Card>
         <Link
           href={`/onboarding?group=1&code=${encodeURIComponent(code)}`}
           className="flex min-h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
         >
-          Join group — free
+          Join {ACCOUNTABILITY_GROUP_SINGULAR} — free
         </Link>
         <Link
           href="/login"

@@ -79,7 +79,7 @@ export async function fetchUserGroup(userId: string): Promise<{
     memberCount: members?.length ?? 0,
     maxMembers: groupRow.max_members,
     checkInStreak: 0,
-    recentMessage: feed[0]?.message ?? "Say hi to your group!",
+    recentMessage: feed[0]?.message ?? "Say hi to your private accountability group!",
     inviteCode: groupRow.invite_code,
     members: (members ?? []).map((m) => ({
       id: m.user_id,

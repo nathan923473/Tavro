@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { ACCOUNTABILITY_GROUP_SINGULAR } from "@/lib/copy/accountability-groups";
 import type { AccountabilityGroup, GroupActivity } from "@/types";
 import { Heart, MessageCircle } from "lucide-react";
 import Link from "next/link";
@@ -18,11 +19,11 @@ export function GroupActivityPreview({
   return (
     <section className="space-y-3" aria-labelledby="group-activity-heading">
       <div className="flex items-center justify-between px-1">
-        <h2 id="group-activity-heading" className="text-base font-semibold">
-          Group activity
+        <h2 id="group-activity-heading" className="text-base font-semibold capitalize">
+          {ACCOUNTABILITY_GROUP_SINGULAR} activity
         </h2>
         <Link href="/groups" className="text-sm font-medium text-primary">
-          Open group
+          Open {ACCOUNTABILITY_GROUP_SINGULAR}
         </Link>
       </div>
       <Card>

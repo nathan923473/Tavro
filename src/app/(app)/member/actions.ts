@@ -271,7 +271,9 @@ export async function createAccountabilityGroup(name: string) {
     .limit(1)
     .maybeSingle();
   if (existingMembership) {
-    throw new Error("Leave your current group before creating another.");
+    throw new Error(
+      "Leave your current private accountability group before creating another.",
+    );
   }
 
   const inviteCode = randomBytes(5).toString("hex");
@@ -280,7 +282,7 @@ export async function createAccountabilityGroup(name: string) {
     .from("accountability_groups")
     .insert({
       id: groupId,
-      name: name.trim() || "My accountability group",
+      name: name.trim() || "My private accountability group",
       invite_code: inviteCode,
       created_by: userId,
     });
@@ -306,7 +308,7 @@ export async function joinGroupByInviteCode(code: string) {
   );
   if (lookupError) throw new Error(lookupError.message);
   const group = Array.isArray(rows) ? rows[0] : rows;
-  if (!group) throw new Error("Invalid group invite code.");
+  if (!group) throw new Error("Invalid private accountability group invite code.");
 
   const { count } = await supabase
     .from("group_members")
@@ -314,7 +316,7 @@ export async function joinGroupByInviteCode(code: string) {
     .eq("group_id", group.id);
 
   if ((count ?? 0) >= group.max_members) {
-    throw new Error("This group is full.");
+    throw new Error("This private accountability group is full.");
   }
 
   await supabase.from("group_members").upsert(
@@ -342,7 +344,7 @@ export async function postGroupMessageAction(body: string) {
     .eq("user_id", userId)
     .limit(1)
     .maybeSingle();
-  if (!membership) throw new Error("Join a group first.");
+  if (!membership) throw new Error("Join a private accountability group first.");
 
   const { error } = await supabase.from("group_messages").insert({
     group_id: membership.group_id,
