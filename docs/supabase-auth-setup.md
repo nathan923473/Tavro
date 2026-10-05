@@ -40,8 +40,13 @@ In **SQL Editor**, run in order:
 
 **Authentication → URL configuration**
 
-- Site URL: `http://localhost:3000` (and your preview URL if you use Cloudflare tunnel)
-- Redirect URLs: `http://localhost:3000/**`, `https://*.trycloudflare.com/**`
+- Site URL: `http://localhost:3000` (or `http://localhost:3456` if you use `npm run dev:alt`)
+- Redirect URLs (add **all** you use):
+  - `http://localhost:3000/**`
+  - `http://127.0.0.1:3000/**`
+  - `http://localhost:3456/**`
+  - `http://127.0.0.1:3456/**`
+  - `https://*.trycloudflare.com/**`
 
 **Authentication → Providers → Email**
 
