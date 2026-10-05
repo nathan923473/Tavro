@@ -10,6 +10,7 @@
     "start": "next start -p 3000 -H 127.0.0.1",
     "doctor": "node scripts/doctor.mjs",
     "check:auth": "node scripts/check-supabase-auth.mjs",
+    "check:media": "node scripts/check-media.mjs",
     "verify:env": "node scripts/verify-env.mjs",
     "check:branding": "node scripts/check-branding.mjs",
     "apply:branding": "node scripts/apply-pag-branding.mjs",

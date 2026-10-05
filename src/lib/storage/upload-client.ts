@@ -7,6 +7,7 @@ import {
   extensionForMime,
   IMAGE_UPLOAD_MAX_BYTES,
 } from "@/lib/storage/avatars";
+import { formatImageUploadError } from "@/lib/storage/upload-errors";
 
 function validateFile(file: File, maxBytes: number) {
   if (!ALLOWED_IMAGE_TYPES.includes(file.type as (typeof ALLOWED_IMAGE_TYPES)[number])) {
@@ -29,7 +30,7 @@ export async function uploadProfileAvatarFile(userId: string, file: File) {
     upsert: true,
     contentType: file.type,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(formatImageUploadError(error.message));
 
   const { data } = supabase.storage.from("avatars").getPublicUrl(path);
   return `${data.publicUrl}?v=${Date.now()}`;
@@ -51,7 +52,7 @@ export async function uploadCommunityMediaFile(
     upsert: true,
     contentType: file.type,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(formatImageUploadError(error.message));
 
   const { data } = supabase.storage.from("community-media").getPublicUrl(path);
   return `${data.publicUrl}?v=${Date.now()}`;
@@ -78,7 +79,7 @@ export async function uploadChallengeMediaFile(
     upsert: kind === "cover",
     contentType: file.type,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(formatImageUploadError(error.message));
 
   const { data } = supabase.storage.from("challenge-media").getPublicUrl(path);
   return `${data.publicUrl}?v=${Date.now()}`;

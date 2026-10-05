@@ -1,6 +1,7 @@
 "use client";
 
 import { createPublicChallenge } from "@/app/(app)/challenges/create/actions";
+import { ChallengePhotosEditor } from "@/components/creator/challenge-photos-editor";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
@@ -10,38 +11,56 @@ import { useState } from "react";
 export function PublicChallengeForm() {
   const [error, setError] = useState<string | null>(null);
   const [invitePath, setInvitePath] = useState<string | null>(null);
-  const [challengeId, setChallengeId] = useState<string | null>(null);
+  const [published, setPublished] = useState<{
+    challengeId: string;
+    creatorId: string;
+    title: string;
+  } | null>(null);
 
   async function handleSubmit(formData: FormData) {
     setError(null);
     const result = await createPublicChallenge(formData);
     if (result.ok) {
       setInvitePath(result.invitePath);
-      setChallengeId(result.challengeId);
+      setPublished({
+        challengeId: result.challengeId,
+        creatorId: result.creatorId,
+        title: String(formData.get("title") ?? "Challenge"),
+      });
     } else {
       setError(result.error);
     }
   }
 
-  if (invitePath) {
+  if (invitePath && published) {
     return (
-      <Card>
-        <h2 className="font-semibold">Public challenge published</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Listed in discovery when wired to live queries. Share your invite link:
-        </p>
-        <div className="mt-3 space-y-2">
-          <CopyLinkButton url={invitePath} label="Copy challenge link" fullWidth />
-          {challengeId ? (
-            <Link
-              href={`/studio/challenges/${challengeId}/photos`}
-              className="flex min-h-11 w-full items-center justify-center rounded-xl border border-border bg-surface text-sm font-semibold"
-            >
-              Add cover & gallery photos
-            </Link>
-          ) : null}
-        </div>
-      </Card>
+      <div className="space-y-4">
+        <Card>
+          <h2 className="font-semibold">Public challenge published</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Share your invite link, then add photos below (also in Studio → Challenge
+            photos).
+          </p>
+          <div className="mt-3">
+            <CopyLinkButton url={invitePath} label="Copy challenge link" fullWidth />
+          </div>
+        </Card>
+        <Card>
+          <ChallengePhotosEditor
+            challengeId={published.challengeId}
+            creatorId={published.creatorId}
+            title={published.title}
+            coverUrl={null}
+            photos={[]}
+          />
+        </Card>
+        <Link
+          href="/studio/challenges"
+          className="block text-center text-sm font-medium text-primary"
+        >
+          All challenge photos →
+        </Link>
+      </div>
     );
   }
 

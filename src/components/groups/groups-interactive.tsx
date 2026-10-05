@@ -17,6 +17,7 @@ import {
 } from "@/lib/copy/accountability-groups";
 import type { AccountabilityGroup, GroupActivity } from "@/types";
 import { groupInvitePath } from "@/lib/site-url";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { Heart, MessageCircle, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -232,11 +233,18 @@ export function GroupsInteractive({
         <ul className="grid grid-cols-2 gap-2">
           {group.members.map((member) => (
             <li key={member.id}>
-              <Card padding="sm">
-                <p className="font-medium">{member.displayName}</p>
-                <p className="text-xs text-muted-foreground">
-                  {member.checkedInToday ? "Checked in" : "Not yet today"}
-                </p>
+              <Card padding="sm" className="flex items-center gap-3">
+                <UserAvatar
+                  displayName={member.displayName}
+                  avatarUrl={member.avatarUrl}
+                  size="sm"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{member.displayName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {member.checkedInToday ? "Checked in today" : "Not yet today"}
+                  </p>
+                </div>
               </Card>
             </li>
           ))}

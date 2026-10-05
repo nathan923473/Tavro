@@ -114,5 +114,6 @@ export async function createPublicChallenge(formData: FormData) {
     ok: true as const,
     invitePath: `/join/${created.invite_slug}`,
     challengeId: created.id,
+    creatorId: user.id,
   };
 }

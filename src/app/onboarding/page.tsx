@@ -8,7 +8,7 @@ export const metadata = {
 };
 
 export default async function OnboardingPage() {
-  await requireAuth("/login?next=/onboarding");
+  const { user, profile } = await requireAuth("/login?next=/onboarding");
   return (
     <div className="mx-auto min-h-dvh max-w-lg bg-background px-4 pt-[env(safe-area-inset-top)]">
       <StandalonePageHeader pathname="/onboarding" title="Get started" />
@@ -17,7 +17,11 @@ export default async function OnboardingPage() {
           <div className="p-6 text-sm text-muted-foreground">Loading…</div>
         }
       >
-        <OnboardingFlow />
+        <OnboardingFlow
+          userId={user.id}
+          displayName={profile?.displayName ?? null}
+          avatarUrl={profile?.avatarUrl ?? null}
+        />
       </Suspense>
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { completeOnboarding } from "@/app/(app)/member/actions";
+import { ProfileAvatarEditor } from "@/components/profile/profile-avatar-editor";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
@@ -26,7 +27,15 @@ const habitOptions = [
   "Evening wind-down",
 ];
 
-export function OnboardingFlow() {
+export function OnboardingFlow({
+  userId,
+  displayName,
+  avatarUrl,
+}: {
+  userId: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const invitedToGroup = searchParams.get("group") === "1";
@@ -38,7 +47,7 @@ export function OnboardingFlow() {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const totalSteps = 3;
+  const totalSteps = 4;
 
   function finish() {
     startTransition(async () => {
@@ -128,6 +137,30 @@ export function OnboardingFlow() {
       ) : null}
 
       {step === 2 ? (
+        <div className="animate-fade-up flex flex-1 flex-col">
+          <h1 className="text-2xl font-semibold">Add a profile picture</h1>
+          <p className="mt-2 text-muted-foreground">
+            Optional — friends see this in your private accountability group.
+          </p>
+          <Card className="mt-6">
+            <ProfileAvatarEditor
+              userId={userId}
+              displayName={displayName}
+              avatarUrl={avatarUrl}
+            />
+          </Card>
+          <Button
+            type="button"
+            variant="ghost"
+            className="mt-3"
+            onClick={() => setStep((s) => s + 1)}
+          >
+            Skip for now
+          </Button>
+        </div>
+      ) : null}
+
+      {step === 3 ? (
         <div className="animate-fade-up flex flex-1 flex-col">
           <h1 className="text-2xl font-semibold capitalize">
             {ACCOUNTABILITY_GROUP_PLURAL} (optional)

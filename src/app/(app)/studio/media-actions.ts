@@ -60,7 +60,14 @@ export async function setChallengeCoverUrlAction(challengeId: string, coverUrl: 
     .eq("id", challengeId)
     .eq("created_by", userId);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (/cover_url|schema cache/i.test(error.message)) {
+      throw new Error(
+        "Challenge cover needs migration 009b_one_shot_fix_media.sql (cover_url on challenges should already exist from 002 — check Supabase).",
+      );
+    }
+    throw new Error(error.message);
+  }
 
   revalidatePath("/studio");
   revalidatePath(`/studio/challenges/${challengeId}/photos`);
@@ -91,7 +98,14 @@ export async function addChallengePhotoAction(challengeId: string, imageUrl: str
     image_url: imageUrl,
     sort_order: count ?? 0,
   });
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (/challenge_photos|schema cache/i.test(error.message)) {
+      throw new Error(
+        "Challenge gallery needs migration 009b_one_shot_fix_media.sql in Supabase SQL Editor.",
+      );
+    }
+    throw new Error(error.message);
+  }
 
   revalidatePath(`/studio/challenges/${challengeId}/photos`);
   revalidatePath("/challenges");

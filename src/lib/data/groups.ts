@@ -30,15 +30,40 @@ export async function fetchUserGroup(userId: string): Promise<{
 
   if (!groupRow) return { group: null, feed: [] };
 
-  const { data: members } = await supabase
+  const membersWithAvatar = await supabase
     .from("group_members")
     .select(
       `
       user_id,
-      profile:profiles!group_members_user_id_fkey ( display_name )
+      profile:profiles!group_members_user_id_fkey ( display_name, avatar_url )
     `,
     )
     .eq("group_id", groupId);
+
+  type MemberRow = {
+    user_id: string;
+    profile:
+      | { display_name: string | null; avatar_url?: string | null }
+      | { display_name: string | null; avatar_url?: string | null }[]
+      | null;
+  };
+
+  let members: MemberRow[] | null = membersWithAvatar.data as MemberRow[] | null;
+  if (
+    membersWithAvatar.error &&
+    /avatar_url|schema cache/i.test(membersWithAvatar.error.message)
+  ) {
+    const fallback = await supabase
+      .from("group_members")
+      .select(
+        `
+        user_id,
+        profile:profiles!group_members_user_id_fkey ( display_name )
+      `,
+      )
+      .eq("group_id", groupId);
+    members = fallback.data as MemberRow[] | null;
+  }
 
   const today = todayDateKey();
   const memberIds = (members ?? []).map((m) => m.user_id);
@@ -81,11 +106,18 @@ export async function fetchUserGroup(userId: string): Promise<{
     checkInStreak: 0,
     recentMessage: feed[0]?.message ?? "Say hi to your private accountability group!",
     inviteCode: groupRow.invite_code,
-    members: (members ?? []).map((m) => ({
-      id: m.user_id,
-      displayName: unwrapOne(m.profile)?.display_name ?? "Member",
-      checkedInToday: checkedInToday.has(m.user_id),
-    })),
+    members: (members ?? []).map((m) => {
+      const profile = unwrapOne(m.profile);
+      return {
+        id: m.user_id,
+        displayName: profile?.display_name ?? "Member",
+        avatarUrl:
+          profile && "avatar_url" in profile && typeof profile.avatar_url === "string"
+            ? profile.avatar_url
+            : null,
+        checkedInToday: checkedInToday.has(m.user_id),
+      };
+    }),
   };
 
   return { group, feed };

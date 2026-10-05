@@ -34,6 +34,7 @@ export type Challenge = {
 export type GroupMember = {
   id: string;
   displayName: string;
+  avatarUrl: string | null;
   checkedInToday: boolean;
 };
 

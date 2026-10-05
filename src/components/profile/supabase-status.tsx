@@ -40,7 +40,7 @@ export async function SupabaseStatus() {
               ) : (
                 <>
                   Photo uploads need migration{" "}
-                  <code className="text-[11px]">009_avatars_and_challenge_media.sql</code>{" "}
+                  <code className="text-[11px]">009b_one_shot_fix_media.sql</code>{" "}
                   in Supabase SQL Editor. {media.message}
                 </>
               )}

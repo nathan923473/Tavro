@@ -15,7 +15,7 @@ export async function checkMediaDatabaseSetup(): Promise<{
       return {
         ok: false,
         message:
-          'Run migration 009_avatars_and_challenge_media.sql in Supabase SQL Editor (adds profile photos & Storage).',
+          'Run supabase/migrations/009b_one_shot_fix_media.sql in Supabase SQL Editor (profile photos & Storage).',
       };
     }
 
@@ -28,7 +28,7 @@ export async function checkMediaDatabaseSetup(): Promise<{
       return {
         ok: false,
         message:
-          "Run migration 009_avatars_and_challenge_media.sql for challenge gallery photos.",
+          "Run 009b_one_shot_fix_media.sql for challenge gallery photos.",
       };
     }
 

@@ -109,7 +109,14 @@ export function ProfileAvatarEditor({
       </div>
 
       {message ? (
-        <p className="text-sm text-muted-foreground" role="status">
+        <p
+          className={
+            /failed|migration|denied|missing/i.test(message)
+              ? "text-sm text-red-600"
+              : "text-sm text-muted-foreground"
+          }
+          role={/failed|migration|denied|missing/i.test(message) ? "alert" : "status"}
+        >
           {message}
         </p>
       ) : null}

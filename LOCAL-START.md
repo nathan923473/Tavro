@@ -119,6 +119,23 @@ On the Log in page, read the **red text** under the button — it tells you wron
 
 ---
 
+## Profile & challenge photos
+
+One-time in Supabase SQL Editor: run **`supabase/migrations/009b_one_shot_fix_media.sql`**.
+
+Then:
+
+```bash
+npm run check:media
+```
+
+- **Members:** Profile tab → **Profile picture** (upload or pick a style).
+- **Creators:** Studio → **Challenge cover & gallery** (or right after publishing a challenge).
+
+Full guide: **`docs/PHOTO-UPLOADS.md`**.
+
+---
+
 ## Demo people in your accountability group
 
 To preview a full group (members, check-ins, chat) on **your** Supabase project:
