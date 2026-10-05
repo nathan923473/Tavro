@@ -21,6 +21,9 @@ export default async function GroupsPage() {
         subtitle={`Member-only ${ACCOUNTABILITY_GROUP_PLURAL} · 4–8 people · not visible to creators`}
       />
       <div className="space-y-4 px-4 py-4">
+        <p className="rounded-lg bg-primary/10 px-3 py-2 text-center text-xs font-medium text-primary">
+          Member feature: {ACCOUNTABILITY_GROUP_PLURAL} — not creator challenge groups
+        </p>
         <GroupsInteractive
           group={group}
           feed={feed}
