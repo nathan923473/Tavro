@@ -4,7 +4,8 @@
 
 Run once in SQL Editor:
 
-`supabase/migrations/010_personal_progress_habits.sql`
+- If you already ran migration **006**: `supabase/migrations/010_personal_progress_habits.sql`
+- If SQL says **`member_goals does not exist`**: use **`supabase/scripts/010b_one_shot_personal_progress.sql`** instead (creates tables + personal progress in one go)
 
 Extends `member_goals` with frequency, pause, and optional `linked_challenge_id`.
 
