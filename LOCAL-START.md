@@ -63,21 +63,39 @@ Then open **http://127.0.0.1:3000**.
 
 ## “Failed to start server”
 
-Use the **Terminal** in Cursor (bottom panel), in the Streakly folder:
+Almost always **port 3000 is already in use** (an old `npm run dev` still running).
+
+### Fix A — use port 3456 (try this first)
+
+In Cursor **Terminal**, run **one line**:
+
+```bash
+npm run stop:dev && npm run dev:alt
+```
+
+Then open **http://127.0.0.1:3456** (not 3000).
+
+### Fix B — free port 3000, then start
 
 ```bash
 npm run stop:dev
-npm install
 npm run dev
 ```
 
-Wait for **`✓ Ready`**, then open **http://127.0.0.1:3000** in Chrome or Safari.
+Wait for **`✓ Ready`**, then **http://127.0.0.1:3000**.
+
+### Fix C — Mac still says “address already in use”
+
+```bash
+lsof -ti tcp:3000 | xargs kill -9 2>/dev/null; npm run dev
+```
 
 | Try this | When |
 |----------|------|
-| `npm run dev:alt` | Port 3000 is busy → use **http://127.0.0.1:3456** |
+| `npm run dev:alt` + **127.0.0.1:3456** | Port 3000 busy (most common) |
 | `npm run dev:webpack` | Turbopack error on your Mac |
 | `npm run doctor` | Check folder, Node, and ports |
+| `npm install` | “Cannot find module” errors |
 
 **Not** for daily use: `npm start` only works after `npm run build`. For development always use **`npm run dev`**.
 
