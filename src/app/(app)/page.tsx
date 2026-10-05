@@ -9,16 +9,23 @@ import { WeeklyConsistencyHome } from "@/components/dashboard/weekly-consistency
 import { PageHeader } from "@/components/layout/page-header";
 import { Card } from "@/components/ui/card";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
-import { fetchChallengesForUser } from "@/lib/data/challenges";
+import { fetchJoinedChallengesForHome } from "@/lib/data/challenges";
 import { fetchUserGroup } from "@/lib/data/groups";
-import {
-  fetchLinkedChallengeHabits,
-  fetchMemberGoals,
-  fetchMilestones,
-  fetchTodayCheckIn,
-  fetchWeeklyConsistencySummary,
-  fetchWeeklyProgress,
-} from "@/lib/data/member";
+import { fetchHomeDashboardBundle } from "@/lib/data/member";
+
+const emptyDashboard = {
+  goals: [],
+  checkIn: { checkedIn: false, mood: null, reflection: null },
+  consistency: {
+    planned: 0,
+    completed: 0,
+    percent: 0,
+    message: "Log in to track consistency.",
+  },
+  weekDays: [],
+  linkedHabits: [],
+  milestones: [],
+};
 
 export default async function HomePage() {
   const { user, profile } = await getCurrentUserProfile();
@@ -28,34 +35,20 @@ export default async function HomePage() {
     user?.email?.split("@")[0] ??
     "there";
 
-  const [
+  const [dashboard, joinedChallenges, groupData] = await Promise.all([
+    userId ? fetchHomeDashboardBundle(userId) : Promise.resolve(emptyDashboard),
+    userId ? fetchJoinedChallengesForHome(userId) : Promise.resolve([]),
+    userId ? fetchUserGroup(userId) : Promise.resolve({ group: null, feed: [] }),
+  ]);
+
+  const {
     goals,
     checkIn,
     consistency,
     weekDays,
-    challenges,
-    groupData,
     linkedHabits,
     milestones,
-  ] = await Promise.all([
-    userId ? fetchMemberGoals(userId) : Promise.resolve([]),
-    userId
-      ? fetchTodayCheckIn(userId)
-      : Promise.resolve({ checkedIn: false, mood: null, reflection: null }),
-    userId
-      ? fetchWeeklyConsistencySummary(userId)
-      : Promise.resolve({
-          planned: 0,
-          completed: 0,
-          percent: 0,
-          message: "Log in to track consistency.",
-        }),
-    userId ? fetchWeeklyProgress(userId) : Promise.resolve([]),
-    fetchChallengesForUser(userId),
-    userId ? fetchUserGroup(userId) : Promise.resolve({ group: null, feed: [] }),
-    userId ? fetchLinkedChallengeHabits(userId) : Promise.resolve([]),
-    userId ? fetchMilestones(userId) : Promise.resolve([]),
-  ]);
+  } = dashboard;
 
   return (
     <div className="animate-fade-up">
@@ -72,7 +65,7 @@ export default async function HomePage() {
           loggedIn={Boolean(userId)}
         />
         <ChallengeHabitActivity
-          challenges={challenges.mine}
+          challenges={joinedChallenges}
           linkedHabits={linkedHabits}
           loggedIn={Boolean(userId)}
         />

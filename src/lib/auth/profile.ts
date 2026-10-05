@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
@@ -13,10 +14,10 @@ export type UserProfile = {
   role: AccountRole;
 };
 
-export async function getCurrentUserProfile(): Promise<{
+export const getCurrentUserProfile = cache(async (): Promise<{
   user: { id: string; email?: string } | null;
   profile: UserProfile | null;
-}> {
+}> => {
   if (!isSupabaseConfigured()) {
     return { user: null, profile: null };
   }
@@ -81,7 +82,7 @@ export async function getCurrentUserProfile(): Promise<{
       role,
     },
   };
-}
+});
 
 export async function requireAuth(redirectTo = "/login") {
   const { user, profile } = await getCurrentUserProfile();

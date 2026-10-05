@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
-import { computeWeeklyConsistency } from "@/lib/progress/consistency";
+import {
+  computeWeeklyConsistency,
+  type WeeklyConsistency,
+} from "@/lib/progress/consistency";
 import { MILESTONE_DEFINITIONS } from "@/lib/progress/milestones";
 import { todayDateKey } from "@/lib/dates";
 import type {
@@ -111,6 +114,165 @@ export async function fetchMemberGoals(userId: string): Promise<PersonalGoal[]> 
   }
 
   return goals.map((g) => mapGoalRow(g, completedToday, weeklyByGoal));
+}
+
+function weekStartKeyDaysAgo(daysAgo: number): string {
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - daysAgo);
+  return weekStart.toISOString().slice(0, 10);
+}
+
+const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+function buildWeekDaysChart(
+  activeGoalCount: number,
+  completionRows: { completion_date: string }[],
+): { day: string; completed: number; total: number }[] {
+  const byDate: Record<string, number> = {};
+  for (const row of completionRows) {
+    byDate[row.completion_date] = (byDate[row.completion_date] ?? 0) + 1;
+  }
+
+  const result: { day: string; completed: number; total: number }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    const dayLabel = WEEKDAY_LABELS[d.getDay() === 0 ? 6 : d.getDay() - 1];
+    result.push({
+      day: dayLabel,
+      completed: activeGoalCount > 0 ? (byDate[key] ?? 0) : 0,
+      total: activeGoalCount,
+    });
+  }
+  return result;
+}
+
+function mapGoalsFromCompletionRows(
+  goalRows: GoalRow[],
+  todayCompletionGoalIds: Set<string>,
+  weekCompletionRows: { goal_id: string; completion_date?: string }[],
+): PersonalGoal[] {
+  const weeklyByGoal: Record<string, number> = {};
+  for (const c of weekCompletionRows) {
+    weeklyByGoal[c.goal_id] = (weeklyByGoal[c.goal_id] ?? 0) + 1;
+  }
+  return goalRows.map((g) =>
+    mapGoalRow(g, todayCompletionGoalIds, weeklyByGoal),
+  );
+}
+
+export type HomeDashboardData = {
+  goals: PersonalGoal[];
+  checkIn: {
+    checkedIn: boolean;
+    mood: DailyCheckInMood | null;
+    reflection: string | null;
+  };
+  consistency: WeeklyConsistency;
+  weekDays: { day: string; completed: number; total: number }[];
+  linkedHabits: PersonalGoal[];
+  milestones: MemberMilestone[];
+};
+
+export async function fetchHomeDashboardBundle(
+  userId: string,
+): Promise<HomeDashboardData> {
+  const supabase = await createClient();
+  const today = todayDateKey();
+  const weekStartKey = weekStartKeyDaysAgo(6);
+
+  const goalRows = await fetchGoalRows(supabase, userId);
+  const goalIds = goalRows.map((g) => g.id);
+
+  const [checkInRes, milestonesRes, todayCompletionsRes, weekCompletionsRes] =
+    await Promise.all([
+    supabase
+      .from("daily_check_ins")
+      .select("mood, reflection")
+      .eq("user_id", userId)
+      .eq("check_in_date", today)
+      .maybeSingle(),
+    supabase
+      .from("member_milestones")
+      .select("milestone_key, unlocked_at")
+      .eq("user_id", userId)
+      .order("unlocked_at", { ascending: false }),
+    goalIds.length
+      ? supabase
+          .from("goal_completions")
+          .select("goal_id")
+          .eq("user_id", userId)
+          .eq("completion_date", today)
+          .in("goal_id", goalIds)
+      : Promise.resolve({ data: [] as { goal_id: string }[], error: null }),
+    goalIds.length
+      ? supabase
+          .from("goal_completions")
+          .select("goal_id, completion_date")
+          .eq("user_id", userId)
+          .gte("completion_date", weekStartKey)
+          .in("goal_id", goalIds)
+      : Promise.resolve({
+          data: [] as { goal_id: string; completion_date: string }[],
+          error: null,
+        }),
+  ]);
+
+  let checkInData = checkInRes.data;
+  if (
+    checkInRes.error &&
+    /mood|reflection|schema cache/i.test(checkInRes.error.message)
+  ) {
+    const { data: legacy } = await supabase
+      .from("daily_check_ins")
+      .select("user_id")
+      .eq("user_id", userId)
+      .eq("check_in_date", today)
+      .maybeSingle();
+    checkInData = legacy ? ({} as typeof checkInData) : null;
+  }
+
+  const todayIds = new Set(
+    (todayCompletionsRes.data ?? []).map((c) => c.goal_id),
+  );
+  const weekRows = weekCompletionsRes.data ?? [];
+  const goals = mapGoalsFromCompletionRows(goalRows, todayIds, weekRows);
+
+  const completionsByGoal: Record<string, number> = {};
+  for (const g of goals) {
+    completionsByGoal[g.id] = g.weeklyCompletion;
+  }
+
+  const activeCount = goals.filter((g) => !g.paused).length;
+  const weekDays = buildWeekDaysChart(
+    activeCount,
+    weekRows.map((r) => ({ completion_date: r.completion_date })),
+  );
+
+  const milestones: MemberMilestone[] =
+    milestonesRes.error || !milestonesRes.data
+      ? []
+      : milestonesRes.data.map((row) => ({
+          key: row.milestone_key,
+          label:
+            MILESTONE_DEFINITIONS[row.milestone_key]?.label ??
+            row.milestone_key,
+          unlockedAt: row.unlocked_at,
+        }));
+
+  return {
+    goals,
+    checkIn: {
+      checkedIn: Boolean(checkInData),
+      mood: (checkInData?.mood as DailyCheckInMood) ?? null,
+      reflection: checkInData?.reflection ?? null,
+    },
+    consistency: computeWeeklyConsistency(goals, completionsByGoal),
+    weekDays,
+    linkedHabits: goals.filter((g) => g.linkedChallengeId && !g.paused),
+    milestones,
+  };
 }
 
 export async function fetchAllMemberGoals(userId: string): Promise<PersonalGoal[]> {
@@ -302,29 +464,20 @@ export async function fetchWeightSummary(
 
 export async function fetchWeeklyProgress(userId: string) {
   const supabase = await createClient();
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const goals = await fetchMemberGoals(userId);
   const activeCount = goals.filter((g) => !g.paused).length;
+  const weekStartKey = weekStartKeyDaysAgo(6);
 
-  const result = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    const dayLabel = days[d.getDay() === 0 ? 6 : d.getDay() - 1];
+  const { data } = await supabase
+    .from("goal_completions")
+    .select("completion_date")
+    .eq("user_id", userId)
+    .gte("completion_date", weekStartKey);
 
-    let completed = 0;
-    if (activeCount > 0) {
-      const { count } = await supabase
-        .from("goal_completions")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("completion_date", key);
-      completed = count ?? 0;
-    }
-    result.push({ day: dayLabel, completed, total: activeCount });
-  }
-  return result;
+  return buildWeekDaysChart(
+    activeCount,
+    (data ?? []) as { completion_date: string }[],
+  );
 }
 
 export async function fetchLinkedChallengeHabits(userId: string) {

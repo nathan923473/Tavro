@@ -173,14 +173,23 @@ export async function fetchCommunitiesList(): Promise<
 
   if (error || !rows) return [];
 
+  const communityIds = rows.map((r) => r.id);
+  const { data: publicChallenges } = await supabase
+    .from("challenges")
+    .select("community_id")
+    .in("community_id", communityIds)
+    .eq("visibility", "public");
+
+  const challengesHostedByCommunity: Record<string, number> = {};
+  for (const c of publicChallenges ?? []) {
+    if (c.community_id) {
+      challengesHostedByCommunity[c.community_id] =
+        (challengesHostedByCommunity[c.community_id] ?? 0) + 1;
+    }
+  }
+
   const result = [];
   for (const row of rows) {
-    const { count } = await supabase
-      .from("challenges")
-      .select("id", { count: "exact", head: true })
-      .eq("community_id", row.id)
-      .eq("visibility", "public");
-
     const ownerName =
       unwrapOne(row.owner)?.display_name ?? row.community_name ?? "Creator";
     const initials = ownerName
@@ -197,7 +206,7 @@ export async function fetchCommunitiesList(): Promise<
       brandColor: row.brand_color ?? "#3d8b6e",
       avatarInitials: initials,
       memberCount: row.member_count_cache ?? 0,
-      challengesHosted: count ?? 0,
+      challengesHosted: challengesHostedByCommunity[row.id] ?? 0,
     });
   }
   return result;

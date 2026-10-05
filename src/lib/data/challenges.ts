@@ -120,6 +120,56 @@ export async function fetchChallengesForUser(userId: string | null): Promise<{
   };
 }
 
+/** Joined challenges only — for Home (avoids loading every challenge + gallery). */
+export async function fetchJoinedChallengesForHome(
+  userId: string,
+): Promise<Challenge[]> {
+  const supabase = await createClient();
+
+  const { data: memberships } = await supabase
+    .from("challenge_participants")
+    .select("challenge_id, progress_percent")
+    .eq("user_id", userId);
+
+  if (!memberships?.length) return [];
+
+  const progress: Record<string, number> = {};
+  const joinedIds = new Set<string>();
+  for (const m of memberships) {
+    joinedIds.add(m.challenge_id);
+    progress[m.challenge_id] = m.progress_percent ?? 0;
+  }
+
+  const ids = [...joinedIds];
+  const select = `
+      id, title, description, start_date, end_date, invite_slug,
+      cover_url, created_by, visibility,
+      creator:profiles!challenges_created_by_fkey ( display_name ),
+      participants:challenge_participants ( count )
+    `;
+
+  const { data: rows, error } = await supabase
+    .from("challenges")
+    .select(select)
+    .in("id", ids)
+    .order("start_date", { ascending: false });
+
+  if (error || !rows) {
+    if (error) console.error("fetchJoinedChallengesForHome:", error.message);
+    return [];
+  }
+
+  return rows.map((r) =>
+    mapChallenge(
+      { ...(r as ChallengeRow), focus_areas: [] },
+      userId,
+      joinedIds,
+      progress,
+      [],
+    ),
+  );
+}
+
 export async function fetchChallengeByInviteSlug(
   slug: string,
   userId: string | null,
