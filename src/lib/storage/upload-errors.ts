@@ -1,7 +1,7 @@
 export function formatImageUploadError(message: string) {
   const m = message.toLowerCase();
   if (m.includes("bucket") && m.includes("not found")) {
-    return "Storage bucket missing — run supabase/migrations/009b_one_shot_fix_media.sql in Supabase SQL Editor.";
+    return "Storage bucket missing — run supabase/scripts/profile-pictures-only.sql in Supabase SQL Editor.";
   }
   if (m.includes("row-level security") || m.includes("policy")) {
     return "Storage permission denied — run 009b_one_shot_fix_media.sql, then sign out and back in.";

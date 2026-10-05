@@ -26,12 +26,13 @@ if (!url || !anon) {
   process.exit(1);
 }
 
-const supabase = createClient(url, anon);
+const service = env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(url, service || anon);
 
 const { error: avatarCol } = await supabase.from("profiles").select("avatar_url").limit(1);
 if (avatarCol && /avatar_url|schema cache/i.test(avatarCol.message)) {
   console.error("✗ profiles.avatar_url missing");
-  console.error("  → Run supabase/migrations/009b_one_shot_fix_media.sql in Supabase SQL Editor");
+  console.error("  → Run supabase/scripts/profile-pictures-only.sql in Supabase SQL Editor");
   process.exit(1);
 }
 console.log("✓ profiles.avatar_url");

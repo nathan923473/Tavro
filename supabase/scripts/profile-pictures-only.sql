@@ -1,0 +1,52 @@
+-- Profile pictures only (members): avatar_url + avatars Storage bucket.
+-- Run once in Supabase → SQL Editor → New query → paste all → Run.
+
+alter table public.profiles
+  add column if not exists avatar_url text;
+
+drop policy if exists "Avatar images are publicly readable" on storage.objects;
+drop policy if exists "Users upload own avatar" on storage.objects;
+drop policy if exists "Users update own avatar" on storage.objects;
+drop policy if exists "Users delete own avatar" on storage.objects;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'avatars',
+  'avatars',
+  true,
+  2097152,
+  array['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+)
+on conflict (id) do update
+set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+create policy "Avatar images are publicly readable"
+  on storage.objects for select
+  using (bucket_id = 'avatars');
+
+create policy "Users upload own avatar"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'avatars'
+    and auth.uid() is not null
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+create policy "Users update own avatar"
+  on storage.objects for update
+  using (
+    bucket_id = 'avatars'
+    and auth.uid() is not null
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+create policy "Users delete own avatar"
+  on storage.objects for delete
+  using (
+    bucket_id = 'avatars'
+    and auth.uid() is not null
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );

@@ -121,7 +121,7 @@ On the Log in page, read the **red text** under the button — it tells you wron
 
 ## Profile & challenge photos
 
-One-time in Supabase SQL Editor: run **`supabase/migrations/009b_one_shot_fix_media.sql`**.
+One-time in Supabase SQL Editor: run **`supabase/scripts/profile-pictures-only.sql`** (or full **`009b_one_shot_fix_media.sql`** for challenge photos too).
 
 Then:
 

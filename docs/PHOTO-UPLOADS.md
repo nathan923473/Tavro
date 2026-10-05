@@ -2,18 +2,17 @@
 
 ## One-time Supabase setup (required)
 
-1. Open [Supabase](https://supabase.com) → your project → **SQL Editor** → **New query**.
-2. Paste the **entire** file `supabase/migrations/009b_one_shot_fix_media.sql`.
-3. Click **Run** (expect **Success**).
+### Profile pictures only
 
-This adds:
+1. Supabase → **SQL Editor** → **New query**.
+2. Paste the **entire** file **`supabase/scripts/profile-pictures-only.sql`**.
+3. Click **Run**.
 
-- `profiles.avatar_url` (uploads + preset styles)
-- `challenge_photos` gallery rows
-- Storage buckets: `avatars`, `community-media`, `challenge-media`
-- Storage security policies
+This adds `profiles.avatar_url` and the **avatars** storage bucket.
 
-If you already ran `009_avatars_and_challenge_media.sql` successfully, you can skip 009b.
+### Profile + creator challenge photos
+
+Use **`supabase/migrations/009b_one_shot_fix_media.sql`** instead (includes challenge gallery buckets).
 
 Verify locally:
 

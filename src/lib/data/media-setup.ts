@@ -15,7 +15,7 @@ export async function checkMediaDatabaseSetup(): Promise<{
       return {
         ok: false,
         message:
-          'Run supabase/migrations/009b_one_shot_fix_media.sql in Supabase SQL Editor (profile photos & Storage).',
+          'Run supabase/scripts/profile-pictures-only.sql in Supabase SQL Editor.',
       };
     }
 

@@ -1,19 +1,20 @@
 "use client";
 
-import { setProfileAvatarUrlAction } from "@/app/(app)/profile/actions";
+import {
+  setProfileAvatarUrlAction,
+  uploadProfileAvatarAction,
+} from "@/app/(app)/profile/actions";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { Button } from "@/components/ui/button";
 import {
   AVATAR_PRESETS,
   presetAvatarValue,
 } from "@/lib/storage/avatars";
-import { uploadProfileAvatarFile } from "@/lib/storage/upload-client";
 import { ImagePlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 
 export function ProfileAvatarEditor({
-  userId,
   displayName,
   avatarUrl,
 }: {
@@ -58,8 +59,9 @@ export function ProfileAvatarEditor({
               if (!file) return;
               startTransition(async () => {
                 try {
-                  const url = await uploadProfileAvatarFile(userId, file);
-                  await setProfileAvatarUrlAction(url);
+                  const body = new FormData();
+                  body.set("file", file);
+                  await uploadProfileAvatarAction(body);
                   setMessage("Photo uploaded.");
                   router.refresh();
                 } catch (err) {
