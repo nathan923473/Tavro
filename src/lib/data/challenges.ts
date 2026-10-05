@@ -10,7 +10,7 @@ type ChallengeRow = {
   start_date: string;
   end_date: string;
   invite_slug: string;
-  focus_areas: string[] | null;
+  focus_areas?: string[] | null;
   cover_url: string | null;
   created_by: string;
   visibility: string;
@@ -51,19 +51,33 @@ export async function fetchChallengesForUser(userId: string | null): Promise<{
 }> {
   const supabase = await createClient();
 
-  const { data: rows, error } = await supabase
-    .from("challenges")
-    .select(
-      `
+  const selectFull = `
       id, title, description, start_date, end_date, invite_slug, focus_areas,
       cover_url, created_by, visibility,
       creator:profiles!challenges_created_by_fkey ( display_name ),
       participants:challenge_participants ( count )
-    `,
-    )
+    `;
+  const selectLegacy = `
+      id, title, description, start_date, end_date, invite_slug,
+      cover_url, created_by, visibility,
+      creator:profiles!challenges_created_by_fkey ( display_name ),
+      participants:challenge_participants ( count )
+    `;
+
+  let { data: rows, error } = await supabase
+    .from("challenges")
+    .select(selectFull)
     .order("start_date", { ascending: false });
 
+  if (error && /focus_areas|schema cache/i.test(error.message)) {
+    ({ data: rows, error } = await supabase
+      .from("challenges")
+      .select(selectLegacy)
+      .order("start_date", { ascending: false }));
+  }
+
   if (error || !rows) {
+    if (error) console.error("fetchChallengesForUser:", error.message);
     return { mine: [], discover: [] };
   }
 

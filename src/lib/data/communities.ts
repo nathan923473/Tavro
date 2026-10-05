@@ -13,6 +13,42 @@ function challengeTimeline(
   return "current";
 }
 
+const COMMUNITY_SELECT_FULL = `
+  id, owner_id, slug, community_name, bio, brand_color, banner_url,
+  avatar_url, shop_url, shop_label, affiliate_disclosure, announcement,
+  member_count_cache, social_links,
+  owner:profiles!creator_communities_owner_id_fkey ( display_name )
+`;
+
+const COMMUNITY_SELECT_LEGACY = `
+  id, owner_id, slug, community_name, bio, brand_color, banner_url,
+  avatar_url, shop_url, shop_label, affiliate_disclosure, announcement,
+  member_count_cache,
+  owner:profiles!creator_communities_owner_id_fkey ( display_name )
+`;
+
+async function fetchCommunityRow(supabase: Awaited<ReturnType<typeof createClient>>, slug: string) {
+  let { data, error } = await supabase
+    .from("creator_communities")
+    .select(COMMUNITY_SELECT_FULL)
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error && /social_links|schema cache/i.test(error.message)) {
+    ({ data, error } = await supabase
+      .from("creator_communities")
+      .select(COMMUNITY_SELECT_LEGACY)
+      .eq("slug", slug)
+      .maybeSingle());
+  }
+
+  if (error) {
+    console.error("fetchCommunityBySlug:", error.message);
+    return null;
+  }
+  return data;
+}
+
 export async function fetchCommunityBySlug(
   slug: string,
   userId: string | null,
@@ -22,18 +58,7 @@ export async function fetchCommunityBySlug(
   isOwner: boolean;
 }> {
   const supabase = await createClient();
-  const { data: row } = await supabase
-    .from("creator_communities")
-    .select(
-      `
-      id, owner_id, slug, community_name, bio, brand_color, banner_url,
-      avatar_url, shop_url, shop_label, affiliate_disclosure, announcement,
-      member_count_cache, social_links,
-      owner:profiles!creator_communities_owner_id_fkey ( display_name )
-    `,
-    )
-    .eq("slug", slug)
-    .maybeSingle();
+  const row = await fetchCommunityRow(supabase, slug);
 
   if (!row) {
     return { community: null, isFollowing: false, isOwner: false };
@@ -81,13 +106,18 @@ export async function fetchCommunityBySlug(
     isFollowing = Boolean(follow);
   }
 
-  const ownerName = unwrapOne(row.owner)?.display_name ?? "Creator";
+  const ownerName = unwrapOne(row.owner)?.display_name ?? row.community_name;
   const initials = ownerName
     .split(/\s+/)
     .map((w: string) => w[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
+
+  const socialLinks =
+    "social_links" in row && Array.isArray(row.social_links)
+      ? (row.social_links as CreatorCommunity["socialLinks"])
+      : [];
 
   const community: CreatorCommunity = {
     id: row.id,
@@ -104,7 +134,7 @@ export async function fetchCommunityBySlug(
     bannerGradient: `linear-gradient(135deg, ${row.brand_color ?? "#3d8b6e"} 0%, #2f6f58 100%)`,
     isApproved: true,
     ownerUserId: row.owner_id,
-    socialLinks: (row.social_links as CreatorCommunity["socialLinks"]) ?? [],
+    socialLinks,
     shopUrl: row.shop_url ?? undefined,
     shopLabel: row.shop_label ?? undefined,
     affiliateDisclosure: row.affiliate_disclosure ?? undefined,
@@ -131,7 +161,7 @@ export async function fetchCommunitiesList(): Promise<
   }>
 > {
   const supabase = await createClient();
-  const { data: rows } = await supabase
+  const { data: rows, error } = await supabase
     .from("creator_communities")
     .select(
       `
@@ -141,7 +171,7 @@ export async function fetchCommunitiesList(): Promise<
     )
     .order("community_name");
 
-  if (!rows) return [];
+  if (error || !rows) return [];
 
   const result = [];
   for (const row of rows) {
@@ -151,7 +181,8 @@ export async function fetchCommunitiesList(): Promise<
       .eq("community_id", row.id)
       .eq("visibility", "public");
 
-    const ownerName = unwrapOne(row.owner)?.display_name ?? "Creator";
+    const ownerName =
+      unwrapOne(row.owner)?.display_name ?? row.community_name ?? "Creator";
     const initials = ownerName
       .split(/\s+/)
       .map((w: string) => w[0])
