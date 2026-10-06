@@ -10,7 +10,7 @@ export async function fetchChallengeMessages(
     .from("challenge_messages")
     .select(
       `
-      id, body, author_role, created_at,
+      id, body, author_role, created_at, author_id,
       author:profiles!challenge_messages_author_id_fkey ( display_name )
     `,
     )
@@ -20,6 +20,7 @@ export async function fetchChallengeMessages(
 
   return (data ?? []).map((row) => ({
     id: row.id,
+    authorId: row.author_id,
     authorName: unwrapOne(row.author)?.display_name ?? "Member",
     role: row.author_role as "creator" | "member",
     text: row.body,

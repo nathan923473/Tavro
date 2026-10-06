@@ -1,5 +1,6 @@
 "use client";
 
+import { ContentGuidelinesReminder } from "@/components/moderation/content-guidelines-reminder";
 import { setCommunityMediaUrlsAction } from "@/app/(app)/studio/media-actions";
 import { Button } from "@/components/ui/button";
 import { uploadCommunityMediaFile } from "@/lib/storage/upload-client";
@@ -97,6 +98,7 @@ export function CommunityMediaUpload({
         Upload banner photo
       </Button>
       <p className="text-xs text-muted-foreground">Shown on your public creator page · max 5 MB</p>
+      <ContentGuidelinesReminder />
       {message ? (
         <p className="text-sm text-muted-foreground" role="status">
           {message}

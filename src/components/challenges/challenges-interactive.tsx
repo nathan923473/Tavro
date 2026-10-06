@@ -10,6 +10,7 @@ type ChallengesInteractiveProps = {
   discover: Challenge[];
   viewerName: string;
   loggedIn: boolean;
+  viewerUserId?: string | null;
   challengeMessages: Record<string, ChallengeChatMessage[]>;
 };
 
@@ -18,6 +19,7 @@ export function ChallengesInteractive({
   discover,
   viewerName,
   loggedIn,
+  viewerUserId = null,
   challengeMessages,
 }: ChallengesInteractiveProps) {
   return (
@@ -44,6 +46,7 @@ export function ChallengesInteractive({
                   viewerName={viewerName}
                   viewerRole="member"
                   loggedIn={loggedIn}
+                  viewerUserId={viewerUserId}
                   messages={challengeMessages[challenge.id] ?? []}
                 />
               </li>
@@ -78,6 +81,7 @@ export function ChallengesInteractive({
                   viewerName={viewerName}
                   viewerRole="member"
                   loggedIn={loggedIn}
+                  viewerUserId={viewerUserId}
                 />
               </li>
             ))}

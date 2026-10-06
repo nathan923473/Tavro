@@ -17,6 +17,7 @@ import {
 } from "@/lib/copy/accountability-groups";
 import type { AccountabilityGroup, GroupActivity } from "@/types";
 import { groupInvitePath } from "@/lib/site-url";
+import { ReportContentMenu } from "@/components/moderation/report-content-menu";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { Heart, MessageCircle, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -26,10 +27,12 @@ export function GroupsInteractive({
   group,
   feed,
   loggedIn,
+  viewerUserId = null,
 }: {
   group: AccountabilityGroup | null;
   feed: GroupActivity[];
   loggedIn: boolean;
+  viewerUserId?: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -191,9 +194,17 @@ export function GroupsInteractive({
             <li className="text-muted-foreground">No messages yet.</li>
           ) : (
             feed.map((item) => (
-              <li key={item.id}>
-                <span className="font-semibold">{item.author}</span>{" "}
-                {item.message}
+              <li key={item.id} className="flex flex-wrap items-start gap-2">
+                <span>
+                  <span className="font-semibold">{item.author}</span> {item.message}
+                </span>
+                <ReportContentMenu
+                  contentType="group_message"
+                  contentId={item.id}
+                  reportedUserId={item.authorId}
+                  canReport={Boolean(viewerUserId && viewerUserId !== item.authorId)}
+                  compact
+                />
               </li>
             ))
           )}
@@ -234,11 +245,22 @@ export function GroupsInteractive({
           {group.members.map((member) => (
             <li key={member.id}>
               <Card padding="sm" className="flex items-center gap-3">
-                <UserAvatar
-                  displayName={member.displayName}
-                  avatarUrl={member.avatarUrl}
-                  size="sm"
-                />
+                <div className="relative">
+                  <UserAvatar
+                    displayName={member.displayName}
+                    avatarUrl={member.avatarUrl}
+                    size="sm"
+                  />
+                  {member.avatarUrl ? (
+                    <ReportContentMenu
+                      contentType="profile_avatar"
+                      contentId={member.id}
+                      reportedUserId={member.id}
+                      canReport={Boolean(viewerUserId && viewerUserId !== member.id)}
+                      className="right-0 top-0 scale-75"
+                    />
+                  ) : null}
+                </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{member.displayName}</p>
                   <p className="text-xs text-muted-foreground">
@@ -259,10 +281,19 @@ export function GroupsInteractive({
           {feed.map((item) => (
             <li key={item.id}>
               <Card>
-                <p className="text-sm">
-                  <span className="font-semibold">{item.author}</span>{" "}
-                  {item.message}
-                </p>
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <p className="text-sm">
+                    <span className="font-semibold">{item.author}</span>{" "}
+                    {item.message}
+                  </p>
+                  <ReportContentMenu
+                    contentType="group_message"
+                    contentId={item.id}
+                    reportedUserId={item.authorId}
+                    canReport={Boolean(viewerUserId && viewerUserId !== item.authorId)}
+                    compact
+                  />
+                </div>
                 <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
                   <span>{item.timeAgo}</span>
                   <span className="inline-flex items-center gap-1 text-primary">

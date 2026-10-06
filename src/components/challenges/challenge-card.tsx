@@ -13,6 +13,7 @@ import { CopyLinkButton } from "@/components/share/copy-link-button";
 import type { ChallengeChatMessage } from "@/lib/challenge-chat";
 import { challengeInvitePath } from "@/lib/site-url";
 import type { Challenge } from "@/types";
+import { ReportContentMenu } from "@/components/moderation/report-content-menu";
 import { CalendarRange, Gift, Users } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -25,6 +26,7 @@ type ChallengeCardProps = {
   viewerRole: "creator" | "member";
   messages?: ChallengeChatMessage[];
   loggedIn: boolean;
+  viewerUserId?: string | null;
 };
 
 export function ChallengeCard({
@@ -34,7 +36,11 @@ export function ChallengeCard({
   viewerRole,
   messages = [],
   loggedIn,
+  viewerUserId = null,
 }: ChallengeCardProps) {
+  const canReportMedia = Boolean(
+    loggedIn && viewerUserId && viewerUserId !== challenge.creatorId,
+  );
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
@@ -63,6 +69,12 @@ export function ChallengeCard({
             className="object-cover"
             unoptimized
           />
+          <ReportContentMenu
+            contentType="challenge_cover"
+            contentId={challenge.id}
+            reportedUserId={challenge.creatorId}
+            canReport={canReportMedia}
+          />
         </div>
       ) : null}
       <div className="p-4">
@@ -90,9 +102,26 @@ export function ChallengeCard({
       </p>
       {challenge.galleryPhotos.length > 0 ? (
         <ul className="mt-3 grid grid-cols-3 gap-1.5">
-          {challenge.galleryPhotos.slice(0, 6).map((url) => (
-            <li key={url} className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-              <Image src={url} alt="" fill className="object-cover" unoptimized />
+          {(challenge.galleryPhotoItems?.length
+            ? challenge.galleryPhotoItems
+            : challenge.galleryPhotos.map((url) => ({ id: url, imageUrl: url }))
+          )
+            .slice(0, 6)
+            .map((photo) => (
+            <li
+              key={photo.id}
+              className="relative aspect-square overflow-hidden rounded-lg bg-muted"
+            >
+              <Image src={photo.imageUrl} alt="" fill className="object-cover" unoptimized />
+              {challenge.galleryPhotoItems ? (
+                <ReportContentMenu
+                  contentType="challenge_gallery_photo"
+                  contentId={photo.id}
+                  reportedUserId={challenge.creatorId}
+                  canReport={canReportMedia}
+                  className="right-1 top-1 scale-90"
+                />
+              ) : null}
             </li>
           ))}
         </ul>
@@ -169,6 +198,7 @@ export function ChallengeCard({
             canPost={loggedIn}
             messages={messages}
             compact
+            viewerUserId={viewerUserId}
           />
         </div>
       ) : (

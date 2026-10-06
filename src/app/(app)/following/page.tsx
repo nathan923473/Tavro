@@ -1,7 +1,9 @@
+import { FollowerAnnouncementsFeed } from "@/components/creator/follower-announcements-feed";
 import { FollowingInteractive } from "@/components/creator/following-interactive";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
+import { fetchAnnouncementsForFollower } from "@/lib/data/community-announcements";
 import { fetchFollowedCommunities } from "@/lib/data/communities";
 import { unwrapOne } from "@/lib/data/relations";
 
@@ -9,6 +11,9 @@ export const metadata = { title: "Following" };
 
 export default async function FollowingPage() {
   const { user } = await getCurrentUserProfile();
+  const announcements =
+    user?.id != null ? await fetchAnnouncementsForFollower(user.id) : [];
+
   const rows =
     user?.id != null
       ? (await fetchFollowedCommunities(user.id)).map((c) => ({
@@ -37,6 +42,12 @@ export default async function FollowingPage() {
             each challenge when you&apos;re ready.
           </p>
         </Card>
+        {user?.id ? (
+          <FollowerAnnouncementsFeed
+            announcements={announcements}
+            viewerUserId={user.id}
+          />
+        ) : null}
         <FollowingInteractive rows={rows} />
       </div>
     </div>

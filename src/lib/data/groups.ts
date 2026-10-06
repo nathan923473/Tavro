@@ -82,7 +82,7 @@ export async function fetchUserGroup(userId: string): Promise<{
     .from("group_messages")
     .select(
       `
-      id, body, created_at,
+      id, body, created_at, author_id,
       author:profiles!group_messages_author_id_fkey ( display_name )
     `,
     )
@@ -92,6 +92,7 @@ export async function fetchUserGroup(userId: string): Promise<{
 
   const feed: GroupActivity[] = (messages ?? []).map((m) => ({
     id: m.id,
+    authorId: m.author_id,
     author: unwrapOne(m.author)?.display_name ?? "Member",
     message: m.body,
     timeAgo: formatTimeAgo(m.created_at),

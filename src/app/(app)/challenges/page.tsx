@@ -72,6 +72,7 @@ export default async function ChallengesPage() {
           discover={discover}
           viewerName={viewerName}
           loggedIn={Boolean(userId)}
+          viewerUserId={userId}
           challengeMessages={challengeMessages}
         />
 

@@ -9,10 +9,12 @@ export function JoinChallengeClient({
   challenge,
   viewerName,
   loggedIn,
+  viewerUserId,
 }: {
   challenge: Challenge;
   viewerName: string;
   loggedIn: boolean;
+  viewerUserId?: string | null;
 }) {
   return (
     <>
@@ -27,6 +29,7 @@ export function JoinChallengeClient({
         viewerName={viewerName}
         viewerRole="member"
         loggedIn={loggedIn}
+        viewerUserId={viewerUserId}
       />
       {challenge.joined ? (
         <Link

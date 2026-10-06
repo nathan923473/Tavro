@@ -28,6 +28,7 @@ export default async function GroupsPage() {
           group={group}
           feed={feed}
           loggedIn={Boolean(userId)}
+          viewerUserId={userId}
         />
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { ReportContentMenu } from "@/components/moderation/report-content-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,12 +10,19 @@ import Link from "next/link";
 type CreatorChallengeCardProps = {
   challenge: CreatorCommunityChallenge;
   showJoin?: boolean;
+  creatorUserId: string;
+  viewerUserId?: string | null;
 };
 
 export function CreatorChallengeCard({
   challenge,
   showJoin = true,
+  creatorUserId,
+  viewerUserId = null,
 }: CreatorChallengeCardProps) {
+  const canReportCover = Boolean(
+    viewerUserId && viewerUserId !== creatorUserId && challenge.coverUrl,
+  );
   const isPast = challenge.timeline === "previous";
 
   return (
@@ -28,13 +36,21 @@ export function CreatorChallengeCard({
         aria-label=""
       >
         {challenge.coverUrl ? (
-          <Image
-            src={challenge.coverUrl}
-            alt=""
-            fill
-            className="object-cover"
-            unoptimized
-          />
+          <>
+            <Image
+              src={challenge.coverUrl}
+              alt=""
+              fill
+              className="object-cover"
+              unoptimized
+            />
+            <ReportContentMenu
+              contentType="challenge_cover"
+              contentId={challenge.id}
+              reportedUserId={creatorUserId}
+              canReport={canReportCover}
+            />
+          </>
         ) : null}
       </div>
       <div className="p-4">

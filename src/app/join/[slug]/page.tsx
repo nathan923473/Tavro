@@ -44,6 +44,7 @@ export default async function JoinChallengePage({
           challenge={challenge}
           viewerName={viewerName}
           loggedIn={Boolean(user)}
+          viewerUserId={user?.id ?? null}
         />
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}

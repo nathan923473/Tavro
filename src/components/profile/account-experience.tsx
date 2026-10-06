@@ -93,12 +93,20 @@ export async function AccountExperience() {
 
       <div className="mt-4 grid gap-2">
         {profile?.role === "admin" ? (
-          <Link
-            href="/admin/creator-applications"
-            className="flex min-h-11 items-center justify-center rounded-xl border border-border text-sm font-semibold"
-          >
-            Review creator applications
-          </Link>
+          <>
+            <Link
+              href="/admin/creator-applications"
+              className="flex min-h-11 items-center justify-center rounded-xl border border-border text-sm font-semibold"
+            >
+              Review creator applications
+            </Link>
+            <Link
+              href="/admin/content-reports"
+              className="flex min-h-11 items-center justify-center rounded-xl border border-border text-sm font-semibold"
+            >
+              Review content reports
+            </Link>
+          </>
         ) : null}
         {profile?.role === "creator" || profile?.role === "admin" ? (
           <Link

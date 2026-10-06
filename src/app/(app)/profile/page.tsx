@@ -101,6 +101,11 @@ export default async function ProfilePage() {
               group chats
             </li>
             <li>
+              <Link href="/community-guidelines" className="font-medium text-primary">
+                Community guidelines
+              </Link>
+            </li>
+            <li>
               <Link href="/onboarding" className="font-medium text-primary">
                 Replay onboarding
               </Link>

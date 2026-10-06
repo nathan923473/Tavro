@@ -8,12 +8,16 @@ type ChallengeTimelineSectionProps = {
   title: string;
   timeline: ChallengeTimeline;
   challenges: CreatorCommunityChallenge[];
+  creatorUserId: string;
+  viewerUserId?: string | null;
 };
 
 export function ChallengeTimelineSection({
   title,
   timeline,
   challenges,
+  creatorUserId,
+  viewerUserId = null,
 }: ChallengeTimelineSectionProps) {
   const items = challenges.filter((c) => c.timeline === timeline);
   if (items.length === 0) return null;
@@ -29,6 +33,8 @@ export function ChallengeTimelineSection({
             <CreatorChallengeCard
               challenge={challenge}
               showJoin={timeline !== "previous"}
+              creatorUserId={creatorUserId}
+              viewerUserId={viewerUserId}
             />
           </li>
         ))}

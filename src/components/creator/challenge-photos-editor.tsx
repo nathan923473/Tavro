@@ -1,5 +1,6 @@
 "use client";
 
+import { ContentGuidelinesReminder } from "@/components/moderation/content-guidelines-reminder";
 import {
   addChallengePhotoAction,
   removeChallengePhotoAction,
@@ -71,6 +72,7 @@ export function ChallengePhotosEditor({
         <p className="text-sm text-muted-foreground">
           Cover and gallery appear on your public challenge invite page.
         </p>
+        <ContentGuidelinesReminder className="mt-2" />
       </div>
 
       <div className="relative aspect-[2/1] w-full overflow-hidden rounded-xl bg-muted">

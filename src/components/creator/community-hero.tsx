@@ -1,3 +1,7 @@
+import {
+  CommunityAvatarWithReport,
+  CommunityBannerWithReport,
+} from "@/components/creator/community-hero-report-slots";
 import { Badge } from "@/components/ui/badge";
 import type { CreatorCommunity } from "@/types/creator-community";
 import type { ReactNode } from "react";
@@ -16,12 +20,14 @@ type CommunityHeroProps = {
   community: CreatorCommunity;
   action?: ReactNode;
   showEditLink?: boolean;
+  viewerUserId?: string | null;
 };
 
 export function CommunityHero({
   community,
   action,
   showEditLink,
+  viewerUserId = null,
 }: CommunityHeroProps) {
   return (
     <div className="animate-fade-up">
@@ -34,13 +40,11 @@ export function CommunityHero({
         }
       >
         {community.bannerUrl ? (
-          <Image
-            src={community.bannerUrl}
-            alt=""
-            fill
-            className="object-cover"
-            priority
-            unoptimized
+          <CommunityBannerWithReport
+            bannerUrl={community.bannerUrl}
+            communityId={community.id}
+            ownerUserId={community.ownerUserId}
+            viewerUserId={viewerUserId}
           />
         ) : null}
         <div className="absolute inset-0 bg-black/10" />
@@ -56,13 +60,11 @@ export function CommunityHero({
       <div className="relative px-4 pb-2">
         <div className="-mt-12 h-24 w-24 overflow-hidden rounded-2xl border-4 border-background bg-muted shadow-md">
           {community.avatarUrl ? (
-            <Image
-              src={community.avatarUrl}
-              alt=""
-              width={96}
-              height={96}
-              className="h-full w-full object-cover"
-              unoptimized
+            <CommunityAvatarWithReport
+              avatarUrl={community.avatarUrl}
+              communityId={community.id}
+              ownerUserId={community.ownerUserId}
+              viewerUserId={viewerUserId}
             />
           ) : (
             <div

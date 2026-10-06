@@ -6,6 +6,7 @@ import {
 } from "@/app/(app)/profile/actions";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { Button } from "@/components/ui/button";
+import { ContentGuidelinesReminder } from "@/components/moderation/content-guidelines-reminder";
 import {
   AVATAR_PRESETS,
   presetAvatarValue,
@@ -83,6 +84,7 @@ export function ProfileAvatarEditor({
           <p className="text-xs text-muted-foreground">
             JPG, PNG, WebP, or GIF · max 2 MB
           </p>
+          <ContentGuidelinesReminder />
         </div>
       </div>
 

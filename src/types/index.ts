@@ -44,6 +44,8 @@ export type Challenge = {
   focusAreas: string[];
   coverUrl: string | null;
   galleryPhotos: string[];
+  /** When loaded for public/join pages — used for content reports */
+  galleryPhotoItems?: { id: string; imageUrl: string }[];
 };
 
 export type GroupMember = {
@@ -67,6 +69,7 @@ export type AccountabilityGroup = {
 export type GroupActivity = {
   id: string;
   author: string;
+  authorId: string;
   message: string;
   timeAgo: string;
   reactions: number;

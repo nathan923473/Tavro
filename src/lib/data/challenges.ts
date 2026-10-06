@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
-import { fetchChallengeGalleryMap } from "@/lib/data/challenge-media";
+import {
+  fetchChallengeGalleryDetailsMap,
+  fetchChallengeGalleryMap,
+} from "@/lib/data/challenge-media";
 import { unwrapOne } from "@/lib/data/relations";
 import type { Challenge } from "@/types";
 
@@ -205,12 +208,15 @@ export async function fetchChallengeByInviteSlug(
     }
   }
 
-  const galleryMap = await fetchChallengeGalleryMap([row.id]);
-  return mapChallenge(
+  const galleryDetailsMap = await fetchChallengeGalleryDetailsMap([row.id]);
+  const galleryItems = galleryDetailsMap[row.id] ?? [];
+  const challenge = mapChallenge(
     row as unknown as ChallengeRow,
     userId,
     joinedIds,
     progress,
-    galleryMap[row.id] ?? [],
+    galleryItems.map((p) => p.imageUrl),
   );
+  challenge.galleryPhotoItems = galleryItems;
+  return challenge;
 }

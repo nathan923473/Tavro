@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { ChallengeChatMessage } from "@/lib/challenge-chat";
+import { ReportContentMenu } from "@/components/moderation/report-content-menu";
 import { MessageCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -17,6 +18,7 @@ type ChallengeGroupChatProps = {
   canPost: boolean;
   messages: ChallengeChatMessage[];
   compact?: boolean;
+  viewerUserId?: string | null;
 };
 
 function formatTime(iso: string) {
@@ -39,6 +41,7 @@ export function ChallengeGroupChat({
   canPost,
   messages,
   compact = false,
+  viewerUserId = null,
 }: ChallengeGroupChatProps) {
   const router = useRouter();
   const [draft, setDraft] = useState("");
@@ -91,6 +94,13 @@ export function ChallengeGroupChat({
             <li key={msg.id} className="text-sm leading-relaxed">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-semibold">{msg.authorName}</span>
+                <ReportContentMenu
+                  contentType="challenge_message"
+                  contentId={msg.id}
+                  reportedUserId={msg.authorId}
+                  canReport={Boolean(viewerUserId && viewerUserId !== msg.authorId)}
+                  compact
+                />
                 {msg.role === "creator" ? (
                   <Badge tone="success" className="text-[10px]">
                     Creator

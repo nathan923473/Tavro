@@ -59,6 +59,7 @@ export default async function CreatorCommunityPage({
 
       <CommunityHero
         community={community}
+        viewerUserId={user?.id ?? null}
         showEditLink={isOwner}
         action={
           <FollowCommunityButton
@@ -76,16 +77,22 @@ export default async function CreatorCommunityPage({
         title="Current & upcoming"
         timeline="current"
         challenges={community.challenges}
+        creatorUserId={community.ownerUserId}
+        viewerUserId={user?.id ?? null}
       />
       <ChallengeTimelineSection
         title="Upcoming"
         timeline="upcoming"
         challenges={community.challenges}
+        creatorUserId={community.ownerUserId}
+        viewerUserId={user?.id ?? null}
       />
       <ChallengeTimelineSection
         title="Past challenges"
         timeline="previous"
         challenges={community.challenges}
+        creatorUserId={community.ownerUserId}
+        viewerUserId={user?.id ?? null}
       />
     </div>
   );
