@@ -16,7 +16,7 @@ export function CreatorLinksSection({ links }: { links: CreatorLinkRow[] }) {
           <li key={link.id}>
             <Card padding="sm">
               <a
-                href={link.url}
+                href={`/out/link/${link.id}`}
                 target="_blank"
                 rel="noopener noreferrer sponsored"
                 className="flex items-center justify-between gap-2 text-sm font-medium"

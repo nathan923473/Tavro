@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import type {
   ChallengePublishStatus,
   CreatorAnnouncement,
+  CreatorLinkAnalytics,
   CreatorLinkRow,
   CreatorStudioChallenge,
   CreatorStudioOverview,
@@ -318,4 +319,130 @@ export async function fetchChallengeSchedule(
 
 export function creatorChallengePath(communitySlug: string, inviteSlug: string) {
   return `/creator/${communitySlug}/challenges/${inviteSlug}`;
+}
+
+export async function fetchCreatorLinkAnalytics(
+  ownerId: string,
+): Promise<CreatorLinkAnalytics | null> {
+  const supabase = await createClient();
+  const { data: community } = await supabase
+    .from("creator_communities")
+    .select("id")
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+
+  if (!community) return null;
+
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - 7);
+
+  const { data: links, error } = await supabase
+    .from("creator_links")
+    .select("id, link_type, label, url, sort_order, is_public, click_count")
+    .eq("community_id", community.id)
+    .order("sort_order");
+
+  if (error) {
+    if (/click_count|schema cache/i.test(error.message)) {
+      const fallback = await fetchCreatorLinks(community.id);
+      return {
+        totalClicks: 0,
+        clicksLast7Days: 0,
+        links: fallback.map((l) => ({
+          ...l,
+          clickCount: 0,
+          clicksLast7Days: 0,
+        })),
+      };
+    }
+    return null;
+  }
+
+  const linkIds = (links ?? []).map((l) => l.id);
+  const clicks7dByLink: Record<string, number> = {};
+
+  if (linkIds.length) {
+    const { data: events } = await supabase
+      .from("creator_link_click_events")
+      .select("link_id")
+      .in("link_id", linkIds)
+      .gte("clicked_at", weekStart.toISOString());
+
+    for (const e of events ?? []) {
+      clicks7dByLink[e.link_id] = (clicks7dByLink[e.link_id] ?? 0) + 1;
+    }
+  }
+
+  const mapped = (links ?? []).map((row) => ({
+    id: row.id,
+    linkType: row.link_type,
+    label: row.label,
+    url: row.url,
+    sortOrder: row.sort_order,
+    isPublic: row.is_public,
+    clickCount: row.click_count ?? 0,
+    clicksLast7Days: clicks7dByLink[row.id] ?? 0,
+  }));
+
+  return {
+    totalClicks: mapped.reduce((s, l) => s + l.clickCount, 0),
+    clicksLast7Days: mapped.reduce((s, l) => s + l.clicksLast7Days, 0),
+    links: mapped,
+  };
+}
+
+export async function fetchChallengeJoinAnalytics(ownerId: string): Promise<{
+  joinsLast7Days: number;
+  joinsLast30Days: number;
+  totalJoins: number;
+}> {
+  const supabase = await createClient();
+  const { data: community } = await supabase
+    .from("creator_communities")
+    .select("id")
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+
+  if (!community) {
+    return { joinsLast7Days: 0, joinsLast30Days: 0, totalJoins: 0 };
+  }
+
+  const { data: challenges } = await supabase
+    .from("challenges")
+    .select("id")
+    .eq("community_id", community.id)
+    .eq("visibility", "public");
+
+  const ids = (challenges ?? []).map((c) => c.id);
+  if (!ids.length) {
+    return { joinsLast7Days: 0, joinsLast30Days: 0, totalJoins: 0 };
+  }
+
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - 7);
+  const monthStart = new Date();
+  monthStart.setDate(monthStart.getDate() - 30);
+
+  const [total, week, month] = await Promise.all([
+    supabase
+      .from("challenge_participants")
+      .select("*", { count: "exact", head: true })
+      .in("challenge_id", ids),
+    supabase
+      .from("challenge_participants")
+      .select("*", { count: "exact", head: true })
+      .in("challenge_id", ids)
+      .gte("joined_at", weekStart.toISOString()),
+    supabase
+      .from("challenge_participants")
+      .select("*", { count: "exact", head: true })
+      .in("challenge_id", ids)
+      .gte("joined_at", monthStart.toISOString()),
+  ]);
+
+  return {
+    totalJoins: total.count ?? 0,
+    joinsLast7Days: week.count ?? 0,
+    joinsLast30Days: month.count ?? 0,
+  };
 }

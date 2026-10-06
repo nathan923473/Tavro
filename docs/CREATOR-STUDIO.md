@@ -1,6 +1,6 @@
 # Creator Studio
 
-Run **`supabase/migrations/011_creator_studio.sql`** in the Supabase SQL editor after earlier migrations.
+Run **`supabase/migrations/011_creator_studio.sql`** and **`012_creator_link_analytics.sql`** in the Supabase SQL editor after earlier migrations.
 
 ## Routes
 

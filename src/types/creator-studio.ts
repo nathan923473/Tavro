@@ -54,6 +54,18 @@ export type CreatorLinkRow = {
   url: string;
   sortOrder: number;
   isPublic: boolean;
+  clickCount?: number;
+};
+
+export type CreatorLinkAnalytics = {
+  totalClicks: number;
+  clicksLast7Days: number;
+  links: Array<
+    CreatorLinkRow & {
+      clickCount: number;
+      clicksLast7Days: number;
+    }
+  >;
 };
 
 export type CreatorStudioOverview = {
