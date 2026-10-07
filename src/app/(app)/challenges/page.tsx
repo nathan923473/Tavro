@@ -38,7 +38,11 @@ export default async function ChallengesPage() {
         subtitle="Search free creator challenges · join in one tap"
       />
       <div className="space-y-6 px-4 py-4">
-        <DiscoverInteractive initial={discoverSections} variant="embedded" />
+        <DiscoverInteractive
+          initial={discoverSections}
+          variant="embedded"
+          viewerUserId={userId}
+        />
 
         <Link
           href="/challenges/create"

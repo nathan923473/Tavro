@@ -73,6 +73,11 @@ export async function fetchChallengeLandingByInviteSlug(
   /** Eligible for public discover search/lists. */
   const isApprovedPublic = isPublicCreatorChallenge && creatorApproved;
 
+  const isOwner =
+    Boolean(userId) &&
+    (userId === row.created_by ||
+      (community?.owner_id != null && userId === community.owner_id));
+
   let joined = false;
   let onboardingCompleted = false;
   if (userId) {
@@ -82,8 +87,9 @@ export async function fetchChallengeLandingByInviteSlug(
       .eq("challenge_id", row.id)
       .eq("user_id", userId)
       .maybeSingle();
-    joined = Boolean(membership);
-    onboardingCompleted = Boolean(membership?.onboarding_completed_at);
+    joined = Boolean(membership) || isOwner;
+    onboardingCompleted =
+      isOwner || Boolean(membership?.onboarding_completed_at);
   }
 
   const galleryMap = await fetchChallengeGalleryDetailsMap([row.id]);

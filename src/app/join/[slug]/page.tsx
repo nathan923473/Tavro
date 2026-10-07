@@ -30,6 +30,10 @@ export default async function JoinChallengePage({ params }: JoinChallengePagePro
     notFound();
   }
 
+  if (user && data.joined && data.onboardingCompleted) {
+    redirect(`/challenges/${data.challenge.id}`);
+  }
+
   if (data.communitySlug) {
     redirect(creatorChallengePath(data.communitySlug, slug));
   }

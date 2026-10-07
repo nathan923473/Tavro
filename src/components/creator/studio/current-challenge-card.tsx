@@ -39,9 +39,21 @@ export function CurrentChallengeCard({
         {challenge.startDate} → {challenge.endDate}
       </p>
       <div className="mt-3 grid gap-2">
+        {challenge.publishStatus !== "draft" ? (
+          <Link
+            href={`/challenges/${challenge.id}`}
+            className="flex min-h-10 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+          >
+            Open challenge
+          </Link>
+        ) : null}
         <Link
           href={manageHref}
-          className="flex min-h-10 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+          className={`flex min-h-10 items-center justify-center rounded-xl text-sm font-semibold ${
+            challenge.publishStatus === "draft"
+              ? "bg-primary text-primary-foreground"
+              : "border border-border"
+          }`}
         >
           Manage challenge
         </Link>

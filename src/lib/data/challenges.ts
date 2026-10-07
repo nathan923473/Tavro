@@ -29,7 +29,8 @@ function mapChallenge(
   gallery: string[] = [],
 ): Challenge {
   const count = row.participants?.[0]?.count ?? 0;
-  const joined = userId ? joinedIds.has(row.id) : false;
+  const isOwner = Boolean(userId && userId === row.created_by);
+  const joined = userId ? isOwner || joinedIds.has(row.id) : false;
   return {
     id: row.id,
     title: row.title,
@@ -134,14 +135,23 @@ export async function fetchJoinedChallengesForHome(
     .select("challenge_id, progress_percent")
     .eq("user_id", userId);
 
-  if (!memberships?.length) return [];
-
   const progress: Record<string, number> = {};
   const joinedIds = new Set<string>();
-  for (const m of memberships) {
+  for (const m of memberships ?? []) {
     joinedIds.add(m.challenge_id);
     progress[m.challenge_id] = m.progress_percent ?? 0;
   }
+
+  const { data: ownedRows } = await supabase
+    .from("challenges")
+    .select("id")
+    .eq("created_by", userId);
+
+  for (const row of ownedRows ?? []) {
+    joinedIds.add(row.id);
+  }
+
+  if (!joinedIds.size) return [];
 
   const ids = [...joinedIds];
   const select = `
@@ -205,6 +215,8 @@ export async function fetchChallengeByInviteSlug(
     if (membership) {
       joinedIds.add(row.id);
       progress[row.id] = membership.progress_percent ?? 0;
+    } else if (userId === row.created_by) {
+      joinedIds.add(row.id);
     }
   }
 

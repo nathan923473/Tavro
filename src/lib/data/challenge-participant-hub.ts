@@ -63,6 +63,8 @@ export type ChallengeParticipantHub = {
   completedDaysCount: number;
   bestStreak: number;
   canonicalPath: string;
+  /** Logged-in user created this challenge (may not be in challenge_participants). */
+  isOwner: boolean;
 };
 
 function scheduleItemForDay(
@@ -83,14 +85,6 @@ export async function fetchChallengeParticipantHub(
   const supabase = await createClient();
   const today = todayDateKey();
 
-  const { data: membership } = await supabase
-    .from("challenge_participants")
-    .select("progress_percent")
-    .eq("challenge_id", challengeId)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (!membership) return null;
-
   const { data: ch } = await supabase
     .from("challenges")
     .select(
@@ -98,7 +92,7 @@ export async function fetchChallengeParticipantHub(
       id, title, description, short_description, goal_description, category,
       start_date, end_date, invite_slug, cover_url, created_by, community_id,
       creator:profiles!challenges_created_by_fkey ( display_name ),
-      community:creator_communities ( slug, community_name, avatar_url ),
+      community:creator_communities ( slug, community_name, avatar_url, owner_id ),
       participants:challenge_participants ( count )
     `,
     )
@@ -107,6 +101,18 @@ export async function fetchChallengeParticipantHub(
   if (!ch) return null;
 
   const community = unwrapOne(ch.community);
+  const isOwner =
+    ch.created_by === userId ||
+    (community?.owner_id != null && community.owner_id === userId);
+
+  const { data: membership } = await supabase
+    .from("challenge_participants")
+    .select("progress_percent")
+    .eq("challenge_id", challengeId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!membership && !isOwner) return null;
+
   const schedule = await fetchChallengeSchedule(challengeId);
   const totalDays = challengeTotalDays(ch.start_date, ch.end_date);
   const rawDayIndex = challengeDayIndex(ch.start_date, today);
@@ -251,7 +257,7 @@ export async function fetchChallengeParticipantHub(
     participants: ch.participants?.[0]?.count ?? 0,
     dayIndex: effectiveDayIndex,
     totalDays,
-    progressPercent: membership.progress_percent ?? 0,
+    progressPercent: membership?.progress_percent ?? 0,
     streakDays,
     phase,
     daysUntilStart,
@@ -281,6 +287,7 @@ export async function fetchChallengeParticipantHub(
     completedDaysCount,
     bestStreak,
     canonicalPath,
+    isOwner,
   };
 }
 

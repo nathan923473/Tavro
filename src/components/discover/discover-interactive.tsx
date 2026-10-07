@@ -11,8 +11,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useTransition, type FormEvent } from "react";
 
-function ChallengeRow({ c }: { c: DiscoverChallenge }) {
-  const href = publicChallengePath(c.communitySlug, c.inviteSlug);
+function ChallengeRow({
+  c,
+  viewerUserId,
+}: {
+  c: DiscoverChallenge;
+  viewerUserId?: string | null;
+}) {
+  const isOwner = Boolean(viewerUserId && viewerUserId === c.createdById);
+  const href = isOwner
+    ? `/challenges/${c.id}`
+    : publicChallengePath(c.communitySlug, c.inviteSlug);
+  const cta = isOwner ? "Open challenge" : "View challenge";
   return (
     <li>
       <Card className="overflow-hidden p-0">
@@ -49,7 +59,7 @@ function ChallengeRow({ c }: { c: DiscoverChallenge }) {
             href={href}
             className="mt-3 flex min-h-10 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
           >
-            View challenge
+            {cta}
           </Link>
         </div>
       </Card>
@@ -66,11 +76,13 @@ type DiscoverInteractiveProps = {
   };
   /** Full page vs embedded on Challenges tab (shorter lists + link to /discover). */
   variant?: "full" | "embedded";
+  viewerUserId?: string | null;
 };
 
 export function DiscoverInteractive({
   initial,
   variant = "full",
+  viewerUserId = null,
 }: DiscoverInteractiveProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<{
@@ -176,7 +188,7 @@ export function DiscoverInteractive({
             <>
               <ul className="space-y-3">
                 {results.challenges.map((c) => (
-                  <ChallengeRow key={c.id} c={c} />
+                  <ChallengeRow key={c.id} c={c} viewerUserId={viewerUserId} />
                 ))}
               </ul>
               <ul className="mt-4 space-y-2">
@@ -201,16 +213,19 @@ export function DiscoverInteractive({
             title="Featured challenges"
             items={initial.featured.slice(0, limits.featured)}
             seeAllHref={embedded && initial.featured.length > limits.featured ? "/discover" : undefined}
+            viewerUserId={viewerUserId}
           />
           <Section
             title="Active challenges"
             items={initial.active.slice(0, limits.active)}
             seeAllHref={embedded && initial.active.length > limits.active ? "/discover" : undefined}
+            viewerUserId={viewerUserId}
           />
           <Section
             title="Upcoming challenges"
             items={initial.upcoming.slice(0, limits.upcoming)}
             seeAllHref={embedded && initial.upcoming.length > limits.upcoming ? "/discover" : undefined}
+            viewerUserId={viewerUserId}
           />
           <section aria-labelledby="discover-creators-heading">
             <div className="mb-2 flex items-center justify-between gap-2 px-1">
@@ -258,10 +273,12 @@ function Section({
   title,
   items,
   seeAllHref,
+  viewerUserId,
 }: {
   title: string;
   items: DiscoverChallenge[];
   seeAllHref?: string;
+  viewerUserId?: string | null;
 }) {
   if (!items.length) return null;
   return (
@@ -276,7 +293,7 @@ function Section({
       </div>
       <ul className="space-y-3">
         {items.map((c) => (
-          <ChallengeRow key={c.id} c={c} />
+          <ChallengeRow key={c.id} c={c} viewerUserId={viewerUserId} />
         ))}
       </ul>
     </section>

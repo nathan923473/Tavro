@@ -46,6 +46,7 @@ export function ChallengeCard({
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
   const inviteUrl = challengeInvitePath(challenge.inviteSlug);
+  const isOwner = Boolean(viewerUserId && viewerUserId === challenge.creatorId);
 
   function run(action: () => Promise<void>, success: string) {
     startTransition(async () => {
@@ -87,7 +88,9 @@ export function ChallengeCard({
           </p>
         </div>
         <div className="flex flex-col items-end gap-1">
-          {challenge.joined ? (
+          {isOwner ? (
+            <Badge tone="success">Your challenge</Badge>
+          ) : challenge.joined ? (
             <Badge tone="success">Joined</Badge>
           ) : (
             <Badge tone="muted">Open</Badge>
@@ -184,19 +187,21 @@ export function ChallengeCard({
           >
             Quick log (legacy)
           </Button>
-          <Button
-            variant="outline"
-            fullWidth
-            disabled={pending || !loggedIn}
-            onClick={() =>
-              run(
-                () => leaveChallengeAction(challenge.id),
-                "You left this challenge.",
-              )
-            }
-          >
-            Leave challenge
-          </Button>
+          {!isOwner ? (
+            <Button
+              variant="outline"
+              fullWidth
+              disabled={pending || !loggedIn}
+              onClick={() =>
+                run(
+                  () => leaveChallengeAction(challenge.id),
+                  "You left this challenge.",
+                )
+              }
+            >
+              Leave challenge
+            </Button>
+          ) : null}
           <ChallengeGroupChat
             challengeId={challenge.id}
             challengeTitle={challenge.title}

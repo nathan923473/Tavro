@@ -11,6 +11,7 @@ export type DiscoverChallenge = {
   communitySlug: string;
   communityName: string;
   creatorName: string;
+  createdById: string;
   startDate: string;
   endDate: string;
   participants: number;
@@ -67,7 +68,7 @@ export async function searchDiscover(query: string): Promise<{
     .from("challenges")
     .select(
       `
-      id, title, short_description, invite_slug, start_date, end_date, cover_url,
+      id, title, short_description, invite_slug, start_date, end_date, cover_url, created_by,
       community:creator_communities ( slug, community_name ),
       creator:profiles!challenges_created_by_fkey ( display_name, creator_status ),
       participants:challenge_participants ( count )
@@ -93,6 +94,7 @@ export async function searchDiscover(query: string): Promise<{
         communitySlug: community?.slug ?? "",
         communityName: community?.community_name ?? "",
         creatorName: unwrapOne(r.creator)?.display_name ?? "Creator",
+        createdById: r.created_by,
         startDate: r.start_date,
         endDate: r.end_date,
         participants: r.participants?.[0]?.count ?? 0,
@@ -116,7 +118,7 @@ export async function fetchDiscoverSections(): Promise<{
     .from("challenges")
     .select(
       `
-      id, title, short_description, invite_slug, start_date, end_date, cover_url,
+      id, title, short_description, invite_slug, start_date, end_date, cover_url, created_by,
       community:creator_communities ( slug, community_name ),
       creator:profiles!challenges_created_by_fkey ( display_name, creator_status ),
       participants:challenge_participants ( count )
@@ -142,6 +144,7 @@ export async function fetchDiscoverSections(): Promise<{
         communitySlug: community?.slug ?? "",
         communityName: community?.community_name ?? "",
         creatorName: unwrapOne(r.creator)?.display_name ?? "Creator",
+        createdById: r.created_by,
         startDate: r.start_date,
         endDate: r.end_date,
         participants: r.participants?.[0]?.count ?? 0,

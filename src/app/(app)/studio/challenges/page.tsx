@@ -40,19 +40,30 @@ export default async function StudioChallengesPage() {
             <ul className="space-y-2">
               {list.map((c) => (
                 <li key={c.id}>
-                  <Link href={`/studio/challenges/${c.id}`}>
-                    <Card padding="sm" className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate font-medium">{c.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {c.participantCount} participants · {c.startDate} → {c.endDate}
-                        </p>
-                      </div>
-                      <span className="shrink-0 text-xs font-semibold text-primary">
+                  <Card padding="sm" className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{c.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {c.participantCount} participants · {c.startDate} → {c.endDate}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      {c.publishStatus !== "draft" ? (
+                        <Link
+                          href={`/challenges/${c.id}`}
+                          className="inline-flex min-h-9 items-center justify-center rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground"
+                        >
+                          Open challenge
+                        </Link>
+                      ) : null}
+                      <Link
+                        href={`/studio/challenges/${c.id}`}
+                        className="inline-flex min-h-9 items-center justify-center rounded-lg border border-border px-3 text-xs font-semibold text-primary"
+                      >
                         Manage
-                      </span>
-                    </Card>
-                  </Link>
+                      </Link>
+                    </div>
+                  </Card>
                 </li>
               ))}
             </ul>

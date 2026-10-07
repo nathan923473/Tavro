@@ -1,6 +1,5 @@
 import { ReportContentMenu } from "@/components/moderation/report-content-menu";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { CreatorCommunityChallenge } from "@/types/creator-community";
 import { CalendarRange, Users } from "lucide-react";
@@ -24,6 +23,10 @@ export function CreatorChallengeCard({
     viewerUserId && viewerUserId !== creatorUserId && challenge.coverUrl,
   );
   const isPast = challenge.timeline === "previous";
+  const isOwner = Boolean(viewerUserId && viewerUserId === creatorUserId);
+  const openHref = isOwner
+    ? `/challenges/${challenge.id}`
+    : `/join/${challenge.inviteSlug}`;
 
   return (
     <Card className="overflow-hidden p-0">
@@ -77,15 +80,18 @@ export function CreatorChallengeCard({
         </div>
         <div className="mt-4 flex gap-2">
           <Link
-            href={`/join/${challenge.inviteSlug}`}
+            href={openHref}
             className="inline-flex min-h-10 flex-1 items-center justify-center rounded-xl bg-primary px-3 text-sm font-semibold text-primary-foreground"
           >
-            {isPast ? "View recap" : "Open challenge"}
+            {isOwner ? "Open challenge" : isPast ? "View recap" : "View challenge"}
           </Link>
-          {showJoin && !isPast ? (
-            <Button variant="outline" className="shrink-0">
+          {showJoin && !isPast && !isOwner ? (
+            <Link
+              href={`/join/${challenge.inviteSlug}`}
+              className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-border px-3 text-sm font-semibold"
+            >
               Free to join
-            </Button>
+            </Link>
           ) : null}
         </div>
       </div>

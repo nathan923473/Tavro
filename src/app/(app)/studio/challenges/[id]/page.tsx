@@ -54,7 +54,15 @@ export default async function ManageChallengePage({ params }: Props) {
       </Card>
 
       {!isDraft ? (
-        <CopyLinkButton url={sharePath} label="Copy challenge link" fullWidth />
+        <>
+          <Link
+            href={`/challenges/${id}`}
+            className="flex min-h-11 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+          >
+            Open challenge
+          </Link>
+          <CopyLinkButton url={sharePath} label="Copy challenge link" fullWidth />
+        </>
       ) : null}
 
       <div className="grid gap-2">
