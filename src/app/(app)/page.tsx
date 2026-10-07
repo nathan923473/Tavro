@@ -5,6 +5,7 @@ import {
   HomeWelcomeBanner,
 } from "@/components/dashboard/home-sections";
 import { TodaysHabits } from "@/components/dashboard/todays-habits";
+import { JoinFreeChallengeCta } from "@/components/dashboard/join-free-challenge-cta";
 import { WeeklyConsistencyHome } from "@/components/dashboard/weekly-consistency-home";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card } from "@/components/ui/card";
