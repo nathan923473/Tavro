@@ -14,6 +14,15 @@ export function msUntilChallengeStart(startDateKey: string, nowMs = Date.now()):
   return Math.max(0, challengeStartTimestampMs(startDateKey) - nowMs);
 }
 
+export function formatChallengeStartDate(startDateKey: string): string {
+  return new Date(`${startDateKey}T12:00:00Z`).toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export function formatChallengeCountdown(ms: number): string {
   if (ms <= 0) return "Starting now";
   const totalSec = Math.floor(ms / 1000);

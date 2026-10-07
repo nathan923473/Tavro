@@ -73,8 +73,9 @@ export function CreatorChallengeCard({
         {isUpcoming ? (
           <ChallengeStartCountdown
             startDate={challenge.startDate}
-            variant="banner"
+            variant="prominent"
             className="mt-3"
+            label="Starting in"
           />
         ) : null}
         <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">

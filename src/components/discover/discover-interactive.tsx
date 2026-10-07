@@ -25,9 +25,19 @@ function ChallengeRow({
     ? `/challenges/${c.id}`
     : publicChallengePath(c.communitySlug, c.inviteSlug);
   const cta = isOwner ? "Open challenge" : "View challenge";
+  const upcoming = isChallengeUpcoming(c.startDate);
   return (
     <li>
-      <Card className="overflow-hidden p-0">
+      <Card
+        className={`overflow-hidden p-0 ${upcoming ? "ring-2 ring-amber-400/50" : ""}`}
+      >
+        {upcoming ? (
+          <ChallengeStartCountdown
+            startDate={c.startDate}
+            variant="strip"
+            label="Starting in"
+          />
+        ) : null}
         {c.coverUrl ? (
           <div className="relative h-28 bg-muted">
             <Image src={c.coverUrl} alt="" fill className="object-cover" unoptimized />
@@ -36,28 +46,23 @@ function ChallengeRow({
         <div className="p-4">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <h3 className="font-semibold">{c.title}</h3>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-semibold">{c.title}</h3>
+                {upcoming ? (
+                  <Badge tone="warning" className="uppercase tracking-wide">
+                    Upcoming
+                  </Badge>
+                ) : null}
+              </div>
               <p className="text-sm text-muted-foreground">{c.communityName}</p>
             </div>
-            <div className="flex shrink-0 flex-col items-end gap-1">
-              {isChallengeUpcoming(c.startDate) ? (
-                <ChallengeStartCountdown startDate={c.startDate} variant="badge" />
-              ) : null}
-              <Badge tone="success" className="gap-1">
-                <Gift className="h-3 w-3" aria-hidden />
-                Free
-              </Badge>
-            </div>
+            <Badge tone="success" className="gap-1 shrink-0">
+              <Gift className="h-3 w-3" aria-hidden />
+              Free
+            </Badge>
           </div>
           {c.shortDescription ? (
             <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{c.shortDescription}</p>
-          ) : null}
-          {isChallengeUpcoming(c.startDate) ? (
-            <ChallengeStartCountdown
-              startDate={c.startDate}
-              variant="inline"
-              className="mt-2"
-            />
           ) : null}
           <p className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1">
