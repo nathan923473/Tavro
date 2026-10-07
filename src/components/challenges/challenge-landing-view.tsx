@@ -210,10 +210,3 @@ export function ChallengeLandingView({
     </div>
   );
 }
-
-export function landingCanonicalPath(data: ChallengeLandingData) {
-  if (data.communitySlug) {
-    return publicChallengePath(data.communitySlug, data.challenge.inviteSlug);
-  }
-  return `/join/${data.challenge.inviteSlug}`;
-}

@@ -1,10 +1,10 @@
-import {
-  ChallengeLandingView,
-  landingCanonicalPath,
-} from "@/components/challenges/challenge-landing-view";
+import { ChallengeLandingView } from "@/components/challenges/challenge-landing-view";
 import { StandalonePageHeader } from "@/components/layout/standalone-page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
-import { fetchChallengeLandingByCommunityAndSlug } from "@/lib/data/challenge-landing";
+import {
+  fetchChallengeLandingByCommunityAndSlug,
+  landingCanonicalPath,
+} from "@/lib/data/challenge-landing";
 import { notFound } from "next/navigation";
 
 type Props = {

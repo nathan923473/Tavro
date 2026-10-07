@@ -1,7 +1,19 @@
 import { fetchChallengeGalleryDetailsMap } from "@/lib/data/challenge-media";
 import { unwrapOne } from "@/lib/data/relations";
+import { publicChallengePath } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
 import type { Challenge } from "@/types";
+
+/** Server-safe canonical URL for a challenge landing page. */
+export function landingCanonicalPath(data: {
+  communitySlug: string | null;
+  challenge: { inviteSlug: string };
+}) {
+  if (data.communitySlug) {
+    return publicChallengePath(data.communitySlug, data.challenge.inviteSlug);
+  }
+  return `/join/${data.challenge.inviteSlug}`;
+}
 
 export type ChallengeLandingData = {
   challenge: Challenge;

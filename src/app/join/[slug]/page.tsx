@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
-import {
-  ChallengeLandingView,
-  landingCanonicalPath,
-} from "@/components/challenges/challenge-landing-view";
+import { ChallengeLandingView } from "@/components/challenges/challenge-landing-view";
 import { StandalonePageHeader } from "@/components/layout/standalone-page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
-import { fetchChallengeLandingByInviteSlug } from "@/lib/data/challenge-landing";
+import {
+  fetchChallengeLandingByInviteSlug,
+  landingCanonicalPath,
+} from "@/lib/data/challenge-landing";
 import { creatorChallengePath } from "@/lib/data/creator-studio";
 import { notFound } from "next/navigation";
 
