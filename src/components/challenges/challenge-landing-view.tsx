@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { ChallengeLandingData } from "@/lib/data/challenge-landing";
 import { publicChallengePath } from "@/lib/site-url";
+import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { CalendarRange, Gift, Users } from "lucide-react";
 import Image from "next/image";
@@ -121,7 +122,11 @@ export function ChallengeLandingView({
           <div className="mt-4 flex flex-wrap gap-3 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <CalendarRange className="h-4 w-4" aria-hidden />
-              {challenge.startDate} → {challenge.endDate}
+              <ChallengeDateRange
+                startDate={challenge.startDate}
+                endDate={challenge.endDate}
+                challengeTimezone={challenge.challengeTimezone}
+              />
             </span>
             <span className="inline-flex items-center gap-1">
               <Users className="h-4 w-4" aria-hidden />

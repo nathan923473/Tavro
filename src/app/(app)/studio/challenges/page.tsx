@@ -1,3 +1,4 @@
+import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { StudioLayout } from "@/components/creator/studio/studio-layout";
 import { Card } from "@/components/ui/card";
@@ -45,7 +46,8 @@ export default async function StudioChallengesPage() {
                     <div className="min-w-0">
                       <p className="truncate font-medium">{c.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        {c.participantCount} participants · {c.startDate} → {c.endDate}
+                        {c.participantCount} participants ·{" "}
+                        <ChallengeDateRange startDate={c.startDate} endDate={c.endDate} />
                       </p>
                       {c.bucket === "upcoming" ? (
                         <ChallengeStartCountdown

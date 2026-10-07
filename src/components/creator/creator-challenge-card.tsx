@@ -2,6 +2,7 @@ import { ReportContentMenu } from "@/components/moderation/report-content-menu";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import type { CreatorCommunityChallenge } from "@/types/creator-community";
+import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { CalendarRange, Users } from "lucide-react";
 import Image from "next/image";
@@ -81,7 +82,7 @@ export function CreatorChallengeCard({
         <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
             <CalendarRange className="h-3.5 w-3.5" aria-hidden />
-            {challenge.startDate} → {challenge.endDate}
+            <ChallengeDateRange startDate={challenge.startDate} endDate={challenge.endDate} />
           </span>
           <span className="inline-flex items-center gap-1">
             <Users className="h-3.5 w-3.5" aria-hidden />

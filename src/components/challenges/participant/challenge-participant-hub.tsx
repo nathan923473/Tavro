@@ -9,7 +9,9 @@ import { ShareChallengeButton } from "@/components/share/share-challenge-button"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
+import { formatCalendarDateKeyShort } from "@/lib/timezone/format";
 import { parseScheduleItemActivities } from "@/lib/challenge-activities";
 import type { ChallengeParticipantHub, HubActivityState } from "@/lib/data/challenge-participant-hub";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -571,7 +573,7 @@ function TabPanels({
                     <span className="text-sm font-semibold">
                       {day.dayLabel}
                       <span className="ml-1.5 font-normal text-muted-foreground">
-                        {formatPlanDate(day.completedOn)}
+                        {formatPlanDate(day.completedOn, hub.challengeTimezone)}
                       </span>
                     </span>
                     <span className="text-xs text-muted-foreground">
@@ -765,7 +767,11 @@ function TabPanels({
           <p className="flex flex-wrap gap-3 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <CalendarRange className="h-3.5 w-3.5" aria-hidden />
-              {hub.startDate} → {hub.endDate}
+              <ChallengeDateRange
+                startDate={hub.startDate}
+                endDate={hub.endDate}
+                challengeTimezone={hub.challengeTimezone}
+              />
             </span>
             <span className="inline-flex items-center gap-1">
               <Users className="h-3.5 w-3.5" aria-hidden />
@@ -810,11 +816,8 @@ function planHabitTitles(
   ).map((a) => a.title);
 }
 
-function formatPlanDate(isoDate: string) {
-  return new Date(`${isoDate}T12:00:00Z`).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
+function formatPlanDate(isoDate: string, challengeTimezone: string) {
+  return formatCalendarDateKeyShort(isoDate, challengeTimezone);
 }
 
 function isRequiredHubActivity(a: HubActivityState) {

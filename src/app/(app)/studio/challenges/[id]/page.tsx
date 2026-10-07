@@ -14,6 +14,7 @@ import {
   fetchCreatorStudioChallenges,
 } from "@/lib/data/creator-studio";
 import { fetchOwnerCommunity } from "@/lib/data/communities";
+import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -49,8 +50,8 @@ export default async function ManageChallengePage({ params }: Props) {
           week
         </p>
         <p>
-          <span className="font-medium">Dates:</span> {challenge.startDate} →{" "}
-          {challenge.endDate}
+          <span className="font-medium">Dates:</span>{" "}
+          <ChallengeDateRange startDate={challenge.startDate} endDate={challenge.endDate} />
         </p>
       </Card>
 

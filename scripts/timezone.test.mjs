@@ -2,7 +2,22 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { TZDate } from "@date-fns/tz";
-import { addDays } from "date-fns";
+import { addDays, format } from "date-fns";
+
+function formatDateRangeDisplay(startDateKey, endDateKey, timeZone = "UTC") {
+  const [sy, sm, sd] = startDateKey.split("-").map(Number);
+  const [ey, em, ed] = endDateKey.split("-").map(Number);
+  if (startDateKey === endDateKey) {
+    return format(new TZDate(ey, em - 1, ed, 12, 0, 0, timeZone), "d MMM yyyy");
+  }
+  const sameYear = sy === ey;
+  const start = format(
+    new TZDate(sy, sm - 1, sd, 12, 0, 0, timeZone),
+    sameYear ? "d MMM" : "d MMM yyyy",
+  );
+  const end = format(new TZDate(ey, em - 1, ed, 12, 0, 0, timeZone), "d MMM yyyy");
+  return `${start} – ${end}`;
+}
 
 function midnightUtc(dateKey, timeZone) {
   const [y, m, d] = dateKey.split("-").map(Number);
@@ -41,6 +56,17 @@ test("Legacy midnight differs by zone", () => {
   const mel = midnightUtc("2026-11-01", "Australia/Melbourne");
   const lon = midnightUtc("2026-11-01", "Europe/London");
   assert.notEqual(mel.toISOString(), lon.toISOString());
+});
+
+test("Challenge date range display is friendly and unambiguous", () => {
+  assert.equal(
+    formatDateRangeDisplay("2026-11-01", "2026-11-30"),
+    "1 Nov – 30 Nov 2026",
+  );
+  assert.equal(
+    formatDateRangeDisplay("2026-12-28", "2027-01-05"),
+    "28 Dec 2026 – 5 Jan 2027",
+  );
 });
 
 console.log("timezone tests passed");

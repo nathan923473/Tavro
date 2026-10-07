@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { DiscoverChallenge, DiscoverCreator } from "@/lib/data/discover";
+import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { isChallengeUpcoming } from "@/lib/challenge-countdown";
 import { publicChallengePath } from "@/lib/site-url";
@@ -69,7 +70,11 @@ function ChallengeRow({
           <p className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <CalendarRange className="h-3.5 w-3.5" aria-hidden />
-              {c.startDate} → {c.endDate}
+              <ChallengeDateRange
+                startDate={c.startDate}
+                endDate={c.endDate}
+                challengeTimezone={c.challengeTimezone}
+              />
             </span>
             <span className="inline-flex items-center gap-1">
               <Users className="h-3.5 w-3.5" aria-hidden />

@@ -1,4 +1,5 @@
 import {
+  formatCalendarDateKey,
   formatHumanCountdownToStart,
   hasStarted,
   msUntilInstant,
@@ -33,14 +34,9 @@ export function msUntilChallengeStartAt(startAtIso: string, nowMs = Date.now()):
 
 export { formatHumanCountdownToStart, hasStarted };
 
-/** @deprecated use formatShortDate from timezone/format */
+/** @deprecated use formatCalendarDateKey from timezone/format */
 export function formatChallengeStartDate(startDateKey: string): string {
-  return new Date(`${startDateKey}T12:00:00Z`).toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return formatCalendarDateKey(startDateKey);
 }
 
 /** @deprecated use formatHumanCountdownToStart */

@@ -3,6 +3,49 @@ import { TZDate } from "@date-fns/tz";
 import { normalizeTimezone } from "@/lib/timezone/validate";
 import { AU_TIMEZONE_PICKER, COMMON_GLOBAL_TIMEZONES } from "@/lib/timezone/constants";
 
+/** Display-only: calendar keys (yyyy-MM-dd) are labels; noon UTC avoids DST edge cases. */
+const CALENDAR_DATE_DISPLAY_TZ = "UTC";
+
+function calendarParts(dateKey: string): { y: number; m: number; d: number } | null {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return { y, m: m - 1, d };
+}
+
+/** Unambiguous calendar day from stored date key: 1 Nov 2026 */
+export function formatCalendarDateKey(
+  dateKey: string,
+  timeZone: string = CALENDAR_DATE_DISPLAY_TZ,
+): string {
+  const parts = calendarParts(dateKey);
+  if (!parts) return dateKey;
+  const tz = normalizeTimezone(timeZone);
+  return format(new TZDate(parts.y, parts.m, parts.d, 12, 0, 0, tz), "d MMM yyyy");
+}
+
+/** Shorter calendar day for inline lists: 1 Nov */
+export function formatCalendarDateKeyShort(
+  dateKey: string,
+  timeZone: string = CALENDAR_DATE_DISPLAY_TZ,
+): string {
+  const parts = calendarParts(dateKey);
+  if (!parts) return dateKey;
+  const tz = normalizeTimezone(timeZone);
+  return format(new TZDate(parts.y, parts.m, parts.d, 12, 0, 0, tz), "d MMM");
+}
+
+/** Friendly challenge schedule range from start_date / end_date (display only). */
+export function formatChallengeDateRange(
+  startDateKey: string,
+  endDateKey: string,
+  challengeTimezone?: string | null,
+): string {
+  const tz = challengeTimezone
+    ? normalizeTimezone(challengeTimezone)
+    : CALENDAR_DATE_DISPLAY_TZ;
+  return formatDateRange(startDateKey, endDateKey, tz);
+}
+
 /** Unambiguous date: 1 Nov 2026 */
 export function formatShortDate(instant: Date, timeZone: string): string {
   const z = new TZDate(instant.getTime(), normalizeTimezone(timeZone));
@@ -26,10 +69,20 @@ export function formatDateRange(
   displayTimeZone: string,
 ): string {
   const tz = normalizeTimezone(displayTimeZone);
-  const [sy, sm, sd] = startDateKey.split("-").map(Number);
-  const [ey, em, ed] = endDateKey.split("-").map(Number);
-  const start = format(new TZDate(sy, sm - 1, sd, 12, 0, 0, tz), "d MMM");
-  const end = format(new TZDate(ey, em - 1, ed, 12, 0, 0, tz), "d MMM yyyy");
+  const startParts = calendarParts(startDateKey);
+  const endParts = calendarParts(endDateKey);
+  if (!startParts || !endParts) return `${startDateKey} – ${endDateKey}`;
+
+  if (startDateKey === endDateKey) {
+    return format(new TZDate(endParts.y, endParts.m, endParts.d, 12, 0, 0, tz), "d MMM yyyy");
+  }
+
+  const sameYear = startParts.y === endParts.y;
+  const start = format(
+    new TZDate(startParts.y, startParts.m, startParts.d, 12, 0, 0, tz),
+    sameYear ? "d MMM" : "d MMM yyyy",
+  );
+  const end = format(new TZDate(endParts.y, endParts.m, endParts.d, 12, 0, 0, tz), "d MMM yyyy");
   return `${start} – ${end}`;
 }
 

@@ -1,3 +1,4 @@
+import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { Card } from "@/components/ui/card";
 import { creatorChallengePath } from "@/lib/data/creator-studio";
@@ -37,7 +38,7 @@ export function CurrentChallengeCard({
         this week
       </p>
       <p className="text-xs text-muted-foreground">
-        {challenge.startDate} → {challenge.endDate}
+        <ChallengeDateRange startDate={challenge.startDate} endDate={challenge.endDate} />
       </p>
       {challenge.bucket === "upcoming" ? (
         <ChallengeStartCountdown

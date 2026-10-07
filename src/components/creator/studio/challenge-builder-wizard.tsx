@@ -23,6 +23,10 @@ import {
   weekdayUtcForChallengeDay,
 } from "@/lib/challenge-day";
 import { TimezoneSelect } from "@/components/timezone/timezone-select";
+import {
+  formatCalendarDateKey,
+  formatChallengeDateRange,
+} from "@/lib/timezone/format";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition, type Dispatch, type SetStateAction } from "react";
@@ -347,6 +351,7 @@ export function ChallengeBuilderWizard({
                 startDate={startDate}
                 endDate={endDate}
                 dayCount={plannedDayCount}
+                challengeTimezone={challengeTimezone}
               />
             )
           ) : (
@@ -434,6 +439,7 @@ export function ChallengeBuilderWizard({
           plannedDayCount={plannedDayCount}
           startDate={startDate}
           endDate={endDate}
+          challengeTimezone={challengeTimezone}
           selectedDays={selectedDays}
           setSelectedDays={setSelectedDays}
           bulkHabitsText={bulkHabitsText}
@@ -461,7 +467,8 @@ export function ChallengeBuilderWizard({
           ) : null}
           <p className="text-sm">{goalDescription}</p>
           <p className="text-xs text-muted-foreground">
-            {plannedDayCount} days · {startDate} → {endDate} · Free challenge
+            {plannedDayCount} days · {formatChallengeDateRange(startDate, endDate, challengeTimezone)} ·
+            Free challenge
           </p>
           <section aria-labelledby="preview-schedule-heading">
             <h3 id="preview-schedule-heading" className="text-sm font-semibold">
@@ -529,6 +536,7 @@ function ScheduleStep({
   plannedDayCount,
   startDate,
   endDate,
+  challengeTimezone,
   selectedDays,
   setSelectedDays,
   bulkHabitsText,
@@ -552,6 +560,7 @@ function ScheduleStep({
   plannedDayCount: number;
   startDate: string;
   endDate: string;
+  challengeTimezone: string;
   selectedDays: Set<number>;
   setSelectedDays: Dispatch<SetStateAction<Set<number>>>;
   bulkHabitsText: string;
@@ -680,7 +689,8 @@ function ScheduleStep({
         <h2 className="font-semibold">Schedule</h2>
         {plannedDayCount > 0 ? (
           <p className="mt-1 text-sm text-muted-foreground">
-            {plannedDayCount} days · {startDate} → {endDate}. Participants check off each habit on
+            {plannedDayCount} days · {formatChallengeDateRange(startDate, endDate, challengeTimezone)}.
+            Participants check off each habit on
             the Today tab.
           </p>
         ) : (
@@ -1111,22 +1121,16 @@ function DayHabitsEditor({
   );
 }
 
-function formatChallengeDate(iso: string): string {
-  return new Date(`${iso}T12:00:00Z`).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 function ChallengeDurationSummary({
   startDate,
   endDate,
   dayCount,
+  challengeTimezone,
 }: {
   startDate: string;
   endDate: string;
   dayCount: number;
+  challengeTimezone?: string;
 }) {
   return (
     <div className="rounded-xl border-2 border-primary/25 bg-primary/5 px-4 py-3">
@@ -1134,10 +1138,15 @@ function ChallengeDurationSummary({
         {dayCount} day{dayCount === 1 ? "" : "s"} long
       </p>
       <p className="mt-1 text-sm text-muted-foreground">
-        Day 1 is <span className="font-medium text-foreground">{formatChallengeDate(startDate)}</span>
+        Day 1 is{" "}
+        <span className="font-medium text-foreground">
+          {formatCalendarDateKey(startDate, challengeTimezone)}
+        </span>
         {" · "}
         Day {dayCount} is{" "}
-        <span className="font-medium text-foreground">{formatChallengeDate(endDate)}</span>
+        <span className="font-medium text-foreground">
+          {formatCalendarDateKey(endDate, challengeTimezone)}
+        </span>
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
         Your schedule step will include {dayCount} row{dayCount === 1 ? "" : "s"} (one per day,
