@@ -140,7 +140,7 @@ export function ChallengeLandingView({
                 <Link
                   href={
                     data.onboardingCompleted
-                      ? `/challenges/${challenge.id}/today`
+                      ? `/challenges/${challenge.id}`
                       : joinContinuePath
                   }
                   className="flex min-h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
@@ -171,15 +171,17 @@ export function ChallengeLandingView({
             ) : null}
           </div>
 
-          <div className="mt-4 grid gap-2 border-t border-border pt-4">
-            <CopyLinkButton url={canonicalPath} label="Copy challenge link" fullWidth />
-            <ShareChallengeButton
-              path={canonicalPath}
-              title={challenge.title}
-              text={`Join ${challenge.title} — free on Streakly`}
-              fullWidth
-            />
-          </div>
+          {!data.joined ? (
+            <div className="mt-4 grid gap-2 border-t border-border pt-4">
+              <CopyLinkButton url={canonicalPath} label="Copy challenge link" fullWidth />
+              <ShareChallengeButton
+                path={canonicalPath}
+                title={challenge.title}
+                text={`Join ${challenge.title} — free on Streakly`}
+                fullWidth
+              />
+            </div>
+          ) : null}
 
           {status ? (
             <p className="mt-2 text-sm text-red-600" role="alert">

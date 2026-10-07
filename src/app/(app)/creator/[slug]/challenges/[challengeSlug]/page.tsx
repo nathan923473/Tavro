@@ -5,7 +5,7 @@ import {
   fetchChallengeLandingByCommunityAndSlug,
   landingCanonicalPath,
 } from "@/lib/data/challenge-landing";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 type Props = {
   params: Promise<{ slug: string; challengeSlug: string }>;
@@ -33,6 +33,13 @@ export default async function CreatorChallengePublicPage({ params }: Props) {
 
   if (!data?.isLandingVisible) {
     notFound();
+  }
+
+  if (user && data.joined) {
+    if (!data.onboardingCompleted) {
+      redirect(`/join/${challengeSlug}/start`);
+    }
+    redirect(`/challenges/${data.challenge.id}`);
   }
 
   const canonicalPath = landingCanonicalPath(data);

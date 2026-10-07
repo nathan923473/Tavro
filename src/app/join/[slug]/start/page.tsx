@@ -18,7 +18,7 @@ export default async function ChallengeParticipantStartPage({ params }: Props) {
     redirect(`/join/${slug}`);
   }
   if (data.onboardingCompleted) {
-    redirect(`/challenges/${data.challenge.id}/today`);
+    redirect(`/challenges/${data.challenge.id}`);
   }
 
   const today = new Date().toISOString().slice(0, 10);

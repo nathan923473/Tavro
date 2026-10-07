@@ -229,7 +229,7 @@ export async function joinChallengeAndContinueAction(
   revalidatePath("/join");
 
   if (row?.onboarding_completed_at) {
-    return `/challenges/${challengeId}/today`;
+    return `/challenges/${challengeId}`;
   }
   return onboardingPath;
 }
@@ -245,11 +245,11 @@ export async function completeChallengeParticipantOnboardingAction(challengeId: 
     .eq("challenge_id", challengeId)
     .eq("user_id", userId);
   if (error && /onboarding_completed_at|schema cache/i.test(error.message)) {
-    return { ok: true as const, nextPath: `/challenges/${challengeId}/today` };
+    return { ok: true as const, nextPath: `/challenges/${challengeId}` };
   }
   if (error) throw new Error(error.message);
-  revalidatePath(`/challenges/${challengeId}/today`);
-  return { ok: true as const, nextPath: `/challenges/${challengeId}/today` };
+  revalidatePath(`/challenges/${challengeId}`);
+  return { ok: true as const, nextPath: `/challenges/${challengeId}` };
 }
 
 export async function leaveChallengeAction(challengeId: string) {
@@ -267,52 +267,125 @@ export async function toggleChallengeScheduleCompletionAction(
   challengeId: string,
   scheduleItemId: string,
   markComplete: boolean,
+  activityKey = "primary",
+  progressNumber?: number | null,
 ) {
   const { supabase, userId } = await requireUserId();
   const today = todayDateKey();
 
   if (markComplete) {
-    const { error } = await supabase.from("challenge_schedule_completions").upsert(
-      {
-        user_id: userId,
-        challenge_id: challengeId,
-        schedule_item_id: scheduleItemId,
-        completed_on: today,
-      },
-      { onConflict: "user_id,schedule_item_id,completed_on" },
-    );
-    if (error && /challenge_schedule_completions|schema cache/i.test(error.message)) {
-      throw new Error("Run migration 015_challenge_daily_progress.sql in Supabase.");
-    }
-    if (error) throw new Error(error.message);
+    const payload: Record<string, unknown> = {
+      user_id: userId,
+      challenge_id: challengeId,
+      schedule_item_id: scheduleItemId,
+      completed_on: today,
+      activity_key: activityKey,
+    };
+    if (progressNumber != null) payload.progress_number = progressNumber;
 
-    const { data: row } = await supabase
-      .from("challenge_participants")
-      .select("progress_percent")
-      .eq("challenge_id", challengeId)
-      .eq("user_id", userId)
-      .maybeSingle();
-    const next = Math.min(100, (row?.progress_percent ?? 0) + 3);
-    await supabase
-      .from("challenge_participants")
-      .update({
-        progress_percent: next,
-        last_activity_date: today,
-      })
-      .eq("challenge_id", challengeId)
-      .eq("user_id", userId);
+    const { error } = await supabase.from("challenge_schedule_completions").upsert(payload, {
+      onConflict: "user_id,schedule_item_id,completed_on,activity_key",
+    });
+    if (error && /activity_key|onConflict|schema cache/i.test(error.message)) {
+      const { error: legacyErr } = await supabase.from("challenge_schedule_completions").upsert(
+        {
+          user_id: userId,
+          challenge_id: challengeId,
+          schedule_item_id: scheduleItemId,
+          completed_on: today,
+          progress_number: progressNumber ?? null,
+        },
+        { onConflict: "user_id,schedule_item_id,completed_on" },
+      );
+      if (legacyErr) throw new Error(legacyErr.message);
+    } else if (error) {
+      throw new Error(error.message);
+    }
+
+    await bumpChallengeProgress(supabase, userId, challengeId, today);
   } else {
-    await supabase
+    let q = supabase
       .from("challenge_schedule_completions")
       .delete()
       .eq("user_id", userId)
       .eq("schedule_item_id", scheduleItemId)
       .eq("completed_on", today);
+    q = q.eq("activity_key", activityKey);
+    await q;
   }
 
+  revalidateChallengeParticipant(challengeId);
+}
+
+async function bumpChallengeProgress(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  challengeId: string,
+  today: string,
+) {
+  const { data: row } = await supabase
+    .from("challenge_participants")
+    .select("progress_percent")
+    .eq("challenge_id", challengeId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  const next = Math.min(100, (row?.progress_percent ?? 0) + 2);
+  await supabase
+    .from("challenge_participants")
+    .update({
+      progress_percent: next,
+      last_activity_date: today,
+    })
+    .eq("challenge_id", challengeId)
+    .eq("user_id", userId);
+}
+
+function revalidateChallengeParticipant(challengeId: string) {
+  revalidatePath(`/challenges/${challengeId}`);
   revalidatePath(`/challenges/${challengeId}/today`);
   revalidatePath("/challenges");
   revalidatePath("/");
+}
+
+export async function saveChallengeStepProgressAction(
+  challengeId: string,
+  scheduleItemId: string,
+  activityKey: string,
+  steps: number,
+  target: number,
+) {
+  const { supabase, userId } = await requireUserId();
+  const today = todayDateKey();
+  const complete = steps >= target;
+  const payload: Record<string, unknown> = {
+    user_id: userId,
+    challenge_id: challengeId,
+    schedule_item_id: scheduleItemId,
+    completed_on: today,
+    activity_key: activityKey,
+    progress_number: steps,
+  };
+
+  const { error } = await supabase.from("challenge_schedule_completions").upsert(payload, {
+    onConflict: "user_id,schedule_item_id,completed_on,activity_key",
+  });
+  if (error && /activity_key|onConflict/i.test(error.message)) {
+    await supabase.from("challenge_schedule_completions").upsert(
+      {
+        user_id: userId,
+        challenge_id: challengeId,
+        schedule_item_id: scheduleItemId,
+        completed_on: today,
+        progress_number: steps,
+      },
+      { onConflict: "user_id,schedule_item_id,completed_on" },
+    );
+  } else if (error) {
+    throw new Error(error.message);
+  }
+
+  if (complete) await bumpChallengeProgress(supabase, userId, challengeId, today);
+  revalidateChallengeParticipant(challengeId);
 }
 
 export async function saveChallengeDailyCheckInAction(
@@ -336,7 +409,7 @@ export async function saveChallengeDailyCheckInAction(
     throw new Error("Run migration 015_challenge_daily_progress.sql in Supabase.");
   }
   if (error) throw new Error(error.message);
-  revalidatePath(`/challenges/${challengeId}/today`);
+  revalidateChallengeParticipant(challengeId);
 }
 
 export async function logChallengeActivityAction(challengeId: string) {

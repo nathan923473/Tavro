@@ -166,10 +166,10 @@ export function ChallengeCard({
             />
           ) : null}
           <Link
-            href={`/challenges/${challenge.id}/today`}
+            href={`/challenges/${challenge.id}`}
             className="flex min-h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
           >
-            Today&apos;s activities
+            Open challenge
           </Link>
           <Button
             variant="secondary"
