@@ -14,7 +14,7 @@ import {
 import type { ChallengeCategory } from "@/types/creator-studio";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { ShareChallengeButton } from "@/components/share/share-challenge-button";
-import { challengeTotalDays } from "@/lib/challenge-day";
+import { challengeEndDateForDayCount } from "@/lib/challenge-day";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
@@ -76,6 +76,7 @@ export function ChallengeBuilderWizard() {
   const [goalDescription, setGoalDescription] = useState(template.goalDescription);
   const [category, setCategory] = useState<ChallengeCategory>(template.category);
   const [startDate, setStartDate] = useState("");
+  const [durationDays, setDurationDays] = useState(30);
   const [endDate, setEndDate] = useState("");
   const [schedule, setSchedule] = useState<ScheduleDraftItem[]>(
     template.schedule.map((s) => ({
@@ -92,13 +93,14 @@ export function ChallengeBuilderWizard() {
   const [bulkTo, setBulkTo] = useState(1);
 
   const plannedDayCount = useMemo(() => {
-    if (!startDate || !endDate) return 0;
-    try {
-      return challengeTotalDays(startDate, endDate);
-    } catch {
-      return 0;
-    }
-  }, [startDate, endDate]);
+    if (!startDate || durationDays < 1) return 0;
+    return Math.max(1, Math.floor(durationDays));
+  }, [startDate, durationDays]);
+
+  useEffect(() => {
+    if (!startDate || durationDays < 1) return;
+    setEndDate(challengeEndDateForDayCount(startDate, durationDays));
+  }, [startDate, durationDays]);
 
   useEffect(() => {
     if (step !== 3 || plannedDayCount < 1) return;
@@ -218,22 +220,41 @@ export function ChallengeBuilderWizard() {
               ))}
             </select>
           </label>
-          <div className="grid grid-cols-2 gap-2">
-            <Field
-              label="Start date"
-              type="date"
-              value={startDate}
-              onChange={setStartDate}
+          <Field
+            label="Start date (day 1)"
+            type="date"
+            value={startDate}
+            onChange={setStartDate}
+            required
+          />
+          <label className="block text-sm">
+            <span className="font-medium">Challenge length (days)</span>
+            <input
+              type="number"
+              min={1}
+              max={400}
               required
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+              value={durationDays}
+              onChange={(e) => {
+                const n = Number.parseInt(e.target.value, 10);
+                setDurationDays(Number.isFinite(n) && n > 0 ? n : 1);
+              }}
             />
-            <Field
-              label="End date"
-              type="date"
-              value={endDate}
-              onChange={setEndDate}
-              required
-            />
-          </div>
+            <span className="mt-1 block text-xs text-muted-foreground">
+              A 30-day challenge is 30 rows in your plan — not the same as picking two calendar
+              dates a month apart (that is often 31–32 days).
+            </span>
+          </label>
+          {startDate && durationDays > 0 && endDate ? (
+            <p className="rounded-xl bg-muted px-3 py-2 text-sm">
+              <span className="font-medium">Last day (day {durationDays}):</span>{" "}
+              {endDate}
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                {durationDays} days from {startDate} through {endDate} inclusive.
+              </span>
+            </p>
+          ) : null}
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => setStep(0)}>
               Back
@@ -241,7 +262,7 @@ export function ChallengeBuilderWizard() {
             <Button
               type="button"
               fullWidth
-              disabled={pending || !title.trim() || !startDate || !endDate}
+              disabled={pending || !title.trim() || !startDate || durationDays < 1 || !endDate}
               onClick={() => saveDraft(2)}
             >
               Save & continue
@@ -303,7 +324,7 @@ export function ChallengeBuilderWizard() {
           ) : null}
           <p className="text-sm">{goalDescription}</p>
           <p className="text-xs text-muted-foreground">
-            {startDate} → {endDate} · Free challenge
+            {durationDays} days · {startDate} → {endDate} · Free challenge
           </p>
           <ul className="space-y-1 text-sm">
             {schedule.slice(0, 5).map((s, i) => (
