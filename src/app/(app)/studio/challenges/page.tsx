@@ -1,3 +1,4 @@
+import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { StudioLayout } from "@/components/creator/studio/studio-layout";
 import { Card } from "@/components/ui/card";
 import { requireApprovedCreator } from "@/lib/auth/profile";
@@ -46,6 +47,13 @@ export default async function StudioChallengesPage() {
                       <p className="text-xs text-muted-foreground">
                         {c.participantCount} participants · {c.startDate} → {c.endDate}
                       </p>
+                      {c.bucket === "upcoming" ? (
+                        <ChallengeStartCountdown
+                          startDate={c.startDate}
+                          variant="inline"
+                          className="mt-1"
+                        />
+                      ) : null}
                     </div>
                     <div className="flex shrink-0 gap-2">
                       {c.publishStatus !== "draft" ? (

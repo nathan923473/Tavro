@@ -2,6 +2,7 @@ import { ReportContentMenu } from "@/components/moderation/report-content-menu";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import type { CreatorCommunityChallenge } from "@/types/creator-community";
+import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { CalendarRange, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -23,6 +24,7 @@ export function CreatorChallengeCard({
     viewerUserId && viewerUserId !== creatorUserId && challenge.coverUrl,
   );
   const isPast = challenge.timeline === "previous";
+  const isUpcoming = challenge.timeline === "upcoming";
   const isOwner = Boolean(viewerUserId && viewerUserId === creatorUserId);
   const openHref = isOwner
     ? `/challenges/${challenge.id}`
@@ -68,6 +70,13 @@ export function CreatorChallengeCard({
         <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
           {challenge.description}
         </p>
+        {isUpcoming ? (
+          <ChallengeStartCountdown
+            startDate={challenge.startDate}
+            variant="banner"
+            className="mt-3"
+          />
+        ) : null}
         <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
             <CalendarRange className="h-3.5 w-3.5" aria-hidden />

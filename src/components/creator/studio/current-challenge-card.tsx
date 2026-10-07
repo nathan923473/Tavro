@@ -1,3 +1,4 @@
+import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { Card } from "@/components/ui/card";
 import { creatorChallengePath } from "@/lib/data/creator-studio";
 import type { CreatorStudioChallenge } from "@/types/creator-studio";
@@ -38,6 +39,13 @@ export function CurrentChallengeCard({
       <p className="text-xs text-muted-foreground">
         {challenge.startDate} → {challenge.endDate}
       </p>
+      {challenge.bucket === "upcoming" ? (
+        <ChallengeStartCountdown
+          startDate={challenge.startDate}
+          variant="banner"
+          className="mt-2"
+        />
+      ) : null}
       <div className="mt-3 grid gap-2">
         {challenge.publishStatus !== "draft" ? (
           <Link

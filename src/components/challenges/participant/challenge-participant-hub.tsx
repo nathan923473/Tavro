@@ -9,6 +9,7 @@ import { ShareChallengeButton } from "@/components/share/share-challenge-button"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { parseScheduleItemActivities } from "@/lib/challenge-activities";
 import type { ChallengeParticipantHub, HubActivityState } from "@/lib/data/challenge-participant-hub";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -73,13 +74,9 @@ export function ChallengeParticipantHub({
         <Card className="space-y-3 text-center">
           <p className="text-lg font-semibold">You&apos;re in! 🎉</p>
           <p className="text-xl font-semibold">{localHub.title}</p>
+          <ChallengeStartCountdown startDate={localHub.startDate} variant="hero" />
           <p className="text-sm text-muted-foreground">
-            Starts {localHub.startDate}
-            <br />
-            {localHub.daysUntilStart} day{localHub.daysUntilStart === 1 ? "" : "s"} to go
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Your first activities will appear when the challenge begins.
+            Your first activities will appear when the countdown ends.
           </p>
           <div className="flex flex-col gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setTab("plan")}>

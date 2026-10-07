@@ -1,6 +1,7 @@
 "use client";
 
 import { completeChallengeParticipantOnboardingAction } from "@/app/(app)/member/actions";
+import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
@@ -31,11 +32,13 @@ export function ChallengeParticipantOnboarding({
       </div>
 
       {notStarted ? (
-        <p className="rounded-xl bg-muted px-3 py-3 text-sm leading-relaxed">
-          This challenge begins on{" "}
-          <strong className="text-foreground">{startDate}</strong>. We&apos;ll let you know when
-          it&apos;s time to start. You can explore the app and follow the creator in the meantime.
-        </p>
+        <div className="space-y-3">
+          <ChallengeStartCountdown startDate={startDate} variant="hero" label="Starts in" />
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Activities unlock when the timer hits zero. Explore the app and follow the creator until
+            then.
+          </p>
+        </div>
       ) : (
         <div>
           <p className="text-sm font-medium">For this challenge you&apos;ll:</p>

@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { DiscoverChallenge, DiscoverCreator } from "@/lib/data/discover";
+import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
+import { isChallengeUpcoming } from "@/lib/challenge-countdown";
 import { publicChallengePath } from "@/lib/site-url";
 import { CalendarRange, Compass, Gift, Search, Sparkles, Users } from "lucide-react";
 import Image from "next/image";
@@ -37,13 +39,25 @@ function ChallengeRow({
               <h3 className="font-semibold">{c.title}</h3>
               <p className="text-sm text-muted-foreground">{c.communityName}</p>
             </div>
-            <Badge tone="success" className="gap-1 shrink-0">
-              <Gift className="h-3 w-3" aria-hidden />
-              Free
-            </Badge>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              {isChallengeUpcoming(c.startDate) ? (
+                <ChallengeStartCountdown startDate={c.startDate} variant="badge" />
+              ) : null}
+              <Badge tone="success" className="gap-1">
+                <Gift className="h-3 w-3" aria-hidden />
+                Free
+              </Badge>
+            </div>
           </div>
           {c.shortDescription ? (
             <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{c.shortDescription}</p>
+          ) : null}
+          {isChallengeUpcoming(c.startDate) ? (
+            <ChallengeStartCountdown
+              startDate={c.startDate}
+              variant="inline"
+              className="mt-2"
+            />
           ) : null}
           <p className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1">

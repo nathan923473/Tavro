@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { ChallengeLandingData } from "@/lib/data/challenge-landing";
 import { publicChallengePath } from "@/lib/site-url";
+import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { CalendarRange, Gift, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -124,9 +125,12 @@ export function ChallengeLandingView({
           </div>
 
           {notStarted ? (
-            <p className="mt-3 rounded-lg bg-muted px-3 py-2 text-sm">
-              Starts {challenge.startDate}. Join now — we&apos;ll remind you when it&apos;s time.
-            </p>
+            <div className="mt-3 space-y-2">
+              <ChallengeStartCountdown startDate={challenge.startDate} variant="hero" />
+              <p className="text-sm text-muted-foreground">
+                Join now — your spot is saved and activities unlock when the countdown ends.
+              </p>
+            </div>
           ) : null}
           {ended ? (
             <p className="mt-3 rounded-lg bg-muted px-3 py-2 text-sm">

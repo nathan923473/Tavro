@@ -14,6 +14,8 @@ import type { ChallengeChatMessage } from "@/lib/challenge-chat";
 import { challengeInvitePath } from "@/lib/site-url";
 import type { Challenge } from "@/types";
 import { ReportContentMenu } from "@/components/moderation/report-content-menu";
+import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
+import { isChallengeUpcoming } from "@/lib/challenge-countdown";
 import { CalendarRange, Gift, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -137,6 +139,14 @@ export function ChallengeCard({
           </Badge>
         ))}
       </div>
+      {isChallengeUpcoming(challenge.startDate) ? (
+        <ChallengeStartCountdown
+          startDate={challenge.startDate}
+          variant="banner"
+          className="mt-3"
+          label="Challenge starts in"
+        />
+      ) : null}
       <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1">
           <CalendarRange className="h-3.5 w-3.5" aria-hidden />
