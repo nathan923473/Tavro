@@ -14,9 +14,34 @@ import {
 import type { ChallengeCategory } from "@/types/creator-studio";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { ShareChallengeButton } from "@/components/share/share-challenge-button";
+import { challengeTotalDays } from "@/lib/challenge-day";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+
+type ScheduleDraftItem = {
+  dayLabel: string;
+  title: string;
+  body: string;
+  isRest: boolean;
+  weekTheme: string;
+};
+
+function buildScheduleForDayCount(
+  totalDays: number,
+  existing: ScheduleDraftItem[],
+): ScheduleDraftItem[] {
+  return Array.from({ length: totalDays }, (_, i) => {
+    const prev = existing[i];
+    return {
+      dayLabel: prev?.dayLabel?.trim() ? prev.dayLabel : `Day ${i + 1}`,
+      title: prev?.title ?? "",
+      body: prev?.body ?? "",
+      isRest: prev?.isRest ?? false,
+      weekTheme: prev?.weekTheme ?? "",
+    };
+  });
+}
 
 const CATEGORIES: { value: ChallengeCategory; label: string }[] = [
   { value: "walking", label: "Walking" },
@@ -52,7 +77,7 @@ export function ChallengeBuilderWizard() {
   const [category, setCategory] = useState<ChallengeCategory>(template.category);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [schedule, setSchedule] = useState(
+  const [schedule, setSchedule] = useState<ScheduleDraftItem[]>(
     template.schedule.map((s) => ({
       dayLabel: s.dayLabel,
       title: s.title,
@@ -61,6 +86,32 @@ export function ChallengeBuilderWizard() {
       weekTheme: s.weekTheme ?? "",
     })),
   );
+  const [selectedDays, setSelectedDays] = useState<Set<number>>(() => new Set());
+  const [bulkTitle, setBulkTitle] = useState("");
+  const [bulkFrom, setBulkFrom] = useState(1);
+  const [bulkTo, setBulkTo] = useState(1);
+
+  const plannedDayCount = useMemo(() => {
+    if (!startDate || !endDate) return 0;
+    try {
+      return challengeTotalDays(startDate, endDate);
+    } catch {
+      return 0;
+    }
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    if (step !== 3 || plannedDayCount < 1) return;
+    setSchedule((prev) => buildScheduleForDayCount(plannedDayCount, prev));
+    setBulkTo(plannedDayCount);
+  }, [step, plannedDayCount]);
+
+  useEffect(() => {
+    if (plannedDayCount > 0) {
+      setBulkTo((prev) => Math.min(Math.max(prev, 1), plannedDayCount));
+      setBulkFrom((prev) => Math.min(Math.max(prev, 1), plannedDayCount));
+    }
+  }, [plannedDayCount]);
 
   function saveDraft(nextStep?: number) {
     startTransition(async () => {
@@ -223,74 +274,24 @@ export function ChallengeBuilderWizard() {
       ) : null}
 
       {step === 3 ? (
-        <Card className="space-y-3">
-          <h2 className="font-semibold">Schedule</h2>
-          <ul className="space-y-2">
-            {schedule.map((item, i) => (
-              <li key={i} className="rounded-xl border border-border p-3 text-sm">
-                <input
-                  className="mb-1 w-full rounded-lg border border-border px-2 py-1"
-                  value={item.dayLabel}
-                  onChange={(e) => {
-                    const next = [...schedule];
-                    next[i] = { ...next[i], dayLabel: e.target.value };
-                    setSchedule(next);
-                  }}
-                  placeholder="Day label"
-                />
-                <input
-                  className="mb-1 w-full rounded-lg border border-border px-2 py-1 font-medium"
-                  value={item.title}
-                  onChange={(e) => {
-                    const next = [...schedule];
-                    next[i] = { ...next[i], title: e.target.value };
-                    setSchedule(next);
-                  }}
-                  placeholder="Activity title"
-                />
-                <label className="flex items-center gap-2 text-xs">
-                  <input
-                    type="checkbox"
-                    checked={item.isRest}
-                    onChange={(e) => {
-                      const next = [...schedule];
-                      next[i] = { ...next[i], isRest: e.target.checked };
-                      setSchedule(next);
-                    }}
-                  />
-                  Rest / recovery day
-                </label>
-              </li>
-            ))}
-          </ul>
-          <Button
-            type="button"
-            variant="secondary"
-            fullWidth
-            onClick={() =>
-              setSchedule([
-                ...schedule,
-                {
-                  dayLabel: `Day ${schedule.length + 1}`,
-                  title: "Activity",
-                  body: "",
-                  isRest: false,
-                  weekTheme: "",
-                },
-              ])
-            }
-          >
-            + Add day
-          </Button>
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={() => setStep(2)}>
-              Back
-            </Button>
-            <Button type="button" fullWidth disabled={pending} onClick={() => saveDraft(4)}>
-              Preview
-            </Button>
-          </div>
-        </Card>
+        <ScheduleStep
+          schedule={schedule}
+          setSchedule={setSchedule}
+          plannedDayCount={plannedDayCount}
+          startDate={startDate}
+          endDate={endDate}
+          selectedDays={selectedDays}
+          setSelectedDays={setSelectedDays}
+          bulkTitle={bulkTitle}
+          setBulkTitle={setBulkTitle}
+          bulkFrom={bulkFrom}
+          setBulkFrom={setBulkFrom}
+          bulkTo={bulkTo}
+          setBulkTo={setBulkTo}
+          pending={pending}
+          onBack={() => setStep(2)}
+          onPreview={() => saveDraft(4)}
+        />
       ) : null}
 
       {step === 4 ? (
@@ -346,6 +347,246 @@ export function ChallengeBuilderWizard() {
         </p>
       ) : null}
     </div>
+  );
+}
+
+function ScheduleStep({
+  schedule,
+  setSchedule,
+  plannedDayCount,
+  startDate,
+  endDate,
+  selectedDays,
+  setSelectedDays,
+  bulkTitle,
+  setBulkTitle,
+  bulkFrom,
+  setBulkFrom,
+  bulkTo,
+  setBulkTo,
+  pending,
+  onBack,
+  onPreview,
+}: {
+  schedule: ScheduleDraftItem[];
+  setSchedule: (next: ScheduleDraftItem[]) => void;
+  plannedDayCount: number;
+  startDate: string;
+  endDate: string;
+  selectedDays: Set<number>;
+  setSelectedDays: (next: Set<number>) => void;
+  bulkTitle: string;
+  setBulkTitle: (v: string) => void;
+  bulkFrom: number;
+  setBulkFrom: (v: number) => void;
+  bulkTo: number;
+  setBulkTo: (v: number) => void;
+  pending: boolean;
+  onBack: () => void;
+  onPreview: () => void;
+}) {
+  function applyBulkToIndices(indices: number[], title: string, asRest: boolean) {
+    if (!title.trim() && !asRest) return;
+    const next = [...schedule];
+    for (const i of indices) {
+      if (i < 0 || i >= next.length) continue;
+      next[i] = {
+        ...next[i],
+        ...(title.trim() ? { title: title.trim(), isRest: false } : {}),
+        ...(asRest ? { isRest: true, title: next[i].title || "Rest" } : {}),
+      };
+    }
+    setSchedule(next);
+  }
+
+  function applyBulkRange() {
+    const from = Math.min(bulkFrom, bulkTo);
+    const to = Math.max(bulkFrom, bulkTo);
+    const indices: number[] = [];
+    for (let d = from; d <= to; d++) indices.push(d - 1);
+    applyBulkToIndices(indices, bulkTitle, false);
+  }
+
+  function applyBulkToSelected() {
+    applyBulkToIndices([...selectedDays], bulkTitle, false);
+  }
+
+  function toggleDaySelected(index: number) {
+    const next = new Set(selectedDays);
+    if (next.has(index)) next.delete(index);
+    else next.add(index);
+    setSelectedDays(next);
+  }
+
+  function selectAllDays() {
+    setSelectedDays(new Set(schedule.map((_, i) => i)));
+  }
+
+  function clearSelectedDays() {
+    setSelectedDays(new Set());
+  }
+
+  return (
+    <Card className="space-y-3">
+      <div>
+        <h2 className="font-semibold">Schedule</h2>
+        {plannedDayCount > 0 ? (
+          <p className="mt-1 text-sm text-muted-foreground">
+            {plannedDayCount} days · {startDate} → {endDate}. One row per challenge day — fill habits
+            below or apply to many days at once.
+          </p>
+        ) : (
+          <p className="mt-1 text-sm text-amber-800">
+            Set start and end dates on the basics step first.
+          </p>
+        )}
+      </div>
+
+      <Card padding="sm" className="space-y-3 border-primary/20 bg-secondary/20">
+        <p className="text-sm font-semibold">Add habit to multiple days</p>
+        <input
+          className="w-full rounded-lg border border-border px-3 py-2 text-sm font-medium"
+          value={bulkTitle}
+          onChange={(e) => setBulkTitle(e.target.value)}
+          placeholder="e.g. 10,000 steps or 30-min walk"
+        />
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <label className="block">
+            <span className="text-xs font-medium text-muted-foreground">From day</span>
+            <input
+              type="number"
+              min={1}
+              max={schedule.length || 1}
+              className="mt-0.5 w-full rounded-lg border border-border px-2 py-1.5"
+              value={bulkFrom}
+              onChange={(e) => setBulkFrom(Number(e.target.value) || 1)}
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs font-medium text-muted-foreground">To day</span>
+            <input
+              type="number"
+              min={1}
+              max={schedule.length || 1}
+              className="mt-0.5 w-full rounded-lg border border-border px-2 py-1.5"
+              value={bulkTo}
+              onChange={(e) => setBulkTo(Number(e.target.value) || 1)}
+            />
+          </label>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            type="button"
+            variant="secondary"
+            className="flex-1"
+            disabled={!bulkTitle.trim()}
+            onClick={applyBulkRange}
+          >
+            Apply to day range
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            className="flex-1"
+            disabled={!bulkTitle.trim() || selectedDays.size === 0}
+            onClick={applyBulkToSelected}
+          >
+            Apply to selected ({selectedDays.size})
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-2 text-xs">
+          <button type="button" className="font-semibold text-primary" onClick={selectAllDays}>
+            Select all days
+          </button>
+          <span className="text-muted-foreground">·</span>
+          <button type="button" className="font-semibold text-primary" onClick={clearSelectedDays}>
+            Clear selection
+          </button>
+          <span className="text-muted-foreground">·</span>
+          <button
+            type="button"
+            className="font-semibold text-primary"
+            onClick={() => {
+              if (!bulkTitle.trim()) return;
+              applyBulkToIndices(
+                schedule.map((_, i) => i),
+                bulkTitle,
+                false,
+              );
+            }}
+          >
+            Apply to all days
+          </button>
+        </div>
+      </Card>
+
+      <div className="max-h-[min(420px,50vh)] space-y-2 overflow-y-auto pr-1">
+        <ul className="space-y-2">
+          {schedule.map((item, i) => (
+            <li
+              key={i}
+              className={`rounded-xl border p-3 text-sm ${
+                selectedDays.has(i) ? "border-primary bg-primary/5" : "border-border"
+              }`}
+            >
+              <div className="mb-2 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedDays.has(i)}
+                  onChange={() => toggleDaySelected(i)}
+                  aria-label={`Select ${item.dayLabel}`}
+                />
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {item.dayLabel}
+                </span>
+              </div>
+              <input
+                className="mb-1 w-full rounded-lg border border-border px-2 py-1 font-medium"
+                value={item.title}
+                onChange={(e) => {
+                  const next = [...schedule];
+                  next[i] = { ...next[i], title: e.target.value };
+                  setSchedule(next);
+                }}
+                placeholder="Activity / habit for this day"
+              />
+              <label className="flex items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  checked={item.isRest}
+                  onChange={(e) => {
+                    const next = [...schedule];
+                    next[i] = { ...next[i], isRest: e.target.checked };
+                    setSchedule(next);
+                  }}
+                />
+                Rest / recovery day
+              </label>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {plannedDayCount > 0 && schedule.length !== plannedDayCount ? (
+        <Button
+          type="button"
+          variant="outline"
+          fullWidth
+          onClick={() => setSchedule(buildScheduleForDayCount(plannedDayCount, schedule))}
+        >
+          Reset to {plannedDayCount} days from your dates
+        </Button>
+      ) : null}
+
+      <div className="flex gap-2">
+        <Button type="button" variant="outline" onClick={onBack}>
+          Back
+        </Button>
+        <Button type="button" fullWidth disabled={pending || schedule.length === 0} onClick={onPreview}>
+          Preview
+        </Button>
+      </div>
+    </Card>
   );
 }
 
