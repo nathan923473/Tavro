@@ -2,8 +2,9 @@ import { ChallengesInteractive } from "@/components/challenges/challenges-intera
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
+import { DiscoverInteractive } from "@/components/discover/discover-interactive";
 import { fetchChallengesForUser } from "@/lib/data/challenges";
-import { fetchCommunitiesList } from "@/lib/data/communities";
+import { fetchDiscoverSections } from "@/lib/data/discover";
 import { fetchChallengeMessages } from "@/lib/data/messages";
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
@@ -20,9 +21,9 @@ export default async function ChallengesPage() {
     user?.email?.split("@")[0] ??
     "Member";
 
-  const [{ mine, discover }, communities] = await Promise.all([
+  const [{ mine }, discoverSections] = await Promise.all([
     fetchChallengesForUser(userId),
-    fetchCommunitiesList(),
+    fetchDiscoverSections(),
   ]);
 
   const challengeMessages: Record<string, Awaited<ReturnType<typeof fetchChallengeMessages>>> = {};
@@ -34,14 +35,11 @@ export default async function ChallengesPage() {
     <div className="animate-fade-up">
       <PageHeader
         title="Challenges"
-        subtitle="Free creator-led habits · discover & join"
-        action={
-          <Link href="/discover" className="text-sm font-semibold text-primary">
-            Discover
-          </Link>
-        }
+        subtitle="Search free creator challenges · join in one tap"
       />
       <div className="space-y-6 px-4 py-4">
+        <DiscoverInteractive initial={discoverSections} variant="embedded" />
+
         <Link
           href="/challenges/create"
           className="block rounded-2xl border border-dashed border-border bg-surface px-4 py-3 text-center text-sm font-semibold text-primary"
@@ -74,51 +72,11 @@ export default async function ChallengesPage() {
 
         <ChallengesInteractive
           mine={mine}
-          discover={discover}
           viewerName={viewerName}
           loggedIn={Boolean(userId)}
           viewerUserId={userId}
           challengeMessages={challengeMessages}
         />
-
-        <section aria-labelledby="creators-heading">
-          <h2
-            id="creators-heading"
-            className="mb-2 flex items-center gap-2 px-1 text-base font-semibold"
-          >
-            <Sparkles className="h-4 w-4 text-primary" aria-hidden />
-            Creator communities
-          </h2>
-          {communities.length === 0 ? (
-            <p className="px-1 text-sm text-muted-foreground">
-              No creator communities yet. Approved creators publish from Studio.
-            </p>
-          ) : (
-            <ul className="mb-6 space-y-2">
-              {communities.map((c) => (
-                <li key={c.id}>
-                  <Link href={`/creator/${c.slug}`}>
-                    <Card className="flex items-center gap-3 p-3 transition-colors hover:bg-muted/40">
-                      <div
-                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white"
-                        style={{ backgroundColor: c.brandColor }}
-                      >
-                        {c.avatarInitials}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium">{c.communityName}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {c.memberCount.toLocaleString()} followers ·{" "}
-                          {c.challengesHosted} challenges
-                        </p>
-                      </div>
-                    </Card>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
       </div>
     </div>
   );

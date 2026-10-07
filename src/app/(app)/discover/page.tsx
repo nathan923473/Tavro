@@ -11,7 +11,7 @@ export default async function DiscoverPage() {
     <div className="animate-fade-up pb-6">
       <PageHeader
         title="Discover"
-        subtitle="Free creator challenges · search creators & habits"
+        subtitle="Same search as the Challenges tab — browse everything in one place"
       />
       <div className="px-4 py-4">
         <DiscoverInteractive initial={sections} />

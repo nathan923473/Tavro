@@ -311,6 +311,22 @@ export async function createAnnouncementAction(input: {
   }
 
   revalidateStudio(community.slug);
+  try {
+    const { notifyFollowersAnnouncement } = await import("@/lib/data/notifications");
+    const { data: meta } = await supabase
+      .from("creator_communities")
+      .select("community_name")
+      .eq("id", input.communityId)
+      .maybeSingle();
+    await notifyFollowersAnnouncement(
+      input.communityId,
+      meta?.community_name ?? "Creator",
+      input.title.trim(),
+      `/following`,
+    );
+  } catch {
+    /* optional */
+  }
 }
 
 export async function upsertCreatorLinkAction(input: {
