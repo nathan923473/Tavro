@@ -1,3 +1,4 @@
+import { JoinFreeChallengeCta } from "@/components/dashboard/join-free-challenge-cta";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Sparkles } from "lucide-react";
