@@ -72,6 +72,17 @@ function mergeItemHabits(item: ScheduleDraftItem, add: string[]): ScheduleDraftI
   return setItemHabits(item, merged.length ? merged : [""]);
 }
 
+function removeHabitsFromItem(item: ScheduleDraftItem, toRemove: string[]): ScheduleDraftItem {
+  const removeSet = new Set(toRemove.map((h) => h.trim().toLowerCase()).filter(Boolean));
+  if (!removeSet.size) return item;
+  const kept = habitsFromItem(item).filter((h) => !removeSet.has(h.trim().toLowerCase()));
+  return setItemHabits(item, kept.length ? kept : [""]);
+}
+
+function clearHabitsOnItem(item: ScheduleDraftItem): ScheduleDraftItem {
+  return { ...item, title: "", body: "", isRest: item.isRest };
+}
+
 function parseBulkHabits(text: string): string[] {
   return text
     .split(/\n+/)
@@ -144,8 +155,14 @@ export function ChallengeBuilderWizard() {
   const [bulkAppend, setBulkAppend] = useState(false);
   const [bulkFrom, setBulkFrom] = useState(1);
   const [bulkTo, setBulkTo] = useState(1);
+  const [scheduleSavedFlash, setScheduleSavedFlash] = useState(false);
 
   const datesInvalid = Boolean(startDate && endDate && endDate < startDate);
+
+  function updateSchedule(next: ScheduleDraftItem[] | ((prev: ScheduleDraftItem[]) => ScheduleDraftItem[])) {
+    setSchedule(next);
+    setScheduleSavedFlash(false);
+  }
 
   const plannedDayCount = useMemo(() => {
     if (!startDate || !endDate || endDate < startDate) return 0;
@@ -182,6 +199,9 @@ export function ChallengeBuilderWizard() {
           schedule,
         });
         setChallengeId(result.challengeId);
+        if (step === 3) {
+          setScheduleSavedFlash(true);
+        }
         if (typeof nextStep === "number") setStep(nextStep);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Save failed.");
@@ -380,7 +400,7 @@ export function ChallengeBuilderWizard() {
       {step === 3 ? (
         <ScheduleStep
           schedule={schedule}
-          setSchedule={setSchedule}
+          setSchedule={updateSchedule}
           plannedDayCount={plannedDayCount}
           startDate={startDate}
           endDate={endDate}
@@ -395,7 +415,9 @@ export function ChallengeBuilderWizard() {
           bulkTo={bulkTo}
           setBulkTo={setBulkTo}
           pending={pending}
+          scheduleSavedFlash={scheduleSavedFlash}
           onBack={() => setStep(2)}
+          onSave={() => saveDraft()}
           onPreview={() => saveDraft(4)}
         />
       ) : null}
@@ -475,11 +497,15 @@ function ScheduleStep({
   bulkTo,
   setBulkTo,
   pending,
+  scheduleSavedFlash,
   onBack,
+  onSave,
   onPreview,
 }: {
   schedule: ScheduleDraftItem[];
-  setSchedule: (next: ScheduleDraftItem[]) => void;
+  setSchedule: (
+    next: ScheduleDraftItem[] | ((prev: ScheduleDraftItem[]) => ScheduleDraftItem[]),
+  ) => void;
   plannedDayCount: number;
   startDate: string;
   endDate: string;
@@ -494,7 +520,9 @@ function ScheduleStep({
   bulkTo: number;
   setBulkTo: (v: number) => void;
   pending: boolean;
+  scheduleSavedFlash: boolean;
   onBack: () => void;
+  onSave: () => void;
   onPreview: () => void;
 }) {
   const [weekdays, setWeekdays] = useState<Set<number>>(() => new Set());
@@ -520,12 +548,33 @@ function ScheduleStep({
     setSchedule(next);
   }
 
-  function applyBulkRange() {
-    const from = Math.min(bulkFrom, bulkTo);
-    const to = Math.max(bulkFrom, bulkTo);
+  function removeHabitsFromIndices(indices: number[], toRemove: string[]) {
+    if (!toRemove.length) return;
+    const next = [...schedule];
+    for (const i of indices) {
+      if (i < 0 || i >= next.length) continue;
+      next[i] = removeHabitsFromItem(next[i], toRemove);
+    }
+    setSchedule(next);
+  }
+
+  function clearHabitsOnIndices(indices: number[]) {
+    const next = [...schedule];
+    for (const i of indices) {
+      if (i < 0 || i >= next.length) continue;
+      next[i] = clearHabitsOnItem(next[i]);
+    }
+    setSchedule(next);
+  }
+
+  function indicesForRange() {
     const indices: number[] = [];
-    for (let d = from; d <= to; d++) indices.push(d - 1);
-    applyBulkToIndices(indices, bulkHabits, bulkAppend ? "append" : "replace");
+    for (let d = rangeFrom; d <= rangeTo; d++) indices.push(d - 1);
+    return indices;
+  }
+
+  function applyBulkRange() {
+    applyBulkToIndices(indicesForRange(), bulkHabits, bulkAppend ? "append" : "replace");
   }
 
   function applyBulkToSelected() {
@@ -681,6 +730,52 @@ function ScheduleStep({
           >
             Apply to all days
           </button>
+        </div>
+
+        <div className="border-t border-border/60 pt-3 space-y-2">
+          <p className="text-sm font-semibold">Remove habits</p>
+          <p className="text-xs text-muted-foreground">
+            Uses the same lines in the box above — removes matching habits (not rest days).
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 text-sm"
+              disabled={!hasBulkHabits}
+              onClick={() => removeHabitsFromIndices(indicesForRange(), bulkHabits)}
+            >
+              Remove from day range
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 text-sm"
+              disabled={!hasBulkHabits || selectedDays.size === 0}
+              onClick={() => removeHabitsFromIndices([...selectedDays], bulkHabits)}
+            >
+              Remove from selected
+            </Button>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            fullWidth
+            className="border-red-200 text-sm text-red-700"
+            disabled={selectedDays.size === 0}
+            onClick={() => {
+              if (
+                !window.confirm(
+                  `Clear every habit on ${selectedDays.size} selected day(s)? Rest-day flags stay as-is.`,
+                )
+              ) {
+                return;
+              }
+              clearHabitsOnIndices([...selectedDays]);
+            }}
+          >
+            Clear all habits on selected days
+          </Button>
         </div>
 
         <div className="border-t border-border/60 pt-3">
@@ -855,12 +950,29 @@ function ScheduleStep({
         </Button>
       ) : null}
 
+      <Card padding="sm" className="space-y-2 border-primary/30 bg-background">
+        <Button type="button" fullWidth disabled={pending || schedule.length === 0} onClick={onSave}>
+          {pending ? "Saving…" : "Save schedule"}
+        </Button>
+        {scheduleSavedFlash ? (
+          <p className="text-center text-sm font-medium text-primary" role="status">
+            Schedule saved — participants will see these habits after you publish (or on open
+            challenges immediately).
+          </p>
+        ) : (
+          <p className="text-center text-xs text-muted-foreground">
+            Apply or edit habits above, then save. You can leave and come back without losing work
+            once saved.
+          </p>
+        )}
+      </Card>
+
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={onBack}>
           Back
         </Button>
         <Button type="button" fullWidth disabled={pending || schedule.length === 0} onClick={onPreview}>
-          Preview
+          Save &amp; preview
         </Button>
       </div>
     </Card>
