@@ -15,11 +15,13 @@ create index if not exists challenge_schedule_completions_user_challenge_idx
 
 alter table public.challenge_schedule_completions enable row level security;
 
+drop policy if exists "Users manage own schedule completions" on public.challenge_schedule_completions;
 create policy "Users manage own schedule completions"
   on public.challenge_schedule_completions for all
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
+drop policy if exists "Creators read aggregate completions for own challenges" on public.challenge_schedule_completions;
 create policy "Creators read aggregate completions for own challenges"
   on public.challenge_schedule_completions for select
   using (
@@ -41,6 +43,7 @@ create table if not exists public.challenge_daily_check_ins (
 
 alter table public.challenge_daily_check_ins enable row level security;
 
+drop policy if exists "Users manage own challenge check-ins" on public.challenge_daily_check_ins;
 create policy "Users manage own challenge check-ins"
   on public.challenge_daily_check_ins for all
   using (user_id = auth.uid())

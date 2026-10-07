@@ -17,8 +17,8 @@
 - **Joined:** `/challenges/{id}` with in-challenge tabs (not bottom nav).
 - Visiting public URL while joined → redirect to hub.
 
-## Migration 017
+## Migrations 015 + 017
 
-Optional but recommended: `activity_key` + `progress_number` for multiple daily activities and manual steps.
+If `015_challenge_daily_progress.sql` deadlocks in the SQL Editor, use **`supabase/scripts/015b_one_shot_challenge_daily.sql`** instead (close other tabs, stop dev server, run once, retry after 30s if deadlock).
 
 Accountability groups: unchanged.
