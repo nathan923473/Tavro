@@ -36,6 +36,49 @@ type ScheduleDraftItem = {
   weekTheme: string;
 };
 
+function habitsFromItem(item: ScheduleDraftItem): string[] {
+  const extras = item.body
+    .split(/\n+/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const title = item.title.trim();
+  if (!title && extras.length === 0) return [""];
+  if (!title) return extras;
+  const out = [title];
+  for (const e of extras) {
+    if (e.toLowerCase() !== title.toLowerCase()) out.push(e);
+  }
+  return out;
+}
+
+function setItemHabits(item: ScheduleDraftItem, habits: string[]): ScheduleDraftItem {
+  const cleaned = habits.map((h) => h.trim()).filter(Boolean);
+  return {
+    ...item,
+    title: cleaned[0] ?? "",
+    body: cleaned.slice(1).join("\n"),
+    ...(cleaned.length ? { isRest: false } : {}),
+  };
+}
+
+function mergeItemHabits(item: ScheduleDraftItem, add: string[]): ScheduleDraftItem {
+  const existing = habitsFromItem(item).filter(Boolean);
+  const merged = [...existing];
+  for (const h of add) {
+    const t = h.trim();
+    if (!t) continue;
+    if (!merged.some((m) => m.toLowerCase() === t.toLowerCase())) merged.push(t);
+  }
+  return setItemHabits(item, merged.length ? merged : [""]);
+}
+
+function parseBulkHabits(text: string): string[] {
+  return text
+    .split(/\n+/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+}
+
 function buildScheduleForDayCount(
   totalDays: number,
   existing: ScheduleDraftItem[],
@@ -97,7 +140,8 @@ export function ChallengeBuilderWizard() {
     })),
   );
   const [selectedDays, setSelectedDays] = useState<Set<number>>(() => new Set());
-  const [bulkTitle, setBulkTitle] = useState("");
+  const [bulkHabitsText, setBulkHabitsText] = useState("");
+  const [bulkAppend, setBulkAppend] = useState(false);
   const [bulkFrom, setBulkFrom] = useState(1);
   const [bulkTo, setBulkTo] = useState(1);
 
@@ -342,8 +386,10 @@ export function ChallengeBuilderWizard() {
           endDate={endDate}
           selectedDays={selectedDays}
           setSelectedDays={setSelectedDays}
-          bulkTitle={bulkTitle}
-          setBulkTitle={setBulkTitle}
+          bulkHabitsText={bulkHabitsText}
+          setBulkHabitsText={setBulkHabitsText}
+          bulkAppend={bulkAppend}
+          setBulkAppend={setBulkAppend}
           bulkFrom={bulkFrom}
           setBulkFrom={setBulkFrom}
           bulkTo={bulkTo}
@@ -366,12 +412,14 @@ export function ChallengeBuilderWizard() {
             {plannedDayCount} days · {startDate} → {endDate} · Free challenge
           </p>
           <ul className="space-y-1 text-sm">
-            {schedule.slice(0, 5).map((s, i) => (
-              <li key={i}>
-                {s.dayLabel}: {s.title}
-                {s.isRest ? " (rest)" : ""}
-              </li>
-            ))}
+            {schedule.slice(0, 5).map((s, i) => {
+              const dayHabits = habitsFromItem(s).filter(Boolean);
+              return (
+                <li key={i}>
+                  {s.dayLabel}: {s.isRest ? "Rest" : dayHabits.join(" · ") || "—"}
+                </li>
+              );
+            })}
           </ul>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => setStep(3)}>
@@ -418,8 +466,10 @@ function ScheduleStep({
   endDate,
   selectedDays,
   setSelectedDays,
-  bulkTitle,
-  setBulkTitle,
+  bulkHabitsText,
+  setBulkHabitsText,
+  bulkAppend,
+  setBulkAppend,
   bulkFrom,
   setBulkFrom,
   bulkTo,
@@ -435,8 +485,10 @@ function ScheduleStep({
   endDate: string;
   selectedDays: Set<number>;
   setSelectedDays: Dispatch<SetStateAction<Set<number>>>;
-  bulkTitle: string;
-  setBulkTitle: (v: string) => void;
+  bulkHabitsText: string;
+  setBulkHabitsText: (v: string) => void;
+  bulkAppend: boolean;
+  setBulkAppend: (v: boolean) => void;
   bulkFrom: number;
   setBulkFrom: (v: number) => void;
   bulkTo: number;
@@ -452,16 +504,18 @@ function ScheduleStep({
   const rangeFrom = Math.min(bulkFrom, bulkTo);
   const rangeTo = Math.max(bulkFrom, bulkTo);
 
-  function applyBulkToIndices(indices: number[], title: string, asRest: boolean) {
-    if (!title.trim() && !asRest) return;
+  const bulkHabits = parseBulkHabits(bulkHabitsText);
+  const hasBulkHabits = bulkHabits.length > 0;
+
+  function applyBulkToIndices(indices: number[], habits: string[], mode: "replace" | "append") {
+    if (!habits.length) return;
     const next = [...schedule];
     for (const i of indices) {
       if (i < 0 || i >= next.length) continue;
-      next[i] = {
-        ...next[i],
-        ...(title.trim() ? { title: title.trim(), isRest: false } : {}),
-        ...(asRest ? { isRest: true, title: next[i].title || "Rest" } : {}),
-      };
+      next[i] =
+        mode === "append"
+          ? mergeItemHabits(next[i], habits)
+          : setItemHabits(next[i], habits);
     }
     setSchedule(next);
   }
@@ -471,11 +525,11 @@ function ScheduleStep({
     const to = Math.max(bulkFrom, bulkTo);
     const indices: number[] = [];
     for (let d = from; d <= to; d++) indices.push(d - 1);
-    applyBulkToIndices(indices, bulkTitle, false);
+    applyBulkToIndices(indices, bulkHabits, bulkAppend ? "append" : "replace");
   }
 
   function applyBulkToSelected() {
-    applyBulkToIndices([...selectedDays], bulkTitle, false);
+    applyBulkToIndices([...selectedDays], bulkHabits, bulkAppend ? "append" : "replace");
   }
 
   function toggleDaySelected(index: number) {
@@ -505,12 +559,12 @@ function ScheduleStep({
   function applyToWeekdays() {
     if (!startDate) return;
     const indices = indicesForWeekdaysInRange(startDate, rangeFrom, rangeTo, weekdays);
-    applyBulkToIndices(indices, bulkTitle, false);
+    applyBulkToIndices(indices, bulkHabits, bulkAppend ? "append" : "replace");
   }
 
   function applyToInterval(step: number) {
     const indices = indicesForEveryNthDay(rangeFrom, rangeTo, step, intervalAnchor);
-    applyBulkToIndices(indices, bulkTitle, false);
+    applyBulkToIndices(indices, bulkHabits, bulkAppend ? "append" : "replace");
   }
 
   function selectMatchingWeekdaysInRange() {
@@ -530,8 +584,8 @@ function ScheduleStep({
         <h2 className="font-semibold">Schedule</h2>
         {plannedDayCount > 0 ? (
           <p className="mt-1 text-sm text-muted-foreground">
-            {plannedDayCount} days · {startDate} → {endDate}. One row per challenge day — fill habits
-            below or apply to many days at once.
+            {plannedDayCount} days · {startDate} → {endDate}. Each day can have multiple habits
+            (participants check off each one on Today).
           </p>
         ) : (
           <p className="mt-1 text-sm text-amber-800">
@@ -541,13 +595,25 @@ function ScheduleStep({
       </div>
 
       <Card padding="sm" className="space-y-3 border-primary/20 bg-secondary/20">
-        <p className="text-sm font-semibold">Add habit to multiple days</p>
-        <input
+        <p className="text-sm font-semibold">Add habits to multiple days</p>
+        <label className="block text-xs text-muted-foreground">
+          One habit per line (e.g. 10,000 steps on line 1, Hydration check-in on line 2)
+        </label>
+        <textarea
           className="w-full rounded-lg border border-border px-3 py-2 text-sm font-medium"
-          value={bulkTitle}
-          onChange={(e) => setBulkTitle(e.target.value)}
-          placeholder="e.g. 10,000 steps or 30-min walk"
+          rows={3}
+          value={bulkHabitsText}
+          onChange={(e) => setBulkHabitsText(e.target.value)}
+          placeholder={"10,000 steps\nHydration check-in\nEvening stretch"}
         />
+        <label className="flex items-center gap-2 text-xs">
+          <input
+            type="checkbox"
+            checked={bulkAppend}
+            onChange={(e) => setBulkAppend(e.target.checked)}
+          />
+          Add to existing habits (keep what&apos;s already on each day)
+        </label>
         <div className="grid grid-cols-2 gap-2 text-sm">
           <label className="block">
             <span className="text-xs font-medium text-muted-foreground">From day</span>
@@ -577,7 +643,7 @@ function ScheduleStep({
             type="button"
             variant="secondary"
             className="flex-1"
-            disabled={!bulkTitle.trim()}
+            disabled={!hasBulkHabits}
             onClick={applyBulkRange}
           >
             Apply to day range
@@ -586,7 +652,7 @@ function ScheduleStep({
             type="button"
             variant="secondary"
             className="flex-1"
-            disabled={!bulkTitle.trim() || selectedDays.size === 0}
+            disabled={!hasBulkHabits || selectedDays.size === 0}
             onClick={applyBulkToSelected}
           >
             Apply to selected ({selectedDays.size})
@@ -605,11 +671,11 @@ function ScheduleStep({
             type="button"
             className="font-semibold text-primary"
             onClick={() => {
-              if (!bulkTitle.trim()) return;
+              if (!hasBulkHabits) return;
               applyBulkToIndices(
                 schedule.map((_, i) => i),
-                bulkTitle,
-                false,
+                bulkHabits,
+                bulkAppend ? "append" : "replace",
               );
             }}
           >
@@ -642,7 +708,7 @@ function ScheduleStep({
               type="button"
               variant="secondary"
               className="flex-1 text-sm"
-              disabled={!bulkTitle.trim() || weekdays.size === 0 || !startDate}
+              disabled={!hasBulkHabits || weekdays.size === 0 || !startDate}
               onClick={applyToWeekdays}
             >
               Apply to selected weekdays
@@ -710,7 +776,7 @@ function ScheduleStep({
               type="button"
               variant="secondary"
               className="flex-1 text-sm"
-              disabled={!bulkTitle.trim()}
+              disabled={!hasBulkHabits}
               onClick={() => applyToInterval(intervalStep)}
             >
               Apply every {intervalStep} days
@@ -752,17 +818,16 @@ function ScheduleStep({
                   ) : null}
                 </span>
               </div>
-              <input
-                className="mb-1 w-full rounded-lg border border-border px-2 py-1 font-medium"
-                value={item.title}
-                onChange={(e) => {
+              <DayHabitsEditor
+                habits={habitsFromItem(item)}
+                disabled={item.isRest}
+                onChange={(habits) => {
                   const next = [...schedule];
-                  next[i] = { ...next[i], title: e.target.value };
+                  next[i] = setItemHabits(next[i], habits);
                   setSchedule(next);
                 }}
-                placeholder="Activity / habit for this day"
               />
-              <label className="flex items-center gap-2 text-xs">
+              <label className="mt-2 flex items-center gap-2 text-xs">
                 <input
                   type="checkbox"
                   checked={item.isRest}
@@ -799,6 +864,72 @@ function ScheduleStep({
         </Button>
       </div>
     </Card>
+  );
+}
+
+function DayHabitsEditor({
+  habits,
+  onChange,
+  disabled,
+}: {
+  habits: string[];
+  onChange: (habits: string[]) => void;
+  disabled?: boolean;
+}) {
+  const rows = habits.length ? habits : [""];
+
+  function updateRow(index: number, value: string) {
+    const next = [...rows];
+    next[index] = value;
+    onChange(next);
+  }
+
+  function addRow() {
+    onChange([...rows, ""]);
+  }
+
+  function removeRow(index: number) {
+    if (rows.length <= 1) {
+      onChange([""]);
+      return;
+    }
+    onChange(rows.filter((_, j) => j !== index));
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-medium text-muted-foreground">Habits for this day</p>
+      {rows.map((h, hi) => (
+        <div key={hi} className="flex gap-1.5">
+          <input
+            className="min-w-0 flex-1 rounded-lg border border-border px-2 py-1 font-medium disabled:opacity-50"
+            value={h}
+            disabled={disabled}
+            onChange={(e) => updateRow(hi, e.target.value)}
+            placeholder={hi === 0 ? "Primary habit" : "Additional habit"}
+          />
+          {rows.length > 1 ? (
+            <button
+              type="button"
+              className="shrink-0 rounded-lg border border-border px-2 text-xs text-muted-foreground"
+              disabled={disabled}
+              onClick={() => removeRow(hi)}
+              aria-label="Remove habit"
+            >
+              ✕
+            </button>
+          ) : null}
+        </div>
+      ))}
+      <button
+        type="button"
+        className="text-xs font-semibold text-primary disabled:opacity-50"
+        disabled={disabled}
+        onClick={addRow}
+      >
+        + Add another habit
+      </button>
+    </div>
   );
 }
 
