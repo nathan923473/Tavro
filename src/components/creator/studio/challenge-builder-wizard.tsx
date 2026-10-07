@@ -14,10 +14,18 @@ import {
 import type { ChallengeCategory } from "@/types/creator-studio";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { ShareChallengeButton } from "@/components/share/share-challenge-button";
-import { challengeEndDateForDayCount } from "@/lib/challenge-day";
+import {
+  challengeEndDateForDayCount,
+  indicesForEveryNthDay,
+  indicesForWeekdaysInRange,
+  WEEKDAY_SHORT,
+  weekdayUtcForChallengeDay,
+} from "@/lib/challenge-day";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition, type Dispatch, type SetStateAction } from "react";
+
+const INTERVAL_PRESETS = [2, 3, 4, 5, 6, 7, 10, 14] as const;
 
 type ScheduleDraftItem = {
   dayLabel: string;
@@ -395,7 +403,7 @@ function ScheduleStep({
   startDate: string;
   endDate: string;
   selectedDays: Set<number>;
-  setSelectedDays: (next: Set<number>) => void;
+  setSelectedDays: Dispatch<SetStateAction<Set<number>>>;
   bulkTitle: string;
   setBulkTitle: (v: string) => void;
   bulkFrom: number;
@@ -406,6 +414,13 @@ function ScheduleStep({
   onBack: () => void;
   onPreview: () => void;
 }) {
+  const [weekdays, setWeekdays] = useState<Set<number>>(() => new Set());
+  const [intervalStep, setIntervalStep] = useState<number>(2);
+  const [intervalAnchor, setIntervalAnchor] = useState(1);
+
+  const rangeFrom = Math.min(bulkFrom, bulkTo);
+  const rangeTo = Math.max(bulkFrom, bulkTo);
+
   function applyBulkToIndices(indices: number[], title: string, asRest: boolean) {
     if (!title.trim() && !asRest) return;
     const next = [...schedule];
@@ -445,6 +460,37 @@ function ScheduleStep({
 
   function clearSelectedDays() {
     setSelectedDays(new Set());
+  }
+
+  function toggleWeekday(w: number) {
+    setWeekdays((prev) => {
+      const next = new Set(prev);
+      if (next.has(w)) next.delete(w);
+      else next.add(w);
+      return next;
+    });
+  }
+
+  function applyToWeekdays() {
+    if (!startDate) return;
+    const indices = indicesForWeekdaysInRange(startDate, rangeFrom, rangeTo, weekdays);
+    applyBulkToIndices(indices, bulkTitle, false);
+  }
+
+  function applyToInterval(step: number) {
+    const indices = indicesForEveryNthDay(rangeFrom, rangeTo, step, intervalAnchor);
+    applyBulkToIndices(indices, bulkTitle, false);
+  }
+
+  function selectMatchingWeekdaysInRange() {
+    if (!startDate || weekdays.size === 0) return;
+    setSelectedDays(new Set(indicesForWeekdaysInRange(startDate, rangeFrom, rangeTo, weekdays)));
+  }
+
+  function selectMatchingIntervalInRange(step: number) {
+    setSelectedDays(
+      new Set(indicesForEveryNthDay(rangeFrom, rangeTo, step, intervalAnchor)),
+    );
   }
 
   return (
@@ -539,6 +585,115 @@ function ScheduleStep({
             Apply to all days
           </button>
         </div>
+
+        <div className="border-t border-border/60 pt-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            By weekday (uses From/To day above)
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {WEEKDAY_SHORT.map((label, w) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => toggleWeekday(w)}
+                className={`min-h-9 rounded-lg border px-2.5 text-xs font-semibold ${
+                  weekdays.has(w)
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+            <Button
+              type="button"
+              variant="secondary"
+              className="flex-1 text-sm"
+              disabled={!bulkTitle.trim() || weekdays.size === 0 || !startDate}
+              onClick={applyToWeekdays}
+            >
+              Apply to selected weekdays
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 text-sm"
+              disabled={weekdays.size === 0 || !startDate}
+              onClick={selectMatchingWeekdaysInRange}
+            >
+              Highlight those days
+            </Button>
+          </div>
+        </div>
+
+        <div className="border-t border-border/60 pt-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Every Nth day (within From/To range)
+          </p>
+          <label className="mt-2 block text-sm">
+            <span className="text-xs font-medium text-muted-foreground">Start pattern on day</span>
+            <input
+              type="number"
+              min={1}
+              max={schedule.length || 1}
+              className="mt-0.5 w-full rounded-lg border border-border px-2 py-1.5"
+              value={intervalAnchor}
+              onChange={(e) => setIntervalAnchor(Number(e.target.value) || 1)}
+            />
+          </label>
+          <p className="mt-1 text-xs text-muted-foreground">
+            e.g. start on day 1 + every 2 days → days 1, 3, 5…
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {INTERVAL_PRESETS.map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setIntervalStep(n)}
+                className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold ${
+                  intervalStep === n
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border"
+                }`}
+              >
+                Every {n} days
+              </button>
+            ))}
+          </div>
+          <label className="mt-2 flex items-center gap-2 text-sm">
+            <span className="shrink-0 text-xs text-muted-foreground">Custom</span>
+            <input
+              type="number"
+              min={1}
+              max={90}
+              className="w-20 rounded-lg border border-border px-2 py-1"
+              value={intervalStep}
+              onChange={(e) => setIntervalStep(Math.max(1, Number(e.target.value) || 1))}
+            />
+            <span className="text-xs text-muted-foreground">days apart</span>
+          </label>
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+            <Button
+              type="button"
+              variant="secondary"
+              className="flex-1 text-sm"
+              disabled={!bulkTitle.trim()}
+              onClick={() => applyToInterval(intervalStep)}
+            >
+              Apply every {intervalStep} days
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 text-sm"
+              onClick={() => selectMatchingIntervalInRange(intervalStep)}
+            >
+              Highlight pattern
+            </Button>
+          </div>
+        </div>
       </Card>
 
       <div className="max-h-[min(420px,50vh)] space-y-2 overflow-y-auto pr-1">
@@ -559,6 +714,11 @@ function ScheduleStep({
                 />
                 <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {item.dayLabel}
+                  {startDate ? (
+                    <span className="ml-1.5 font-normal normal-case text-muted-foreground/80">
+                      ({WEEKDAY_SHORT[weekdayUtcForChallengeDay(startDate, i + 1)]})
+                    </span>
+                  ) : null}
                 </span>
               </div>
               <input

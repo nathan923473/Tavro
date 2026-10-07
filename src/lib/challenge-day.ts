@@ -24,3 +24,48 @@ export function challengeEndDateForDayCount(startDate: string, totalDays: number
   const days = Math.max(1, Math.floor(totalDays));
   return addDaysToDateKey(startDate, days - 1);
 }
+
+export const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+
+/** UTC weekday 0=Sun … 6=Sat for 1-based challenge day index. */
+export function weekdayUtcForChallengeDay(startDate: string, dayNumber1Based: number): number {
+  const key = addDaysToDateKey(startDate, dayNumber1Based - 1);
+  return new Date(`${key}T12:00:00Z`).getUTCDay();
+}
+
+/** 0-based schedule indices whose calendar weekday is in `weekdays` (within day range). */
+export function indicesForWeekdaysInRange(
+  startDate: string,
+  fromDay: number,
+  toDay: number,
+  weekdays: Iterable<number>,
+): number[] {
+  const set = new Set(weekdays);
+  if (!startDate || set.size === 0) return [];
+  const from = Math.min(fromDay, toDay);
+  const to = Math.max(fromDay, toDay);
+  const out: number[] = [];
+  for (let d = from; d <= to; d++) {
+    if (set.has(weekdayUtcForChallengeDay(startDate, d))) out.push(d - 1);
+  }
+  return out;
+}
+
+/** 0-based indices: anchorDay, anchorDay+interval, … up to toDay (within from–to range). */
+export function indicesForEveryNthDay(
+  fromDay: number,
+  toDay: number,
+  interval: number,
+  anchorDay: number,
+): number[] {
+  const step = Math.max(1, Math.floor(interval));
+  const anchor = Math.max(1, Math.floor(anchorDay));
+  const from = Math.min(fromDay, toDay);
+  const to = Math.max(fromDay, toDay);
+  const out: number[] = [];
+  for (let d = from; d <= to; d++) {
+    if (d < anchor) continue;
+    if ((d - anchor) % step === 0) out.push(d - 1);
+  }
+  return out;
+}
