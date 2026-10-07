@@ -13,6 +13,10 @@ export function challengeInvitePath(slug: string): string {
   return `/join/${slug}`;
 }
 
+export function publicChallengePath(communitySlug: string, inviteSlug: string): string {
+  return `/creator/${communitySlug}/challenges/${inviteSlug}`;
+}
+
 export function groupInvitePath(code: string): string {
   return `/invite/group/${code}`;
 }

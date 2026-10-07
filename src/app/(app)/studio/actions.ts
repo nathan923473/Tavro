@@ -177,7 +177,7 @@ export async function publishChallengeAction(challengeId: string) {
 
   const { data: ch } = await supabase
     .from("challenges")
-    .select("invite_slug")
+    .select("invite_slug, title, community_id")
     .eq("id", challengeId)
     .single();
 
@@ -195,9 +195,22 @@ export async function publishChallengeAction(challengeId: string) {
 
   revalidateStudio(community.slug);
   revalidatePath(`/join/${ch?.invite_slug}`);
+  if (community?.slug && ch?.invite_slug) {
+    revalidatePath(`/creator/${community.slug}/challenges/${ch.invite_slug}`);
+  }
+  const creatorPath = creatorChallengePath(community.slug, ch?.invite_slug ?? "");
+  try {
+    const { notifyFollowersNewChallenge } = await import("@/lib/data/notifications");
+    if (ch?.community_id && ch.title) {
+      await notifyFollowersNewChallenge(ch.community_id, ch.title, creatorPath);
+    }
+  } catch {
+    /* notifications optional until migration 016 */
+  }
+
   return {
     invitePath: `/join/${ch?.invite_slug}`,
-    creatorPath: creatorChallengePath(community.slug, ch?.invite_slug ?? ""),
+    creatorPath,
   };
 }
 

@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { AccountExperience } from "@/components/profile/account-experience";
 import { CreatorMediaCard } from "@/components/profile/creator-media-card";
+import { NotificationPreferencesCard } from "@/components/profile/notification-preferences-card";
 import { ProfilePhotoCard } from "@/components/profile/profile-photo-card";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { SupabaseStatus } from "@/components/profile/supabase-status";
@@ -89,6 +90,7 @@ export default async function ProfilePage() {
           </Card>
         ) : null}
 
+        <NotificationPreferencesCard />
         <SupabaseStatus />
         <InstallPrompt />
 

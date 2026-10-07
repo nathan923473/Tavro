@@ -18,6 +18,8 @@ const EXACT_BACK: Record<string, string> = {
   "/admin/creator-applications": "/profile",
   "/admin/content-reports": "/profile",
   "/community-guidelines": "/profile",
+  "/discover": "/challenges",
+  "/notifications": "/profile",
   "/login": "/",
   "/signup": "/",
   "/onboarding": "/",

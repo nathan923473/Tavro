@@ -1,0 +1,127 @@
+import { fetchChallengeGalleryDetailsMap } from "@/lib/data/challenge-media";
+import { unwrapOne } from "@/lib/data/relations";
+import { createClient } from "@/lib/supabase/server";
+import type { Challenge } from "@/types";
+
+export type ChallengeLandingData = {
+  challenge: Challenge;
+  communitySlug: string | null;
+  communityName: string | null;
+  creatorBio: string | null;
+  brandColor: string;
+  avatarUrl: string | null;
+  bannerUrl: string | null;
+  shortDescription: string | null;
+  goalDescription: string | null;
+  category: string | null;
+  joined: boolean;
+  onboardingCompleted: boolean;
+  isApprovedPublic: boolean;
+  isLandingVisible: boolean;
+};
+
+export async function fetchChallengeLandingByInviteSlug(
+  inviteSlug: string,
+  userId: string | null,
+): Promise<ChallengeLandingData | null> {
+  const supabase = await createClient();
+  const { data: row } = await supabase
+    .from("challenges")
+    .select(
+      `
+      id, title, description, short_description, goal_description, category,
+      start_date, end_date, invite_slug, focus_areas, cover_url, created_by,
+      visibility, publish_status, community_id,
+      creator:profiles!challenges_created_by_fkey ( display_name, creator_status ),
+      participants:challenge_participants ( count ),
+      community:creator_communities (
+        slug, community_name, bio, brand_color, avatar_url, banner_url, owner_id
+      )
+    `,
+    )
+    .eq("invite_slug", inviteSlug)
+    .maybeSingle();
+
+  if (!row) return null;
+
+  const community = unwrapOne(row.community);
+  const creator = unwrapOne(row.creator);
+  const published =
+    row.publish_status === "published" ||
+    row.publish_status === "scheduled" ||
+    row.publish_status == null;
+  const isPublicCreatorChallenge =
+    row.visibility === "public" && published && Boolean(row.community_id);
+  const creatorApproved = creator?.creator_status === "approved";
+  /** Shown on landing (includes private invite-only links). */
+  const isLandingVisible =
+    published &&
+    (row.visibility === "private" ||
+      (isPublicCreatorChallenge && creatorApproved));
+  /** Eligible for public discover search/lists. */
+  const isApprovedPublic = isPublicCreatorChallenge && creatorApproved;
+
+  let joined = false;
+  let onboardingCompleted = false;
+  if (userId) {
+    const { data: membership } = await supabase
+      .from("challenge_participants")
+      .select("progress_percent, onboarding_completed_at")
+      .eq("challenge_id", row.id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    joined = Boolean(membership);
+    onboardingCompleted = Boolean(membership?.onboarding_completed_at);
+  }
+
+  const galleryMap = await fetchChallengeGalleryDetailsMap([row.id]);
+  const galleryItems = galleryMap[row.id] ?? [];
+
+  const challenge: Challenge = {
+    id: row.id,
+    title: row.title,
+    creatorName: creator?.display_name ?? "Creator",
+    creatorId: row.created_by,
+    description: row.description ?? "",
+    startDate: row.start_date,
+    endDate: row.end_date,
+    participants: row.participants?.[0]?.count ?? 0,
+    joined,
+    progressPercent: 0,
+    inviteSlug: row.invite_slug,
+    focusAreas: row.focus_areas ?? [],
+    coverUrl: row.cover_url ?? null,
+    galleryPhotos: galleryItems.map((p) => p.imageUrl),
+    galleryPhotoItems: galleryItems,
+  };
+
+  return {
+    challenge,
+    communitySlug: community?.slug ?? null,
+    communityName: community?.community_name ?? null,
+    creatorBio: community?.bio ?? null,
+    brandColor: community?.brand_color ?? "#3d8b6e",
+    avatarUrl: community?.avatar_url ?? null,
+    bannerUrl: community?.banner_url ?? null,
+    shortDescription: row.short_description ?? null,
+    goalDescription: row.goal_description ?? null,
+    category: row.category ?? null,
+    joined,
+    onboardingCompleted,
+    isApprovedPublic,
+    isLandingVisible,
+  };
+}
+
+export async function fetchChallengeLandingByCommunityAndSlug(
+  communitySlug: string,
+  inviteSlug: string,
+  userId: string | null,
+): Promise<ChallengeLandingData | null> {
+  const base = await fetchChallengeLandingByInviteSlug(inviteSlug, userId);
+  if (!base?.communitySlug || base.communitySlug !== communitySlug) {
+    if (base && !base.communitySlug) return null;
+    if (base?.communitySlug !== communitySlug) return null;
+  }
+  return base;
+}

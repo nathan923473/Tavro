@@ -1,11 +1,54 @@
-import { redirect } from "next/navigation";
+import {
+  ChallengeLandingView,
+  landingCanonicalPath,
+} from "@/components/challenges/challenge-landing-view";
+import { StandalonePageHeader } from "@/components/layout/standalone-page-header";
+import { getCurrentUserProfile } from "@/lib/auth/profile";
+import { fetchChallengeLandingByCommunityAndSlug } from "@/lib/data/challenge-landing";
+import { notFound } from "next/navigation";
 
 type Props = {
   params: Promise<{ slug: string; challengeSlug: string }>;
 };
 
-/** Friendly creator URL — same join experience as /join/{invite_slug}. */
+export async function generateMetadata({ params }: Props) {
+  const { slug, challengeSlug } = await params;
+  const { user } = await getCurrentUserProfile();
+  const data = await fetchChallengeLandingByCommunityAndSlug(
+    slug,
+    challengeSlug,
+    user?.id ?? null,
+  );
+  return { title: data?.challenge.title ?? "Challenge" };
+}
+
 export default async function CreatorChallengePublicPage({ params }: Props) {
-  const { challengeSlug } = await params;
-  redirect(`/join/${challengeSlug}`);
+  const { slug, challengeSlug } = await params;
+  const { user } = await getCurrentUserProfile();
+  const data = await fetchChallengeLandingByCommunityAndSlug(
+    slug,
+    challengeSlug,
+    user?.id ?? null,
+  );
+
+  if (!data?.isLandingVisible) {
+    notFound();
+  }
+
+  const canonicalPath = landingCanonicalPath(data);
+  const joinContinuePath = `/join/${challengeSlug}/start`;
+
+  return (
+    <div className="mx-auto min-h-dvh max-w-lg bg-background pb-8">
+      <StandalonePageHeader pathname={canonicalPath} title="Challenge" />
+      <div className="animate-fade-up px-4">
+        <ChallengeLandingView
+          data={data}
+          loggedIn={Boolean(user)}
+          canonicalPath={canonicalPath}
+          joinContinuePath={joinContinuePath}
+        />
+      </div>
+    </div>
+  );
 }

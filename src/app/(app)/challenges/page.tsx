@@ -35,6 +35,11 @@ export default async function ChallengesPage() {
       <PageHeader
         title="Challenges"
         subtitle="Free creator-led habits · discover & join"
+        action={
+          <Link href="/discover" className="text-sm font-semibold text-primary">
+            Discover
+          </Link>
+        }
       />
       <div className="space-y-6 px-4 py-4">
         <Link

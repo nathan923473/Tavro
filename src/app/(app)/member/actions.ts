@@ -201,6 +201,57 @@ export async function joinChallengeAction(challengeId: string) {
   revalidatePath(`/join`);
 }
 
+/** Join then return path to participant onboarding or today's challenge hub. */
+export async function joinChallengeAndContinueAction(
+  challengeId: string,
+  onboardingPath: string,
+): Promise<string> {
+  const { supabase, userId } = await requireUserId();
+  const { error } = await supabase.from("challenge_participants").upsert(
+    {
+      challenge_id: challengeId,
+      user_id: userId,
+      progress_percent: 5,
+    },
+    { onConflict: "challenge_id,user_id" },
+  );
+  if (error) throw new Error(error.message);
+
+  const { data: row } = await supabase
+    .from("challenge_participants")
+    .select("onboarding_completed_at")
+    .eq("challenge_id", challengeId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  revalidatePath("/challenges");
+  revalidatePath("/");
+  revalidatePath("/join");
+
+  if (row?.onboarding_completed_at) {
+    return `/challenges/${challengeId}/today`;
+  }
+  return onboardingPath;
+}
+
+export async function completeChallengeParticipantOnboardingAction(challengeId: string) {
+  const { supabase, userId } = await requireUserId();
+  const payload: Record<string, string> = {
+    onboarding_completed_at: new Date().toISOString(),
+  };
+  const { error } = await supabase
+    .from("challenge_participants")
+    .update(payload)
+    .eq("challenge_id", challengeId)
+    .eq("user_id", userId);
+  if (error && /onboarding_completed_at|schema cache/i.test(error.message)) {
+    return { ok: true as const, nextPath: `/challenges/${challengeId}/today` };
+  }
+  if (error) throw new Error(error.message);
+  revalidatePath(`/challenges/${challengeId}/today`);
+  return { ok: true as const, nextPath: `/challenges/${challengeId}/today` };
+}
+
 export async function leaveChallengeAction(challengeId: string) {
   const { supabase, userId } = await requireUserId();
   await supabase
@@ -210,6 +261,82 @@ export async function leaveChallengeAction(challengeId: string) {
     .eq("user_id", userId);
   revalidatePath("/challenges");
   revalidatePath("/");
+}
+
+export async function toggleChallengeScheduleCompletionAction(
+  challengeId: string,
+  scheduleItemId: string,
+  markComplete: boolean,
+) {
+  const { supabase, userId } = await requireUserId();
+  const today = todayDateKey();
+
+  if (markComplete) {
+    const { error } = await supabase.from("challenge_schedule_completions").upsert(
+      {
+        user_id: userId,
+        challenge_id: challengeId,
+        schedule_item_id: scheduleItemId,
+        completed_on: today,
+      },
+      { onConflict: "user_id,schedule_item_id,completed_on" },
+    );
+    if (error && /challenge_schedule_completions|schema cache/i.test(error.message)) {
+      throw new Error("Run migration 015_challenge_daily_progress.sql in Supabase.");
+    }
+    if (error) throw new Error(error.message);
+
+    const { data: row } = await supabase
+      .from("challenge_participants")
+      .select("progress_percent")
+      .eq("challenge_id", challengeId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    const next = Math.min(100, (row?.progress_percent ?? 0) + 3);
+    await supabase
+      .from("challenge_participants")
+      .update({
+        progress_percent: next,
+        last_activity_date: today,
+      })
+      .eq("challenge_id", challengeId)
+      .eq("user_id", userId);
+  } else {
+    await supabase
+      .from("challenge_schedule_completions")
+      .delete()
+      .eq("user_id", userId)
+      .eq("schedule_item_id", scheduleItemId)
+      .eq("completed_on", today);
+  }
+
+  revalidatePath(`/challenges/${challengeId}/today`);
+  revalidatePath("/challenges");
+  revalidatePath("/");
+}
+
+export async function saveChallengeDailyCheckInAction(
+  challengeId: string,
+  mood: string,
+  note: string,
+) {
+  const { supabase, userId } = await requireUserId();
+  const trimmed = note.trim().slice(0, 500);
+  const { error } = await supabase.from("challenge_daily_check_ins").upsert(
+    {
+      user_id: userId,
+      challenge_id: challengeId,
+      check_in_date: todayDateKey(),
+      mood,
+      note: trimmed || null,
+    },
+    { onConflict: "user_id,challenge_id,check_in_date" },
+  );
+  if (error && /challenge_daily_check_ins|schema cache/i.test(error.message)) {
+    throw new Error("Run migration 015_challenge_daily_progress.sql in Supabase.");
+  }
+  if (error) throw new Error(error.message);
+  revalidatePath(`/challenges/${challengeId}/today`);
 }
 
 export async function logChallengeActivityAction(challengeId: string) {

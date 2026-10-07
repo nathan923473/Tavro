@@ -1,8 +1,12 @@
-import { JoinChallengeClient } from "@/app/join/[slug]/join-challenge-client";
+import { redirect } from "next/navigation";
+import {
+  ChallengeLandingView,
+  landingCanonicalPath,
+} from "@/components/challenges/challenge-landing-view";
 import { StandalonePageHeader } from "@/components/layout/standalone-page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
-import { fetchChallengeByInviteSlug } from "@/lib/data/challenges";
-import Link from "next/link";
+import { fetchChallengeLandingByInviteSlug } from "@/lib/data/challenge-landing";
+import { creatorChallengePath } from "@/lib/data/creator-studio";
 import { notFound } from "next/navigation";
 
 type JoinChallengePageProps = {
@@ -11,47 +15,38 @@ type JoinChallengePageProps = {
 
 export async function generateMetadata({ params }: JoinChallengePageProps) {
   const { slug } = await params;
-  const challenge = await fetchChallengeByInviteSlug(slug, null);
+  const data = await fetchChallengeLandingByInviteSlug(slug, null);
   return {
-    title: challenge ? `Join ${challenge.title}` : "Challenge invite",
+    title: data?.challenge.title ?? "Challenge invite",
   };
 }
 
-export default async function JoinChallengePage({
-  params,
-}: JoinChallengePageProps) {
+export default async function JoinChallengePage({ params }: JoinChallengePageProps) {
   const { slug } = await params;
-  const { user, profile } = await getCurrentUserProfile();
-  const challenge = await fetchChallengeByInviteSlug(slug, user?.id ?? null);
+  const { user } = await getCurrentUserProfile();
+  const data = await fetchChallengeLandingByInviteSlug(slug, user?.id ?? null);
 
-  if (!challenge) {
+  if (!data?.isLandingVisible) {
     notFound();
   }
 
-  const viewerName =
-    profile?.displayName?.split(/\s+/)[0] ??
-    user?.email?.split("@")[0] ??
-    "Member";
+  if (data.communitySlug) {
+    redirect(creatorChallengePath(data.communitySlug, slug));
+  }
+
+  const canonicalPath = landingCanonicalPath(data);
+  const joinContinuePath = `/join/${slug}/start`;
 
   return (
     <div className="mx-auto min-h-dvh max-w-lg bg-background px-4 py-8 pt-[env(safe-area-inset-top)]">
       <div className="animate-fade-up space-y-4">
-        <StandalonePageHeader
-          pathname={`/join/${slug}`}
-          title="Challenge invite"
-        />
-        <JoinChallengeClient
-          challenge={challenge}
-          viewerName={viewerName}
+        <StandalonePageHeader pathname={canonicalPath} title="Challenge invite" />
+        <ChallengeLandingView
+          data={data}
           loggedIn={Boolean(user)}
-          viewerUserId={user?.id ?? null}
+          canonicalPath={canonicalPath}
+          joinContinuePath={joinContinuePath}
         />
-        <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Link href="/login" className="font-medium text-primary">
-            Log in
-          </Link>
-        </p>
       </div>
     </div>
   );

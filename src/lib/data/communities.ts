@@ -3,7 +3,7 @@ import { fetchChallengeGalleryMap } from "@/lib/data/challenge-media";
 import { unwrapOne } from "@/lib/data/relations";
 import type { CreatorCommunity, CreatorCommunityChallenge } from "@/types/creator-community";
 
-function challengeTimeline(
+export function challengeTimeline(
   start: string,
   end: string,
 ): "current" | "upcoming" | "previous" {

@@ -26,6 +26,14 @@ export default async function CreatorStudioPage() {
       title="Creator Studio"
       subtitle={`Hi ${profile.displayName ?? "creator"} · free challenges only`}
     >
+      {!profile.creatorOnboardingCompleted ? (
+        <Card className="border-dashed border-primary/40">
+          <p className="text-sm font-medium">New creator? Finish the 3-minute setup.</p>
+          <Link href="/studio/onboarding" className="mt-2 inline-block text-sm font-semibold text-primary">
+            Start creator onboarding →
+          </Link>
+        </Card>
+      ) : null}
       <Card className="border-primary/20 bg-secondary/30">
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone="success">Approved creator</Badge>

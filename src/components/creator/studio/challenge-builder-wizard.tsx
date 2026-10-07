@@ -13,6 +13,7 @@ import {
 } from "@/lib/creator/challenge-templates";
 import type { ChallengeCategory } from "@/types/creator-studio";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
+import { ShareChallengeButton } from "@/components/share/share-challenge-button";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
@@ -88,13 +89,19 @@ export function ChallengeBuilderWizard() {
   if (published) {
     return (
       <Card className="space-y-3">
-        <h2 className="text-lg font-semibold">Your challenge is live</h2>
-        <p className="text-sm text-muted-foreground">All challenges are free to join.</p>
+        <h2 className="text-lg font-semibold">Your challenge is live!</h2>
+        <p className="text-sm text-muted-foreground">
+          Share your link on Instagram, Stories, or DMs. All challenges are free to join.
+        </p>
         <CopyLinkButton url={published.creatorPath} label="Copy challenge link" fullWidth />
-        <CopyLinkButton url={published.invitePath} label="Copy invite link (/join)" fullWidth />
-        <Link href={published.invitePath} className="block text-center text-sm font-medium text-primary">
-          View challenge →
+        <ShareChallengeButton path={published.creatorPath} title={title} fullWidth />
+        <Link
+          href={published.creatorPath}
+          className="flex min-h-11 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+        >
+          View challenge page
         </Link>
+        <CopyLinkButton url={published.invitePath} label="Short link (/join)" fullWidth />
         <Link href="/studio/challenges" className="block text-center text-sm text-muted-foreground">
           Back to challenges
         </Link>

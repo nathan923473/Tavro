@@ -178,14 +178,20 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
         {mode === "signup" ? (
           <>
             Already have an account?{" "}
-            <Link href="/login" className="font-medium text-primary">
+            <Link
+              href={next !== "/" ? `/login?next=${encodeURIComponent(next)}` : "/login"}
+              className="font-medium text-primary"
+            >
               Log in
             </Link>
           </>
         ) : (
           <>
             New here?{" "}
-            <Link href="/signup" className="font-medium text-primary">
+            <Link
+              href={next !== "/" ? `/signup?next=${encodeURIComponent(next)}` : "/signup"}
+              className="font-medium text-primary"
+            >
               Sign up
             </Link>
           </>

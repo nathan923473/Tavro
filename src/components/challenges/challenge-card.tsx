@@ -16,6 +16,7 @@ import type { Challenge } from "@/types";
 import { ReportContentMenu } from "@/components/moderation/report-content-menu";
 import { CalendarRange, Gift, Users } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -164,6 +165,12 @@ export function ChallengeCard({
               fullWidth
             />
           ) : null}
+          <Link
+            href={`/challenges/${challenge.id}/today`}
+            className="flex min-h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+          >
+            Today&apos;s activities
+          </Link>
           <Button
             variant="secondary"
             fullWidth
@@ -175,7 +182,7 @@ export function ChallengeCard({
               )
             }
           >
-            Log today&apos;s activity
+            Quick log (legacy)
           </Button>
           <Button
             variant="outline"

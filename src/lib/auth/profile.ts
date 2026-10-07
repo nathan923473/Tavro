@@ -12,6 +12,7 @@ export type UserProfile = {
   creatorStatus: "none" | "pending" | "approved" | "rejected";
   isAdmin: boolean;
   role: AccountRole;
+  creatorOnboardingCompleted: boolean;
 };
 
 export const getCurrentUserProfile = cache(async (): Promise<{
@@ -32,7 +33,7 @@ export const getCurrentUserProfile = cache(async (): Promise<{
   }
 
   const fullSelect =
-    "id, display_name, avatar_url, referral_code, creator_status, is_admin, is_creator";
+    "id, display_name, avatar_url, referral_code, creator_status, is_admin, is_creator, creator_onboarding_completed_at";
   const legacySelect =
     "id, display_name, referral_code, creator_status, is_admin, is_creator";
 
@@ -42,7 +43,7 @@ export const getCurrentUserProfile = cache(async (): Promise<{
     .eq("id", user.id)
     .maybeSingle();
 
-  if (error && /avatar_url|schema cache/i.test(error.message)) {
+  if (error && /avatar_url|creator_onboarding|schema cache/i.test(error.message)) {
     ({ data: row } = await supabase
       .from("profiles")
       .select(legacySelect)
@@ -80,6 +81,9 @@ export const getCurrentUserProfile = cache(async (): Promise<{
       creatorStatus,
       isAdmin: row.is_admin ?? false,
       role,
+      creatorOnboardingCompleted: Boolean(
+        "creator_onboarding_completed_at" in row && row.creator_onboarding_completed_at,
+      ),
     },
   };
 });
