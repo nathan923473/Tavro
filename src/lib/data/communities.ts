@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchChallengeGalleryMap } from "@/lib/data/challenge-media";
 import { unwrapOne } from "@/lib/data/relations";
+import { resolveCreatorAvatarUrl } from "@/lib/creator-avatar";
 import type { CreatorCommunity, CreatorCommunityChallenge } from "@/types/creator-community";
 
 export function challengeTimeline(
@@ -17,14 +18,14 @@ const COMMUNITY_SELECT_FULL = `
   id, owner_id, slug, community_name, bio, brand_color, banner_url,
   avatar_url, shop_url, shop_label, affiliate_disclosure, announcement,
   member_count_cache, social_links,
-  owner:profiles!creator_communities_owner_id_fkey ( display_name )
+  owner:profiles!creator_communities_owner_id_fkey ( display_name, avatar_url )
 `;
 
 const COMMUNITY_SELECT_LEGACY = `
   id, owner_id, slug, community_name, bio, brand_color, banner_url,
   avatar_url, shop_url, shop_label, affiliate_disclosure, announcement,
   member_count_cache,
-  owner:profiles!creator_communities_owner_id_fkey ( display_name )
+  owner:profiles!creator_communities_owner_id_fkey ( display_name, avatar_url )
 `;
 
 async function fetchCommunityRow(supabase: Awaited<ReturnType<typeof createClient>>, slug: string) {
@@ -139,7 +140,12 @@ export async function fetchCommunityBySlug(
     isFollowing = Boolean(follow);
   }
 
-  const ownerName = unwrapOne(row.owner)?.display_name ?? row.community_name;
+  const ownerProfile = unwrapOne(row.owner);
+  const ownerName = ownerProfile?.display_name ?? row.community_name;
+  const resolvedAvatarUrl = resolveCreatorAvatarUrl(
+    row.avatar_url,
+    ownerProfile && "avatar_url" in ownerProfile ? ownerProfile.avatar_url : null,
+  );
   const initials = ownerName
     .split(/\s+/)
     .map((w: string) => w[0])
@@ -162,7 +168,7 @@ export async function fetchCommunityBySlug(
     challengesHosted: mappedChallenges.length,
     brandColor: row.brand_color ?? "#3d8b6e",
     avatarInitials: initials,
-    avatarUrl: row.avatar_url ?? null,
+    avatarUrl: resolvedAvatarUrl,
     bannerUrl: row.banner_url ?? null,
     bannerGradient: `linear-gradient(135deg, ${row.brand_color ?? "#3d8b6e"} 0%, #2f6f58 100%)`,
     isApproved: true,

@@ -1,6 +1,9 @@
+"use client";
+
 import { parsePresetAvatar } from "@/lib/storage/avatars";
 import { cn } from "@/lib/cn";
 import Image from "next/image";
+import { useState } from "react";
 
 type UserAvatarProps = {
   displayName?: string | null;
@@ -29,7 +32,9 @@ export function UserAvatar({
       .slice(0, 2)
       .toUpperCase() || "?";
 
-  const preset = parsePresetAvatar(avatarUrl);
+  const [imageFailed, setImageFailed] = useState(false);
+  const trimmedUrl = avatarUrl?.trim() || null;
+  const preset = parsePresetAvatar(trimmedUrl);
   const sizeClass = sizeMap[size];
 
   if (preset) {
@@ -48,22 +53,23 @@ export function UserAvatar({
     );
   }
 
-  if (avatarUrl) {
+  if (trimmedUrl && !imageFailed) {
     return (
       <div
         className={cn(
-          "relative shrink-0 overflow-hidden rounded-2xl bg-muted",
+          "relative shrink-0 overflow-hidden rounded-2xl bg-secondary",
           sizeClass,
           className,
         )}
       >
         <Image
-          src={avatarUrl}
+          src={trimmedUrl}
           alt=""
           fill
           className="object-cover"
           sizes={size === "lg" ? "96px" : size === "md" ? "56px" : "40px"}
           unoptimized
+          onError={() => setImageFailed(true)}
         />
       </div>
     );

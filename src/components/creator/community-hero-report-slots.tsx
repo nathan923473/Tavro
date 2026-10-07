@@ -1,6 +1,7 @@
 "use client";
 
 import { ReportContentMenu } from "@/components/moderation/report-content-menu";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import Image from "next/image";
 
 export function CommunityBannerWithReport({
@@ -30,11 +31,13 @@ export function CommunityBannerWithReport({
 
 export function CommunityAvatarWithReport({
   avatarUrl,
+  displayName,
   communityId,
   ownerUserId,
   viewerUserId,
 }: {
   avatarUrl: string;
+  displayName: string;
   communityId: string;
   ownerUserId: string;
   viewerUserId: string | null;
@@ -42,13 +45,11 @@ export function CommunityAvatarWithReport({
   const canReport = Boolean(viewerUserId && viewerUserId !== ownerUserId);
   return (
     <div className="relative h-full w-full">
-      <Image
-        src={avatarUrl}
-        alt=""
-        width={96}
-        height={96}
-        className="h-full w-full object-cover"
-        unoptimized
+      <UserAvatar
+        displayName={displayName}
+        avatarUrl={avatarUrl}
+        size="lg"
+        className="h-full w-full rounded-2xl"
       />
       <ReportContentMenu
         contentType="creator_avatar"

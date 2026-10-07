@@ -3,6 +3,7 @@ import {
   fetchChallengeGalleryDetailsMap,
   fetchChallengeGalleryMap,
 } from "@/lib/data/challenge-media";
+import { resolveCreatorAvatarUrl } from "@/lib/creator-avatar";
 import { unwrapOne } from "@/lib/data/relations";
 import type { Challenge } from "@/types";
 
@@ -20,7 +21,14 @@ type ChallengeRow = {
   cover_url: string | null;
   created_by: string;
   visibility: string;
-  creator?: { display_name: string | null } | { display_name: string | null }[] | null;
+  creator?:
+    | { display_name: string | null; avatar_url?: string | null }
+    | { display_name: string | null; avatar_url?: string | null }[]
+    | null;
+  community?:
+    | { avatar_url: string | null }
+    | { avatar_url: string | null }[]
+    | null;
   participants?: { count: number }[] | null;
 };
 
@@ -39,6 +47,10 @@ function mapChallenge(
     title: row.title,
     creatorName: unwrapOne(row.creator)?.display_name ?? "Member",
     creatorId: row.created_by,
+    creatorAvatarUrl: resolveCreatorAvatarUrl(
+      unwrapOne(row.community)?.avatar_url ?? null,
+      unwrapOne(row.creator)?.avatar_url ?? null,
+    ),
     description: row.description ?? "",
     startDate: row.start_date,
     endDate: row.end_date,
@@ -65,13 +77,15 @@ export async function fetchChallengesForUser(userId: string | null): Promise<{
       id, title, description, start_date, end_date, start_at, end_at, challenge_timezone,
       invite_slug, focus_areas,
       cover_url, created_by, visibility,
-      creator:profiles!challenges_created_by_fkey ( display_name ),
+      creator:profiles!challenges_created_by_fkey ( display_name, avatar_url ),
+      community:creator_communities ( avatar_url ),
       participants:challenge_participants ( count )
     `;
   const selectLegacy = `
       id, title, description, start_date, end_date, invite_slug,
       cover_url, created_by, visibility,
-      creator:profiles!challenges_created_by_fkey ( display_name ),
+      creator:profiles!challenges_created_by_fkey ( display_name, avatar_url ),
+      community:creator_communities ( avatar_url ),
       participants:challenge_participants ( count )
     `;
 

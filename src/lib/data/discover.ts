@@ -1,6 +1,7 @@
 import { fetchChallengeGalleryMap } from "@/lib/data/challenge-media";
 import { unwrapOne } from "@/lib/data/relations";
 import { createClient } from "@/lib/supabase/server";
+import { resolveCreatorAvatarUrl } from "@/lib/creator-avatar";
 import { challengeTimeline } from "@/lib/data/communities";
 import { challengePhaseFromInstants } from "@/lib/timezone/challenge-calendar";
 
@@ -12,6 +13,7 @@ export type DiscoverChallenge = {
   communitySlug: string;
   communityName: string;
   creatorName: string;
+  creatorAvatarUrl: string | null;
   createdById: string;
   startDate: string;
   endDate: string;
@@ -68,7 +70,7 @@ export async function searchDiscover(query: string): Promise<{
     .select(
       `
       id, slug, community_name, bio, avatar_url, member_count_cache,
-      owner:profiles!creator_communities_owner_id_fkey ( display_name, creator_status )
+      owner:profiles!creator_communities_owner_id_fkey ( display_name, creator_status, avatar_url )
     `,
     )
     .ilike("community_name", ilike)
@@ -81,7 +83,10 @@ export async function searchDiscover(query: string): Promise<{
       slug: c.slug,
       communityName: c.community_name,
       bio: c.bio,
-      avatarUrl: c.avatar_url,
+      avatarUrl: resolveCreatorAvatarUrl(
+        c.avatar_url,
+        unwrapOne(c.owner)?.avatar_url ?? null,
+      ),
       memberCount: c.member_count_cache ?? 0,
       ownerName: unwrapOne(c.owner)?.display_name ?? c.community_name,
       featuredChallengeTitle: null,
@@ -93,8 +98,8 @@ export async function searchDiscover(query: string): Promise<{
       `
       id, title, short_description, invite_slug, start_date, end_date,
       start_at, end_at, challenge_timezone, cover_url, created_by,
-      community:creator_communities ( slug, community_name ),
-      creator:profiles!challenges_created_by_fkey ( display_name, creator_status ),
+      community:creator_communities ( slug, community_name, avatar_url ),
+      creator:profiles!challenges_created_by_fkey ( display_name, creator_status, avatar_url ),
       participants:challenge_participants ( count )
     `,
     )
@@ -118,6 +123,10 @@ export async function searchDiscover(query: string): Promise<{
         communitySlug: community?.slug ?? "",
         communityName: community?.community_name ?? "",
         creatorName: unwrapOne(r.creator)?.display_name ?? "Creator",
+        creatorAvatarUrl: resolveCreatorAvatarUrl(
+          community?.avatar_url ?? null,
+          unwrapOne(r.creator)?.avatar_url ?? null,
+        ),
         createdById: r.created_by,
         startDate: r.start_date,
         endDate: r.end_date,
@@ -147,8 +156,8 @@ export async function fetchDiscoverSections(): Promise<{
       `
       id, title, short_description, invite_slug, start_date, end_date,
       start_at, end_at, challenge_timezone, cover_url, created_by,
-      community:creator_communities ( slug, community_name ),
-      creator:profiles!challenges_created_by_fkey ( display_name, creator_status ),
+      community:creator_communities ( slug, community_name, avatar_url ),
+      creator:profiles!challenges_created_by_fkey ( display_name, creator_status, avatar_url ),
       participants:challenge_participants ( count )
     `,
     )
@@ -172,6 +181,10 @@ export async function fetchDiscoverSections(): Promise<{
         communitySlug: community?.slug ?? "",
         communityName: community?.community_name ?? "",
         creatorName: unwrapOne(r.creator)?.display_name ?? "Creator",
+        creatorAvatarUrl: resolveCreatorAvatarUrl(
+          community?.avatar_url ?? null,
+          unwrapOne(r.creator)?.avatar_url ?? null,
+        ),
         createdById: r.created_by,
         startDate: r.start_date,
         endDate: r.end_date,
@@ -194,7 +207,7 @@ export async function fetchDiscoverSections(): Promise<{
     .select(
       `
       id, slug, community_name, bio, avatar_url, member_count_cache,
-      owner:profiles!creator_communities_owner_id_fkey ( display_name, creator_status )
+      owner:profiles!creator_communities_owner_id_fkey ( display_name, creator_status, avatar_url )
     `,
     )
     .order("member_count_cache", { ascending: false })
@@ -207,7 +220,10 @@ export async function fetchDiscoverSections(): Promise<{
       slug: c.slug,
       communityName: c.community_name,
       bio: c.bio,
-      avatarUrl: c.avatar_url,
+      avatarUrl: resolveCreatorAvatarUrl(
+        c.avatar_url,
+        unwrapOne(c.owner)?.avatar_url ?? null,
+      ),
       memberCount: c.member_count_cache ?? 0,
       ownerName: unwrapOne(c.owner)?.display_name ?? c.community_name,
       featuredChallengeTitle: null,

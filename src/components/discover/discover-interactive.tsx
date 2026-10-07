@@ -9,6 +9,8 @@ import { ChallengeDateRange } from "@/components/challenges/challenge-date-range
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { isChallengeUpcoming } from "@/lib/challenge-countdown";
 import { publicChallengePath } from "@/lib/site-url";
+import { ChallengeCreatorLine } from "@/components/challenges/challenge-creator-line";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { CalendarRange, Compass, Gift, Search, Sparkles, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -57,7 +59,12 @@ function ChallengeRow({
                   </Badge>
                 ) : null}
               </div>
-              <p className="text-sm text-muted-foreground">{c.communityName}</p>
+              <ChallengeCreatorLine
+                displayName={c.creatorName}
+                avatarUrl={c.creatorAvatarUrl}
+                subtitle={c.communityName !== c.creatorName ? c.communityName : null}
+                className="mt-1"
+              />
             </div>
             <Badge tone="success" className="gap-1 shrink-0">
               <Gift className="h-3 w-3" aria-hidden />
@@ -222,10 +229,18 @@ export function DiscoverInteractive({
                   <li key={cr.id}>
                     <Link
                       href={`/creator/${cr.slug}`}
-                      className="block rounded-xl border border-border bg-surface p-3"
+                      className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3"
                     >
-                      <p className="font-semibold">{cr.communityName}</p>
-                      <p className="text-sm text-muted-foreground line-clamp-2">{cr.bio}</p>
+                      <UserAvatar
+                        displayName={cr.ownerName}
+                        avatarUrl={cr.avatarUrl}
+                        size="md"
+                        className="rounded-xl"
+                      />
+                      <div className="min-w-0">
+                        <p className="font-semibold">{cr.communityName}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{cr.bio}</p>
+                      </div>
                     </Link>
                   </li>
                 ))}
@@ -275,9 +290,12 @@ export function DiscoverInteractive({
                     href={`/creator/${cr.slug}`}
                     className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3 transition-colors hover:bg-muted/40"
                   >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-sm font-bold">
-                      {cr.communityName.slice(0, 2).toUpperCase()}
-                    </div>
+                    <UserAvatar
+                      displayName={cr.ownerName}
+                      avatarUrl={cr.avatarUrl}
+                      size="md"
+                      className="rounded-xl"
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold">{cr.communityName}</p>
                       <p className="text-xs text-muted-foreground">

@@ -62,6 +62,7 @@ export function CommunityHero({
           {community.avatarUrl ? (
             <CommunityAvatarWithReport
               avatarUrl={community.avatarUrl}
+              displayName={community.creatorDisplayName}
               communityId={community.id}
               ownerUserId={community.ownerUserId}
               viewerUserId={viewerUserId}

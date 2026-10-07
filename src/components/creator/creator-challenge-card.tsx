@@ -2,6 +2,7 @@ import { ReportContentMenu } from "@/components/moderation/report-content-menu";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import type { CreatorCommunityChallenge } from "@/types/creator-community";
+import { ChallengeCreatorLine } from "@/components/challenges/challenge-creator-line";
 import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { CalendarRange, Users } from "lucide-react";
@@ -12,6 +13,8 @@ type CreatorChallengeCardProps = {
   challenge: CreatorCommunityChallenge;
   showJoin?: boolean;
   creatorUserId: string;
+  creatorDisplayName: string;
+  creatorAvatarUrl: string | null;
   viewerUserId?: string | null;
 };
 
@@ -19,6 +22,8 @@ export function CreatorChallengeCard({
   challenge,
   showJoin = true,
   creatorUserId,
+  creatorDisplayName,
+  creatorAvatarUrl,
   viewerUserId = null,
 }: CreatorChallengeCardProps) {
   const canReportCover = Boolean(
@@ -60,6 +65,11 @@ export function CreatorChallengeCard({
         ) : null}
       </div>
       <div className="p-4">
+        <ChallengeCreatorLine
+          displayName={creatorDisplayName}
+          avatarUrl={creatorAvatarUrl}
+          className="mb-2"
+        />
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold leading-snug">{challenge.title}</h3>
           {!isPast ? (

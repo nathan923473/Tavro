@@ -14,6 +14,7 @@ import type { ChallengeChatMessage } from "@/lib/challenge-chat";
 import { challengeInvitePath } from "@/lib/site-url";
 import type { Challenge } from "@/types";
 import { ReportContentMenu } from "@/components/moderation/report-content-menu";
+import { ChallengeCreatorLine } from "@/components/challenges/challenge-creator-line";
 import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { isChallengeUpcoming } from "@/lib/challenge-countdown";
@@ -86,9 +87,11 @@ export function ChallengeCard({
       <div className="flex items-start justify-between gap-2">
         <div>
           <h2 className="font-semibold">{challenge.title}</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            with {challenge.creatorName}
-          </p>
+          <ChallengeCreatorLine
+            displayName={challenge.creatorName}
+            avatarUrl={challenge.creatorAvatarUrl}
+            className="mt-2"
+          />
         </div>
         <div className="flex flex-col items-end gap-1">
           {isOwner ? (

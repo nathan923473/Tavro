@@ -34,6 +34,7 @@ export type Challenge = {
   title: string;
   creatorName: string;
   creatorId: string;
+  creatorAvatarUrl?: string | null;
   description: string;
   startDate: string;
   endDate: string;

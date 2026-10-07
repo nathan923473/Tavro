@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { ChallengeLandingData } from "@/lib/data/challenge-landing";
 import { publicChallengePath } from "@/lib/site-url";
+import { ChallengeCreatorLine } from "@/components/challenges/challenge-creator-line";
 import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { CalendarRange, Gift, Users } from "lucide-react";
@@ -88,17 +89,14 @@ export function ChallengeLandingView({
           </div>
         ) : null}
         <div className="p-4">
-          <div className="flex items-start gap-3">
-            {data.avatarUrl ? (
-              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl">
-                <Image src={data.avatarUrl} alt="" fill className="object-cover" unoptimized />
-              </div>
-            ) : null}
+          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-sm text-muted-foreground">
-                {data.communityName ?? challenge.creatorName}
-              </p>
-              <h1 className="text-xl font-semibold leading-snug">{challenge.title}</h1>
+              <ChallengeCreatorLine
+                displayName={challenge.creatorName}
+                avatarUrl={data.avatarUrl ?? challenge.creatorAvatarUrl}
+                subtitle={data.communityName ?? undefined}
+              />
+              <h1 className="mt-3 text-xl font-semibold leading-snug">{challenge.title}</h1>
             </div>
             <Badge tone="success" className="shrink-0 gap-1">
               <Gift className="h-3 w-3" aria-hidden />

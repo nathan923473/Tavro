@@ -1,4 +1,5 @@
 import { fetchChallengeGalleryDetailsMap } from "@/lib/data/challenge-media";
+import { resolveCreatorAvatarUrl } from "@/lib/creator-avatar";
 import { unwrapOne } from "@/lib/data/relations";
 import { publicChallengePath } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
@@ -45,7 +46,7 @@ export async function fetchChallengeLandingByInviteSlug(
       start_date, end_date, start_at, end_at, challenge_timezone,
       invite_slug, focus_areas, cover_url, created_by,
       visibility, publish_status, community_id,
-      creator:profiles!challenges_created_by_fkey ( display_name, creator_status ),
+      creator:profiles!challenges_created_by_fkey ( display_name, creator_status, avatar_url ),
       participants:challenge_participants ( count ),
       community:creator_communities (
         slug, community_name, bio, brand_color, avatar_url, banner_url, owner_id
@@ -101,6 +102,10 @@ export async function fetchChallengeLandingByInviteSlug(
     title: row.title,
     creatorName: creator?.display_name ?? "Creator",
     creatorId: row.created_by,
+    creatorAvatarUrl: resolveCreatorAvatarUrl(
+      community?.avatar_url ?? null,
+      creator?.avatar_url ?? null,
+    ),
     description: row.description ?? "",
     startDate: row.start_date,
     endDate: row.end_date,
@@ -123,7 +128,7 @@ export async function fetchChallengeLandingByInviteSlug(
     communityName: community?.community_name ?? null,
     creatorBio: community?.bio ?? null,
     brandColor: community?.brand_color ?? "#3d8b6e",
-    avatarUrl: community?.avatar_url ?? null,
+    avatarUrl: resolveCreatorAvatarUrl(community?.avatar_url ?? null, creator?.avatar_url ?? null),
     bannerUrl: community?.banner_url ?? null,
     shortDescription: row.short_description ?? null,
     goalDescription: row.goal_description ?? null,

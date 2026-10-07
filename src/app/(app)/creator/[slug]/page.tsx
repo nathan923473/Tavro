@@ -78,6 +78,8 @@ export default async function CreatorCommunityPage({
         timeline="current"
         challenges={community.challenges}
         creatorUserId={community.ownerUserId}
+        creatorDisplayName={community.creatorDisplayName}
+        creatorAvatarUrl={community.avatarUrl}
         viewerUserId={user?.id ?? null}
       />
       <ChallengeTimelineSection
@@ -85,6 +87,8 @@ export default async function CreatorCommunityPage({
         timeline="upcoming"
         challenges={community.challenges}
         creatorUserId={community.ownerUserId}
+        creatorDisplayName={community.creatorDisplayName}
+        creatorAvatarUrl={community.avatarUrl}
         viewerUserId={user?.id ?? null}
       />
       <ChallengeTimelineSection
@@ -92,6 +96,8 @@ export default async function CreatorCommunityPage({
         timeline="previous"
         challenges={community.challenges}
         creatorUserId={community.ownerUserId}
+        creatorDisplayName={community.creatorDisplayName}
+        creatorAvatarUrl={community.avatarUrl}
         viewerUserId={user?.id ?? null}
       />
     </div>

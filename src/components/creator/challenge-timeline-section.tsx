@@ -9,6 +9,8 @@ type ChallengeTimelineSectionProps = {
   timeline: ChallengeTimeline;
   challenges: CreatorCommunityChallenge[];
   creatorUserId: string;
+  creatorDisplayName: string;
+  creatorAvatarUrl: string | null;
   viewerUserId?: string | null;
 };
 
@@ -17,6 +19,8 @@ export function ChallengeTimelineSection({
   timeline,
   challenges,
   creatorUserId,
+  creatorDisplayName,
+  creatorAvatarUrl,
   viewerUserId = null,
 }: ChallengeTimelineSectionProps) {
   const items = challenges.filter((c) => c.timeline === timeline);
@@ -34,6 +38,8 @@ export function ChallengeTimelineSection({
               challenge={challenge}
               showJoin={timeline !== "previous"}
               creatorUserId={creatorUserId}
+              creatorDisplayName={creatorDisplayName}
+              creatorAvatarUrl={creatorAvatarUrl}
               viewerUserId={viewerUserId}
             />
           </li>

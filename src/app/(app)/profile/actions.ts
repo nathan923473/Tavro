@@ -32,8 +32,26 @@ export async function setProfileAvatarUrlAction(avatarUrl: string) {
     throw new Error(error.message);
   }
 
+  const { data: community } = await supabase
+    .from("creator_communities")
+    .select("id, slug, avatar_url")
+    .eq("owner_id", userId)
+    .maybeSingle();
+
+  if (community && !community.avatar_url?.trim()) {
+    await supabase
+      .from("creator_communities")
+      .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
+      .eq("id", community.id);
+    if (community.slug) {
+      revalidatePath(`/creator/${community.slug}`);
+    }
+  }
+
   revalidatePath("/profile");
   revalidatePath("/groups");
+  revalidatePath("/discover");
+  revalidatePath("/challenges");
   revalidatePath("/");
   revalidatePath("/onboarding");
 }
