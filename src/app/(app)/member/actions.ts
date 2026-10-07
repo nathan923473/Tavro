@@ -2,6 +2,11 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { todayDateKey } from "@/lib/dates";
+import { challengeTodayDateKey } from "@/lib/timezone/challenge-calendar";
+import { resolveChallengeEndAt, resolveChallengeStartAt } from "@/lib/timezone/challenge-fields";
+import { normalizeTimezone, isValidIanaTimezone } from "@/lib/timezone/validate";
+import { DEFAULT_FALLBACK_TIMEZONE } from "@/lib/timezone/constants";
+import type { AuStateOrTerritory } from "@/lib/timezone/constants";
 import { revalidatePath } from "next/cache";
 import { randomBytes, randomUUID } from "node:crypto";
 
@@ -22,13 +27,55 @@ function slugify(text: string) {
     .slice(0, 24)}-${randomBytes(3).toString("hex")}`;
 }
 
+export async function saveParticipantTimezoneAction(input: {
+  timezone: string;
+  auStateOrTerritory?: AuStateOrTerritory | null;
+  timezoneSource?: string;
+  confirmed?: boolean;
+}) {
+  const { supabase, userId } = await requireUserId();
+  if (!isValidIanaTimezone(input.timezone)) {
+    throw new Error("Choose a valid timezone.");
+  }
+  const patch: Record<string, unknown> = {
+    timezone: input.timezone,
+    timezone_source: input.timezoneSource ?? "manual",
+  };
+  if (input.auStateOrTerritory !== undefined) {
+    patch.au_state_or_territory = input.auStateOrTerritory;
+  }
+  if (input.confirmed) {
+    patch.timezone_confirmed_at = new Date().toISOString();
+  }
+  const { error } = await supabase.from("profiles").update(patch).eq("id", userId);
+  if (error && /timezone|au_state|schema cache/i.test(error.message)) {
+    throw new Error("Run migration 021_timezone_support.sql in Supabase.");
+  }
+  if (error) throw new Error(error.message);
+  revalidatePath("/profile");
+  revalidatePath("/onboarding");
+  return { ok: true as const };
+}
+
 export async function completeOnboarding(input: {
   focusGoal: string;
   habits: string[];
   createGroup: boolean;
   inviteCode?: string;
+  timezone?: string;
+  auStateOrTerritory?: AuStateOrTerritory | null;
+  timezoneSource?: string;
 }) {
   const { supabase, userId } = await requireUserId();
+
+  if (input.timezone && isValidIanaTimezone(input.timezone)) {
+    await saveParticipantTimezoneAction({
+      timezone: input.timezone,
+      auStateOrTerritory: input.auStateOrTerritory,
+      timezoneSource: input.timezoneSource ?? "device",
+      confirmed: true,
+    });
+  }
 
   const habitTitles = input.habits.length
     ? input.habits.slice(0, 5)
@@ -263,23 +310,49 @@ export async function leaveChallengeAction(challengeId: string) {
   revalidatePath("/");
 }
 
+async function challengeCompletionContext(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  challengeId: string,
+) {
+  const { data: ch } = await supabase
+    .from("challenges")
+    .select("start_date, end_date, start_at, end_at, challenge_timezone")
+    .eq("id", challengeId)
+    .maybeSingle();
+  if (!ch) throw new Error("Challenge not found.");
+  const tz = normalizeTimezone(ch.challenge_timezone, DEFAULT_FALLBACK_TIMEZONE);
+  const todayKey = challengeTodayDateKey(new Date(), tz);
+  return {
+    startDate: ch.start_date as string,
+    endDate: ch.end_date as string,
+    todayKey,
+    startAt: resolveChallengeStartAt({
+      start_date: ch.start_date as string,
+      start_at: ch.start_at as string | null,
+      challenge_timezone: tz,
+    }),
+    endAt: resolveChallengeEndAt({
+      end_date: ch.end_date as string,
+      end_at: ch.end_at as string | null,
+      challenge_timezone: tz,
+    }),
+  };
+}
+
 async function assertChallengeCompletionDate(
   supabase: Awaited<ReturnType<typeof createClient>>,
   challengeId: string,
   completedOn: string,
 ) {
-  const { data: ch } = await supabase
-    .from("challenges")
-    .select("start_date, end_date")
-    .eq("id", challengeId)
-    .maybeSingle();
-  if (!ch) throw new Error("Challenge not found.");
-  const today = todayDateKey();
-  if (completedOn < ch.start_date || completedOn > ch.end_date) {
+  const ctx = await challengeCompletionContext(supabase, challengeId);
+  if (completedOn < ctx.startDate || completedOn > ctx.endDate) {
     throw new Error("That date is outside this challenge.");
   }
-  if (completedOn > today) {
+  if (completedOn > ctx.todayKey) {
     throw new Error("You can only check off habits for today or earlier days.");
+  }
+  if (new Date().getTime() < ctx.startAt.getTime()) {
+    throw new Error("This challenge has not started yet.");
   }
 }
 
@@ -292,8 +365,8 @@ export async function toggleChallengeScheduleCompletionAction(
   completedOn?: string,
 ) {
   const { supabase, userId } = await requireUserId();
-  const today = todayDateKey();
-  const completionDate = completedOn ?? today;
+  const ctx = await challengeCompletionContext(supabase, challengeId);
+  const completionDate = completedOn ?? ctx.todayKey;
   await assertChallengeCompletionDate(supabase, challengeId, completionDate);
 
   if (markComplete) {
@@ -379,8 +452,8 @@ export async function saveChallengeStepProgressAction(
   completedOn?: string,
 ) {
   const { supabase, userId } = await requireUserId();
-  const today = todayDateKey();
-  const completionDate = completedOn ?? today;
+  const ctx = await challengeCompletionContext(supabase, challengeId);
+  const completionDate = completedOn ?? ctx.todayKey;
   await assertChallengeCompletionDate(supabase, challengeId, completionDate);
   const complete = steps >= target;
   const payload: Record<string, unknown> = {

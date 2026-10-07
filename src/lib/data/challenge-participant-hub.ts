@@ -1,10 +1,18 @@
-import { challengeDayIndex, challengeTotalDays } from "@/lib/challenge-day";
+import { challengeTotalDays } from "@/lib/challenge-day";
 import { parseScheduleItemActivities, type ParsedDailyActivity } from "@/lib/challenge-activities";
 import { fetchChallengeSchedule } from "@/lib/data/creator-studio";
 import { fetchChallengeGalleryDetailsMap } from "@/lib/data/challenge-media";
 import { unwrapOne } from "@/lib/data/relations";
 import { createClient } from "@/lib/supabase/server";
-import { todayDateKey } from "@/lib/dates";
+import {
+  challengeDateKeyForDay,
+  challengeDayIndexInZone,
+  challengePhaseFromInstants,
+  challengeTodayDateKey,
+} from "@/lib/timezone/challenge-calendar";
+import { resolveChallengeEndAt, resolveChallengeStartAt } from "@/lib/timezone/challenge-fields";
+import { normalizeTimezone } from "@/lib/timezone/validate";
+import { DEFAULT_FALLBACK_TIMEZONE } from "@/lib/timezone/constants";
 import type { ChallengeCategory } from "@/types/creator-studio";
 
 export type HubActivityState = ParsedDailyActivity & {
@@ -49,6 +57,10 @@ export type ChallengeParticipantHub = {
   communityAvatarUrl: string | null;
   startDate: string;
   endDate: string;
+  startAt: string;
+  endAt: string;
+  challengeTimezone: string;
+  participantTimezone: string;
   participants: number;
   dayIndex: number;
   totalDays: number;
@@ -107,26 +119,101 @@ export async function fetchChallengeParticipantHub(
   userId: string,
 ): Promise<ChallengeParticipantHub | null> {
   const supabase = await createClient();
-  const today = todayDateKey();
+  const now = new Date();
 
-  const { data: ch } = await supabase
-    .from("challenges")
-    .select(
-      `
+  type HubChallengeRow = {
+    id: string;
+    title: string;
+    description: string | null;
+    short_description: string | null;
+    goal_description: string | null;
+    category: string | null;
+    start_date: string;
+    end_date: string;
+    start_at?: string | null;
+    end_at?: string | null;
+    challenge_timezone?: string | null;
+    invite_slug: string;
+    cover_url: string | null;
+    created_by: string;
+    community_id: string | null;
+    creator:
+      | { display_name: string | null }
+      | { display_name: string | null }[]
+      | null;
+    community:
+      | {
+          slug: string;
+          community_name: string;
+          avatar_url: string | null;
+          owner_id: string;
+        }
+      | {
+          slug: string;
+          community_name: string;
+          avatar_url: string | null;
+          owner_id: string;
+        }[]
+      | null;
+    participants: { count: number }[] | null;
+  };
+
+  let ch: HubChallengeRow | null = null;
+  const fullSelect = `
+      id, title, description, short_description, goal_description, category,
+      start_date, end_date, start_at, end_at, challenge_timezone, schedule_mode,
+      invite_slug, cover_url, created_by, community_id,
+      creator:profiles!challenges_created_by_fkey ( display_name ),
+      community:creator_communities ( slug, community_name, avatar_url, owner_id ),
+      participants:challenge_participants ( count )
+    `;
+  const legacySelect = `
       id, title, description, short_description, goal_description, category,
       start_date, end_date, invite_slug, cover_url, created_by, community_id,
       creator:profiles!challenges_created_by_fkey ( display_name ),
       community:creator_communities ( slug, community_name, avatar_url, owner_id ),
       participants:challenge_participants ( count )
-    `,
-    )
-    .eq("id", challengeId)
-    .maybeSingle();
+    `;
+  const first = await supabase.from("challenges").select(fullSelect).eq("id", challengeId).maybeSingle();
+  if (first.error && /start_at|challenge_timezone|schema cache/i.test(first.error.message)) {
+    const legacy = await supabase.from("challenges").select(legacySelect).eq("id", challengeId).maybeSingle();
+    ch = legacy.data as HubChallengeRow | null;
+  } else {
+    if (first.error) throw new Error(first.error.message);
+    ch = first.data as HubChallengeRow | null;
+  }
   if (!ch) return null;
 
+  const startDate = ch.start_date;
+  const endDate = ch.end_date;
+  const challengeTimezone = normalizeTimezone(
+    (ch.challenge_timezone as string | null) ?? null,
+    DEFAULT_FALLBACK_TIMEZONE,
+  );
+  const startAt = resolveChallengeStartAt({
+    start_date: startDate,
+    start_at: ch.start_at as string | null,
+    challenge_timezone: challengeTimezone,
+  });
+  const endAt = resolveChallengeEndAt({
+    end_date: endDate,
+    end_at: ch.end_at as string | null,
+    challenge_timezone: challengeTimezone,
+  });
+
+  const { data: viewerProfile } = await supabase
+    .from("profiles")
+    .select("timezone")
+    .eq("id", userId)
+    .maybeSingle();
+  const participantTimezone = normalizeTimezone(viewerProfile?.timezone, DEFAULT_FALLBACK_TIMEZONE);
+
+  const today = challengeTodayDateKey(now, challengeTimezone);
+
   const community = unwrapOne(ch.community);
+  const createdBy = ch.created_by;
   const isOwner =
-    ch.created_by === userId ||
+    createdBy === userId ||
     (community?.owner_id != null && community.owner_id === userId);
 
   const { data: membership } = await supabase
@@ -138,22 +225,15 @@ export async function fetchChallengeParticipantHub(
   if (!membership && !isOwner) return null;
 
   const schedule = await fetchChallengeSchedule(challengeId);
-  const totalDays = challengeTotalDays(ch.start_date, ch.end_date);
-  const rawDayIndex = challengeDayIndex(ch.start_date, today);
+  const totalDays = challengeTotalDays(startDate, endDate);
+  const rawDayIndex = challengeDayIndexInZone(startDate, challengeTimezone, now);
   const dayIndex = Math.min(Math.max(rawDayIndex, 1), totalDays);
 
-  let phase: ChallengeParticipantHub["phase"] = "active";
-  let daysUntilStart = 0;
-  if (today < ch.start_date) {
-    phase = "upcoming";
-    daysUntilStart = Math.ceil(
-      (new Date(`${ch.start_date}T12:00:00Z`).getTime() -
-        new Date(`${today}T12:00:00Z`).getTime()) /
-        (86400000),
-    );
-  } else if (today > ch.end_date) {
-    phase = "completed";
-  }
+  const phase = challengePhaseFromInstants(startAt, endAt, now);
+  const daysUntilStart =
+    phase === "upcoming"
+      ? Math.max(0, Math.ceil((startAt.getTime() - now.getTime()) / 86_400_000))
+      : 0;
 
   const effectiveDayIndex = phase === "upcoming" ? 1 : dayIndex;
   const scheduleItem = phase === "active" ? scheduleItemForDay(schedule, effectiveDayIndex) : null;
@@ -240,7 +320,7 @@ export async function fetchChallengeParticipantHub(
       dayCompletionMap[d] = false;
       continue;
     }
-    const dayDate = addDays(ch.start_date, d - 1);
+    const dayDate = challengeDateKeyForDay(startDate, d);
     const activities = activitiesForScheduleItem(item, dayDate);
     const allComplete = isDayAllComplete(item, activities);
     dayCompletionMap[d] = allComplete;
@@ -304,7 +384,7 @@ export async function fetchChallengeParticipantHub(
   const members = await fetchChallengeMemberRows(
     supabase,
     challengeId,
-    ch.created_by,
+    createdBy,
     creatorDisplayName,
     today,
   );
@@ -319,12 +399,16 @@ export async function fetchChallengeParticipantHub(
     category,
     coverUrl,
     creatorName: unwrapOne(ch.creator)?.display_name ?? "Creator",
-    creatorId: ch.created_by,
+    creatorId: createdBy,
     communitySlug: community?.slug ?? null,
     communityName: community?.community_name ?? null,
     communityAvatarUrl: community?.avatar_url ?? null,
-    startDate: ch.start_date,
-    endDate: ch.end_date,
+    startDate,
+    endDate,
+    startAt: startAt.toISOString(),
+    endAt: endAt.toISOString(),
+    challengeTimezone,
+    participantTimezone,
     participants: ch.participants?.[0]?.count ?? 0,
     dayIndex: effectiveDayIndex,
     totalDays,
@@ -465,12 +549,6 @@ async function fetchChallengeMemberRows(
   }
 
   return members;
-}
-
-function addDays(isoDate: string, days: number): string {
-  const d = new Date(`${isoDate}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
 }
 
 function streakFromCompletions(

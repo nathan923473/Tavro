@@ -5,6 +5,8 @@ import { templateByKey, type ChallengeTemplateKey } from "@/lib/creator/challeng
 import { creatorChallengePath } from "@/lib/data/creator-studio";
 import type { ChallengeCategory, ChallengePublishStatus } from "@/types/creator-studio";
 import { revalidatePath } from "next/cache";
+import { buildFixedInstantScheduleFields } from "@/lib/timezone/challenge-fields";
+import { isValidIanaTimezone } from "@/lib/timezone/validate";
 
 function slugify(title: string): string {
   return `${title
@@ -63,6 +65,8 @@ export async function saveChallengeDraftAction(input: {
   category: ChallengeCategory;
   startDate: string;
   endDate: string;
+  startTimeLocal: string;
+  challengeTimezone: string;
   schedule: Array<{
     dayLabel: string;
     title: string;
@@ -78,8 +82,21 @@ export async function saveChallengeDraftAction(input: {
 
   const title = input.title.trim();
   if (!title) throw new Error("Challenge name is required.");
+  if (!input.startDate || !input.endDate || input.endDate < input.startDate) {
+    throw new Error("Choose valid start and end dates.");
+  }
+  if (!isValidIanaTimezone(input.challengeTimezone)) {
+    throw new Error("Choose a valid challenge timezone.");
+  }
 
   const template = input.templateKey ? templateByKey(input.templateKey) : null;
+  const instantFields = buildFixedInstantScheduleFields({
+    startDate: input.startDate,
+    endDate: input.endDate,
+    startTimeLocal: input.startTimeLocal,
+    challengeTimezone: input.challengeTimezone,
+  });
+
   const row: Record<string, unknown> = {
     created_by: user.id,
     community_id: community.id,
@@ -90,6 +107,7 @@ export async function saveChallengeDraftAction(input: {
     category: input.category,
     start_date: input.startDate,
     end_date: input.endDate,
+    ...instantFields,
     visibility: "public",
     publish_status: "draft" satisfies ChallengePublishStatus,
   };
@@ -177,9 +195,15 @@ export async function publishChallengeAction(challengeId: string) {
 
   const { data: ch } = await supabase
     .from("challenges")
-    .select("invite_slug, title, community_id")
+    .select("invite_slug, title, community_id, start_at, schedule_mode")
     .eq("id", challengeId)
     .single();
+
+  if (ch?.schedule_mode !== "start_anytime" && !ch?.start_at) {
+    throw new Error(
+      "Set a start date, time, and timezone before publishing. Save the challenge again after migration 021.",
+    );
+  }
 
   const patch = {
     publish_status: "published" as const,
@@ -241,6 +265,10 @@ export async function duplicateChallengeAction(challengeId: string) {
       category: full.category ?? null,
       start_date: full.start_date,
       end_date: full.end_date,
+      challenge_timezone: full.challenge_timezone ?? null,
+      start_at: full.start_at ?? null,
+      end_at: full.end_at ?? null,
+      schedule_mode: full.schedule_mode ?? "fixed_instant",
       visibility: "public",
       invite_slug: slugify(full.title),
       publish_status: "draft",

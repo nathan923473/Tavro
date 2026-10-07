@@ -36,9 +36,14 @@ export function ChallengeLandingView({
   const [pending, startTransition] = useTransition();
   const [status, setStatus] = useState<string | null>(null);
   const { challenge } = data;
-  const today = new Date().toISOString().slice(0, 10);
-  const notStarted = challenge.startDate > today;
-  const ended = challenge.endDate < today;
+  const notStarted =
+    challenge.startAt != null
+      ? new Date(challenge.startAt).getTime() > Date.now()
+      : challenge.startDate > new Date().toISOString().slice(0, 10);
+  const ended =
+    challenge.endAt != null
+      ? new Date(challenge.endAt).getTime() <= Date.now()
+      : challenge.endDate < new Date().toISOString().slice(0, 10);
 
   function handleJoin() {
     if (!loggedIn) {
@@ -126,7 +131,13 @@ export function ChallengeLandingView({
 
           {notStarted ? (
             <div className="mt-3 space-y-2">
-              <ChallengeStartCountdown startDate={challenge.startDate} variant="hero" />
+              <ChallengeStartCountdown
+                startAt={challenge.startAt}
+                startDate={challenge.startDate}
+                challengeTimezone={challenge.challengeTimezone}
+                variant="hero"
+                showCreatorStart
+              />
               <p className="text-sm text-muted-foreground">
                 Join now — your spot is saved and activities unlock when the countdown ends.
               </p>

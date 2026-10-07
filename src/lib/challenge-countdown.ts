@@ -1,19 +1,39 @@
-import { todayDateKey } from "@/lib/dates";
+import {
+  formatHumanCountdownToStart,
+  hasStarted,
+  msUntilInstant,
+} from "@/lib/timezone/format";
 
-/** UTC midnight on the challenge start date (matches app date keys). */
+/** @deprecated Use start_at ISO + formatHumanCountdownToStart */
 export function challengeStartTimestampMs(startDateKey: string): number {
   return Date.parse(`${startDateKey}T00:00:00.000Z`);
 }
 
-export function isChallengeUpcoming(startDateKey: string, todayKey = todayDateKey()): boolean {
+export function isChallengeUpcomingByStartAt(startAtIso: string | null | undefined): boolean {
+  if (!startAtIso) return false;
+  return !hasStarted(new Date(startAtIso));
+}
+
+/** Legacy date-only upcoming check (fallback if start_at missing). */
+export function isChallengeUpcomingLegacy(startDateKey: string, todayKey: string): boolean {
   return startDateKey > todayKey;
 }
 
-export function msUntilChallengeStart(startDateKey: string, nowMs = Date.now()): number {
-  if (!isChallengeUpcoming(startDateKey)) return 0;
-  return Math.max(0, challengeStartTimestampMs(startDateKey) - nowMs);
+export function isChallengeUpcoming(input: {
+  startAt?: string | null;
+  startDate: string;
+}): boolean {
+  if (input.startAt) return isChallengeUpcomingByStartAt(input.startAt);
+  return isChallengeUpcomingLegacy(input.startDate, new Date().toISOString().slice(0, 10));
 }
 
+export function msUntilChallengeStartAt(startAtIso: string, nowMs = Date.now()): number {
+  return msUntilInstant(new Date(startAtIso), nowMs);
+}
+
+export { formatHumanCountdownToStart, hasStarted };
+
+/** @deprecated use formatShortDate from timezone/format */
 export function formatChallengeStartDate(startDateKey: string): string {
   return new Date(`${startDateKey}T12:00:00Z`).toLocaleDateString(undefined, {
     weekday: "short",
@@ -23,15 +43,14 @@ export function formatChallengeStartDate(startDateKey: string): string {
   });
 }
 
+/** @deprecated use formatHumanCountdownToStart */
 export function formatChallengeCountdown(ms: number): string {
-  if (ms <= 0) return "Starting now";
-  const totalSec = Math.floor(ms / 1000);
-  const days = Math.floor(totalSec / 86400);
-  const hours = Math.floor((totalSec % 86400) / 3600);
-  const minutes = Math.floor((totalSec % 3600) / 60);
-  const seconds = totalSec % 60;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  if (days > 0) return `${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
-  if (hours > 0) return `${hours}h ${pad(minutes)}m ${pad(seconds)}s`;
-  return `${minutes}m ${pad(seconds)}s`;
+  if (ms <= 0) return "Started";
+  const totalDays = Math.floor(ms / 86_400_000);
+  if (totalDays > 1) return `Starts in ${totalDays} days`;
+  if (totalDays === 1) return "Starts tomorrow";
+  const hours = Math.floor(ms / 3_600_000);
+  if (hours >= 1) return `Starts in ${hours} hours`;
+  const mins = Math.max(1, Math.floor(ms / 60_000));
+  return `Starts in ${mins} minutes`;
 }

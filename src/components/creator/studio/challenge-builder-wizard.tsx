@@ -22,6 +22,7 @@ import {
   WEEKDAY_SHORT,
   weekdayUtcForChallengeDay,
 } from "@/lib/challenge-day";
+import { TimezoneSelect } from "@/components/timezone/timezone-select";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition, type Dispatch, type SetStateAction } from "react";
@@ -117,7 +118,11 @@ const CATEGORIES: { value: ChallengeCategory; label: string }[] = [
   { value: "other", label: "Other" },
 ];
 
-export function ChallengeBuilderWizard() {
+export function ChallengeBuilderWizard({
+  defaultChallengeTimezone = "Australia/Melbourne",
+}: {
+  defaultChallengeTimezone?: string;
+} = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTemplate = (searchParams.get("template") ??
@@ -140,6 +145,8 @@ export function ChallengeBuilderWizard() {
   const [category, setCategory] = useState<ChallengeCategory>(template.category);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [startTimeLocal, setStartTimeLocal] = useState("09:00");
+  const [challengeTimezone, setChallengeTimezone] = useState(defaultChallengeTimezone);
   const [lengthShortcut, setLengthShortcut] = useState("30");
   const [schedule, setSchedule] = useState<ScheduleDraftItem[]>(
     template.schedule.map((s) => ({
@@ -196,6 +203,8 @@ export function ChallengeBuilderWizard() {
           category,
           startDate,
           endDate,
+          startTimeLocal,
+          challengeTimezone,
           schedule,
         });
         setChallengeId(result.challengeId);
@@ -306,6 +315,27 @@ export function ChallengeBuilderWizard() {
               required
             />
           </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <label className="block text-sm">
+              <span className="font-medium">Start time</span>
+              <input
+                type="time"
+                className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+                value={startTimeLocal}
+                onChange={(e) => setStartTimeLocal(e.target.value)}
+                required
+              />
+            </label>
+            <TimezoneSelect
+              label="Challenge timezone"
+              value={challengeTimezone}
+              onChange={setChallengeTimezone}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Participants in other timezones will automatically see this converted to their local
+            time.
+          </p>
 
           {startDate && endDate ? (
             datesInvalid ? (

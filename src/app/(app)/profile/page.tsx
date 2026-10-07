@@ -4,6 +4,9 @@ import { PageHeader } from "@/components/layout/page-header";
 import { AccountExperience } from "@/components/profile/account-experience";
 import { CreatorMediaCard } from "@/components/profile/creator-media-card";
 import { NotificationPreferencesCard } from "@/components/profile/notification-preferences-card";
+import { TimezoneSettingsCard } from "@/components/profile/timezone-settings-card";
+import { createClient } from "@/lib/supabase/server";
+import type { AuStateOrTerritory } from "@/lib/timezone/constants";
 import { ProfilePhotoCard } from "@/components/profile/profile-photo-card";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { SupabaseStatus } from "@/components/profile/supabase-status";
@@ -20,6 +23,19 @@ export default async function ProfilePage() {
   const { user, profile } = await getCurrentUserProfile();
   const referralCode = profile?.referralCode ?? "sign-in-for-code";
   const goals = user ? await fetchMemberGoals(user.id) : [];
+
+  let timezone: string | null = null;
+  let auState: AuStateOrTerritory | null = null;
+  if (user) {
+    const supabase = await createClient();
+    const { data: tzRow } = await supabase
+      .from("profiles")
+      .select("timezone, au_state_or_territory")
+      .eq("id", user.id)
+      .maybeSingle();
+    timezone = tzRow?.timezone ?? null;
+    auState = (tzRow?.au_state_or_territory as AuStateOrTerritory | null) ?? null;
+  }
 
   return (
     <div className="animate-fade-up">
@@ -90,6 +106,7 @@ export default async function ProfilePage() {
           </Card>
         ) : null}
 
+        {user ? <TimezoneSettingsCard timezone={timezone} auState={auState} /> : null}
         <NotificationPreferencesCard />
         <SupabaseStatus />
         <InstallPrompt />

@@ -37,6 +37,9 @@ export type Challenge = {
   description: string;
   startDate: string;
   endDate: string;
+  startAt?: string | null;
+  endAt?: string | null;
+  challengeTimezone?: string | null;
   participants: number;
   joined: boolean;
   progressPercent: number;

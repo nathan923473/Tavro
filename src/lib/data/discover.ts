@@ -2,6 +2,7 @@ import { fetchChallengeGalleryMap } from "@/lib/data/challenge-media";
 import { unwrapOne } from "@/lib/data/relations";
 import { createClient } from "@/lib/supabase/server";
 import { challengeTimeline } from "@/lib/data/communities";
+import { challengePhaseFromInstants } from "@/lib/timezone/challenge-calendar";
 
 export type DiscoverChallenge = {
   id: string;
@@ -14,10 +15,32 @@ export type DiscoverChallenge = {
   createdById: string;
   startDate: string;
   endDate: string;
+  startAt: string | null;
+  endAt: string | null;
+  challengeTimezone: string | null;
   participants: number;
   coverUrl: string | null;
   timeline: "current" | "upcoming" | "previous";
 };
+
+function timelineForChallenge(row: {
+  start_date: string;
+  end_date: string;
+  start_at?: string | null;
+  end_at?: string | null;
+  challenge_timezone?: string | null;
+}): DiscoverChallenge["timeline"] {
+  if (row.start_at && row.end_at) {
+    const phase = challengePhaseFromInstants(
+      new Date(row.start_at),
+      new Date(row.end_at),
+    );
+    if (phase === "upcoming") return "upcoming";
+    if (phase === "completed") return "previous";
+    return "current";
+  }
+  return challengeTimeline(row.start_date, row.end_date);
+}
 
 export type DiscoverCreator = {
   id: string;
@@ -68,7 +91,8 @@ export async function searchDiscover(query: string): Promise<{
     .from("challenges")
     .select(
       `
-      id, title, short_description, invite_slug, start_date, end_date, cover_url, created_by,
+      id, title, short_description, invite_slug, start_date, end_date,
+      start_at, end_at, challenge_timezone, cover_url, created_by,
       community:creator_communities ( slug, community_name ),
       creator:profiles!challenges_created_by_fkey ( display_name, creator_status ),
       participants:challenge_participants ( count )
@@ -97,9 +121,12 @@ export async function searchDiscover(query: string): Promise<{
         createdById: r.created_by,
         startDate: r.start_date,
         endDate: r.end_date,
+        startAt: r.start_at ?? null,
+        endAt: r.end_at ?? null,
+        challengeTimezone: r.challenge_timezone ?? null,
         participants: r.participants?.[0]?.count ?? 0,
         coverUrl: r.cover_url ?? galleryMap[r.id]?.[0] ?? null,
-        timeline: challengeTimeline(r.start_date, r.end_date),
+        timeline: timelineForChallenge(r),
       };
     })
     .filter((c) => c.communitySlug);
@@ -118,7 +145,8 @@ export async function fetchDiscoverSections(): Promise<{
     .from("challenges")
     .select(
       `
-      id, title, short_description, invite_slug, start_date, end_date, cover_url, created_by,
+      id, title, short_description, invite_slug, start_date, end_date,
+      start_at, end_at, challenge_timezone, cover_url, created_by,
       community:creator_communities ( slug, community_name ),
       creator:profiles!challenges_created_by_fkey ( display_name, creator_status ),
       participants:challenge_participants ( count )
@@ -147,9 +175,12 @@ export async function fetchDiscoverSections(): Promise<{
         createdById: r.created_by,
         startDate: r.start_date,
         endDate: r.end_date,
+        startAt: r.start_at ?? null,
+        endAt: r.end_at ?? null,
+        challengeTimezone: r.challenge_timezone ?? null,
         participants: r.participants?.[0]?.count ?? 0,
         coverUrl: r.cover_url ?? galleryMap[r.id]?.[0] ?? null,
-        timeline: challengeTimeline(r.start_date, r.end_date),
+        timeline: timelineForChallenge(r),
       };
     })
     .filter((c) => c.communitySlug);

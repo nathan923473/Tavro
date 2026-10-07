@@ -1,6 +1,17 @@
 "use client";
 
 import { completeOnboarding } from "@/app/(app)/member/actions";
+import { TimezoneSelect } from "@/components/timezone/timezone-select";
+import {
+  AU_STATE_OPTIONS,
+  type AuStateOrTerritory,
+} from "@/lib/timezone/constants";
+import {
+  detectBrowserTimezone,
+  resolveInitialTimezone,
+  timezoneFromAuState,
+} from "@/lib/timezone/detect";
+import { friendlyTimezoneTitle } from "@/lib/timezone/format";
 import { ProfileAvatarEditor } from "@/components/profile/profile-avatar-editor";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -43,19 +54,47 @@ export function OnboardingFlow({
     onboardingHabits[4],
   ]);
   const [wantsGroup, setWantsGroup] = useState(invitedToGroup);
+  const [auState, setAuState] = useState<AuStateOrTerritory | "">("");
+  const [timezone, setTimezone] = useState(() => detectBrowserTimezone() ?? "Australia/Melbourne");
+  const [timezoneSource, setTimezoneSource] = useState<string>("device");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const totalSteps = 4;
+  const totalSteps = 5;
+
+  function applyStateFallback(state: AuStateOrTerritory | "") {
+    setAuState(state);
+    if (state && state !== "outside_australia") {
+      const fromState = timezoneFromAuState(state);
+      if (fromState) {
+        setTimezone(fromState);
+        setTimezoneSource("state_fallback");
+      }
+    } else if (state === "outside_australia") {
+      const detected = detectBrowserTimezone();
+      if (detected) {
+        setTimezone(detected);
+        setTimezoneSource("device");
+      }
+    }
+  }
 
   function finish() {
     startTransition(async () => {
       try {
+        const resolved = resolveInitialTimezone({
+          detected: timezone,
+          auState: auState || null,
+          stored: timezone,
+        });
         await completeOnboarding({
           focusGoal: selectedGoal,
           habits: selectedHabits.slice(0, 5),
           createGroup: wantsGroup && !inviteCode,
           inviteCode,
+          timezone: resolved.timezone,
+          auStateOrTerritory: auState || null,
+          timezoneSource: timezoneSource || resolved.source,
         });
         router.push("/");
         router.refresh();
@@ -152,6 +191,50 @@ export function OnboardingFlow({
 
       {step === 2 ? (
         <div className="animate-fade-up flex flex-1 flex-col">
+          <h1 className="text-2xl font-semibold">Where are you based?</h1>
+          <p className="mt-2 text-muted-foreground">
+            This helps us show challenge times correctly.
+          </p>
+          <ul className="mt-4 space-y-2">
+            {AU_STATE_OPTIONS.map((o) => (
+              <li key={o.value}>
+                <button
+                  type="button"
+                  onClick={() => applyStateFallback(o.value)}
+                  className={cn(
+                    "w-full rounded-xl border px-4 py-3 text-left text-sm",
+                    auState === o.value
+                      ? "border-primary bg-secondary/60 font-medium"
+                      : "border-border bg-surface",
+                  )}
+                >
+                  {o.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <Card className="mt-4 space-y-3">
+            <div>
+              <p className="text-sm font-semibold">Your timezone</p>
+              <p className="text-sm text-muted-foreground">{friendlyTimezoneTitle(timezone)}</p>
+              <p className="text-xs text-muted-foreground">{timezone}</p>
+            </div>
+            <TimezoneSelect
+              value={timezone}
+              onChange={(v) => {
+                setTimezone(v);
+                setTimezoneSource("manual");
+              }}
+            />
+            <p className="text-xs text-muted-foreground">
+              We&apos;ll use this for local times and reminders. You can change it anytime in Profile.
+            </p>
+          </Card>
+        </div>
+      ) : null}
+
+      {step === 3 ? (
+        <div className="animate-fade-up flex flex-1 flex-col">
           <h1 className="text-2xl font-semibold">Add a profile picture</h1>
           <p className="mt-2 text-muted-foreground">
             Optional — friends see this in your private accountability group.
@@ -174,7 +257,7 @@ export function OnboardingFlow({
         </div>
       ) : null}
 
-      {step === 3 ? (
+      {step === 4 ? (
         <div className="animate-fade-up flex flex-1 flex-col">
           <h1 className="text-2xl font-semibold capitalize">
             {ACCOUNTABILITY_GROUP_PLURAL} (optional)

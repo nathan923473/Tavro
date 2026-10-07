@@ -12,6 +12,9 @@ type ChallengeRow = {
   description: string | null;
   start_date: string;
   end_date: string;
+  start_at?: string | null;
+  end_at?: string | null;
+  challenge_timezone?: string | null;
   invite_slug: string;
   focus_areas?: string[] | null;
   cover_url: string | null;
@@ -39,6 +42,9 @@ function mapChallenge(
     description: row.description ?? "",
     startDate: row.start_date,
     endDate: row.end_date,
+    startAt: row.start_at ?? null,
+    endAt: row.end_at ?? null,
+    challengeTimezone: row.challenge_timezone ?? null,
     participants: count,
     joined,
     progressPercent: joined ? (progress[row.id] ?? 0) : 0,
@@ -56,7 +62,8 @@ export async function fetchChallengesForUser(userId: string | null): Promise<{
   const supabase = await createClient();
 
   const selectFull = `
-      id, title, description, start_date, end_date, invite_slug, focus_areas,
+      id, title, description, start_date, end_date, start_at, end_at, challenge_timezone,
+      invite_slug, focus_areas,
       cover_url, created_by, visibility,
       creator:profiles!challenges_created_by_fkey ( display_name ),
       participants:challenge_participants ( count )
@@ -192,7 +199,8 @@ export async function fetchChallengeByInviteSlug(
     .from("challenges")
     .select(
       `
-      id, title, description, start_date, end_date, invite_slug, focus_areas,
+      id, title, description, start_date, end_date, start_at, end_at, challenge_timezone,
+      invite_slug, focus_areas,
       cover_url, created_by, visibility,
       creator:profiles!challenges_created_by_fkey ( display_name ),
       participants:challenge_participants ( count )

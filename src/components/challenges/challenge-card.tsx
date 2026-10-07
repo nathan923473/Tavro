@@ -139,9 +139,11 @@ export function ChallengeCard({
           </Badge>
         ))}
       </div>
-      {isChallengeUpcoming(challenge.startDate) ? (
+      {isChallengeUpcoming(challenge) ? (
         <ChallengeStartCountdown
+          startAt={challenge.startAt}
           startDate={challenge.startDate}
+          challengeTimezone={challenge.challengeTimezone}
           variant="prominent"
           className="mt-3"
           label="Starting in"

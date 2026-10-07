@@ -74,7 +74,14 @@ export function ChallengeParticipantHub({
         <Card className="space-y-3 text-center">
           <p className="text-lg font-semibold">You&apos;re in! 🎉</p>
           <p className="text-xl font-semibold">{localHub.title}</p>
-          <ChallengeStartCountdown startDate={localHub.startDate} variant="hero" />
+          <ChallengeStartCountdown
+            startAt={localHub.startAt}
+            startDate={localHub.startDate}
+            challengeTimezone={localHub.challengeTimezone}
+            participantTimezone={localHub.participantTimezone}
+            variant="hero"
+            showCreatorStart
+          />
           <p className="text-sm text-muted-foreground">
             Your first activities will appear when the countdown ends.
           </p>

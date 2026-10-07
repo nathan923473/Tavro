@@ -25,7 +25,7 @@ function ChallengeRow({
     ? `/challenges/${c.id}`
     : publicChallengePath(c.communitySlug, c.inviteSlug);
   const cta = isOwner ? "Open challenge" : "View challenge";
-  const upcoming = isChallengeUpcoming(c.startDate);
+  const upcoming = isChallengeUpcoming({ startAt: c.startAt, startDate: c.startDate });
   return (
     <li>
       <Card
@@ -33,7 +33,9 @@ function ChallengeRow({
       >
         {upcoming ? (
           <ChallengeStartCountdown
+            startAt={c.startAt}
             startDate={c.startDate}
+            challengeTimezone={c.challengeTimezone}
             variant="strip"
             label="Starting in"
           />

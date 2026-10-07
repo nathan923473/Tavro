@@ -42,7 +42,8 @@ export async function fetchChallengeLandingByInviteSlug(
     .select(
       `
       id, title, description, short_description, goal_description, category,
-      start_date, end_date, invite_slug, focus_areas, cover_url, created_by,
+      start_date, end_date, start_at, end_at, challenge_timezone,
+      invite_slug, focus_areas, cover_url, created_by,
       visibility, publish_status, community_id,
       creator:profiles!challenges_created_by_fkey ( display_name, creator_status ),
       participants:challenge_participants ( count ),
@@ -103,6 +104,9 @@ export async function fetchChallengeLandingByInviteSlug(
     description: row.description ?? "",
     startDate: row.start_date,
     endDate: row.end_date,
+    startAt: row.start_at ?? null,
+    endAt: row.end_at ?? null,
+    challengeTimezone: row.challenge_timezone ?? null,
     participants: row.participants?.[0]?.count ?? 0,
     joined,
     progressPercent: 0,
