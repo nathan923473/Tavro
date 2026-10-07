@@ -96,6 +96,7 @@ grant execute on function public.shares_challenge_with(uuid, uuid) to authentica
 
 drop policy if exists "Participants read own memberships" on public.challenge_participants;
 drop policy if exists "Challenge participants readable by co-participants" on public.challenge_participants;
+drop policy if exists "Challenge participants readable" on public.challenge_participants;
 
 create policy "Challenge participants readable"
   on public.challenge_participants for select
