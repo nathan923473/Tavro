@@ -2,6 +2,7 @@ import {
   duplicateChallengeRedirectAction,
   publishChallengeFormAction,
 } from "@/app/(app)/studio/actions";
+import { DeleteChallengeButton } from "@/components/creator/studio/delete-challenge-button";
 import { StudioLayout } from "@/components/creator/studio/studio-layout";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { Button } from "@/components/ui/button";
@@ -128,6 +129,12 @@ export default async function ManageChallengePage({ params }: Props) {
           Duplicate as new draft
         </Button>
       </form>
+
+      <DeleteChallengeButton
+        challengeId={id}
+        challengeTitle={challenge.title}
+        participantCount={challenge.participantCount}
+      />
 
       <Link href="/studio/challenges" className="block text-center text-sm text-primary">
         ← All challenges

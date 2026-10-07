@@ -388,6 +388,53 @@ export async function duplicateChallengeRedirectAction(challengeId: string) {
   redirect(`/studio/challenges/${newId}`);
 }
 
+export async function deleteChallengeAction(challengeId: string) {
+  const { user } = await requireApprovedCreator();
+  const { createClient } = await import("@/lib/supabase/server");
+  const supabase = await createClient();
+  const community = await requireOwnerCommunity(supabase, user.id);
+  const owned = await assertOwnsChallenge(supabase, user.id, challengeId);
+
+  const { data: ch } = await supabase
+    .from("challenges")
+    .select("invite_slug")
+    .eq("id", challengeId)
+    .single();
+
+  const { error } = await supabase
+    .from("challenges")
+    .delete()
+    .eq("id", challengeId)
+    .eq("created_by", user.id);
+
+  if (error) {
+    if (/policy|permission|42501/i.test(error.message)) {
+      throw new Error(
+        "Delete is not allowed yet — run migration 020_creator_delete_challenges.sql in Supabase.",
+      );
+    }
+    throw new Error(error.message);
+  }
+
+  revalidateStudio(community.slug);
+  revalidatePath("/challenges");
+  revalidatePath("/discover");
+  if (ch?.invite_slug) {
+    revalidatePath(`/join/${ch.invite_slug}`);
+  }
+  if (community.slug && owned.invite_slug) {
+    revalidatePath(`/creator/${community.slug}/challenges/${owned.invite_slug}`);
+  }
+
+  return { ok: true as const };
+}
+
+export async function deleteChallengeFormAction(challengeId: string) {
+  await deleteChallengeAction(challengeId);
+  const { redirect } = await import("next/navigation");
+  redirect("/studio/challenges");
+}
+
 export async function deleteCreatorLinkAction(communityId: string, linkId: string) {
   const { user } = await requireApprovedCreator();
   const { createClient } = await import("@/lib/supabase/server");
