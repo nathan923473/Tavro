@@ -2,6 +2,7 @@
 
 import { deleteChallengeFormAction } from "@/app/(app)/studio/actions";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { useState, useTransition } from "react";
 
 export function DeleteChallengeButton({

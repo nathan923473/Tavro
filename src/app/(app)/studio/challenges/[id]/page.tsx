@@ -130,6 +130,8 @@ export default async function ManageChallengePage({ params }: Props) {
         </Button>
       </form>
 
+      <hr className="border-border" aria-hidden />
+
       <DeleteChallengeButton
         challengeId={id}
         challengeTitle={challenge.title}
