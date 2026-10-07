@@ -38,11 +38,49 @@ function exclusiveEndUtc(endDateKey, timeZone) {
   );
 }
 
+function normalizeSupabaseUrl(raw) {
+  const trimmed = String(raw).trim().replace(/^["']|["']$/g, "");
+  let url = trimmed.replace(/\/+$/, "");
+  if (url.endsWith("/rest/v1")) {
+    url = url.slice(0, -"/rest/v1".length).replace(/\/+$/, "");
+  }
+  if (!/^https?:\/\/.+/i.test(url)) {
+    throw new Error(
+      'SUPABASE_URL must be the Project URL, e.g. https://abcdefghijklmnop.supabase.co (from Supabase → Project Settings → API).',
+    );
+  }
+  if (/supabase\.com\/dashboard|\/project\//i.test(url)) {
+    throw new Error(
+      "That looks like a dashboard link. Use Project URL from Settings → API (https://YOUR_REF.supabase.co), not the browser address bar.",
+    );
+  }
+  if (url.includes(" ") || url.includes("\n")) {
+    throw new Error("SUPABASE_URL contains spaces or line breaks — check your paste and quotes.");
+  }
+  return url;
+}
+
 async function main() {
-  const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    console.error("Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY");
+  const urlRaw = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const keyRaw = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!urlRaw || !keyRaw) {
+    console.error("Set SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL) and SUPABASE_SERVICE_ROLE_KEY.");
+    process.exit(1);
+  }
+
+  let url;
+  try {
+    url = normalizeSupabaseUrl(urlRaw);
+  } catch (e) {
+    console.error(e instanceof Error ? e.message : String(e));
+    process.exit(1);
+  }
+
+  const key = String(keyRaw).trim().replace(/^["']|["']$/g, "");
+  if (!key.startsWith("eyJ")) {
+    console.error(
+      "SUPABASE_SERVICE_ROLE_KEY should be the long JWT from Settings → API → service_role (secret), not the anon key or a database password.",
+    );
     process.exit(1);
   }
 
@@ -55,6 +93,11 @@ async function main() {
 
   if (error) {
     console.error("Fetch failed:", error.message);
+    if (/invalid path/i.test(error.message)) {
+      console.error(
+        "\nUsually this means SUPABASE_URL is wrong. It must be exactly:\n  https://YOUR_PROJECT_REF.supabase.co\nCopy it from Supabase → Project Settings → API → Project URL.\nDo not add /rest/v1 or paste the dashboard URL.",
+      );
+    }
     process.exit(1);
   }
 
