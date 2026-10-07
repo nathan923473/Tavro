@@ -263,22 +263,45 @@ export async function leaveChallengeAction(challengeId: string) {
   revalidatePath("/");
 }
 
+async function assertChallengeCompletionDate(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  challengeId: string,
+  completedOn: string,
+) {
+  const { data: ch } = await supabase
+    .from("challenges")
+    .select("start_date, end_date")
+    .eq("id", challengeId)
+    .maybeSingle();
+  if (!ch) throw new Error("Challenge not found.");
+  const today = todayDateKey();
+  if (completedOn < ch.start_date || completedOn > ch.end_date) {
+    throw new Error("That date is outside this challenge.");
+  }
+  if (completedOn > today) {
+    throw new Error("You can only check off habits for today or earlier days.");
+  }
+}
+
 export async function toggleChallengeScheduleCompletionAction(
   challengeId: string,
   scheduleItemId: string,
   markComplete: boolean,
   activityKey = "primary",
   progressNumber?: number | null,
+  completedOn?: string,
 ) {
   const { supabase, userId } = await requireUserId();
   const today = todayDateKey();
+  const completionDate = completedOn ?? today;
+  await assertChallengeCompletionDate(supabase, challengeId, completionDate);
 
   if (markComplete) {
     const payload: Record<string, unknown> = {
       user_id: userId,
       challenge_id: challengeId,
       schedule_item_id: scheduleItemId,
-      completed_on: today,
+      completed_on: completionDate,
       activity_key: activityKey,
     };
     if (progressNumber != null) payload.progress_number = progressNumber;
@@ -292,7 +315,7 @@ export async function toggleChallengeScheduleCompletionAction(
           user_id: userId,
           challenge_id: challengeId,
           schedule_item_id: scheduleItemId,
-          completed_on: today,
+          completed_on: completionDate,
           progress_number: progressNumber ?? null,
         },
         { onConflict: "user_id,schedule_item_id,completed_on" },
@@ -302,14 +325,14 @@ export async function toggleChallengeScheduleCompletionAction(
       throw new Error(error.message);
     }
 
-    await bumpChallengeProgress(supabase, userId, challengeId, today);
+    await bumpChallengeProgress(supabase, userId, challengeId, completionDate);
   } else {
     let q = supabase
       .from("challenge_schedule_completions")
       .delete()
       .eq("user_id", userId)
       .eq("schedule_item_id", scheduleItemId)
-      .eq("completed_on", today);
+      .eq("completed_on", completionDate);
     q = q.eq("activity_key", activityKey);
     await q;
   }
@@ -353,15 +376,18 @@ export async function saveChallengeStepProgressAction(
   activityKey: string,
   steps: number,
   target: number,
+  completedOn?: string,
 ) {
   const { supabase, userId } = await requireUserId();
   const today = todayDateKey();
+  const completionDate = completedOn ?? today;
+  await assertChallengeCompletionDate(supabase, challengeId, completionDate);
   const complete = steps >= target;
   const payload: Record<string, unknown> = {
     user_id: userId,
     challenge_id: challengeId,
     schedule_item_id: scheduleItemId,
-    completed_on: today,
+    completed_on: completionDate,
     activity_key: activityKey,
     progress_number: steps,
   };
@@ -375,7 +401,7 @@ export async function saveChallengeStepProgressAction(
         user_id: userId,
         challenge_id: challengeId,
         schedule_item_id: scheduleItemId,
-        completed_on: today,
+        completed_on: completionDate,
         progress_number: steps,
       },
       { onConflict: "user_id,schedule_item_id,completed_on" },
@@ -384,7 +410,7 @@ export async function saveChallengeStepProgressAction(
     throw new Error(error.message);
   }
 
-  if (complete) await bumpChallengeProgress(supabase, userId, challengeId, today);
+  if (complete) await bumpChallengeProgress(supabase, userId, challengeId, completionDate);
   revalidateChallengeParticipant(challengeId);
 }
 

@@ -9,7 +9,8 @@ import { ShareChallengeButton } from "@/components/share/share-challenge-button"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import type { ChallengeParticipantHub } from "@/lib/data/challenge-participant-hub";
+import { parseScheduleItemActivities } from "@/lib/challenge-activities";
+import type { ChallengeParticipantHub, HubActivityState } from "@/lib/data/challenge-participant-hub";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { CalendarRange, MoreHorizontal, Users } from "lucide-react";
 import Image from "next/image";
@@ -99,7 +100,17 @@ export function ChallengeParticipantHub({
         </Card>
         <TabBar tab={tab} setTab={setTab} />
         {tab !== "today" ? (
-          <TabPanels hub={localHub} tab={tab} viewerUserId={viewerUserId} />
+          <TabPanels
+            hub={localHub}
+            tab={tab}
+            viewerUserId={viewerUserId}
+            pending={pending}
+            startTransition={startTransition}
+            onMutate={(next) => {
+              setLocalHub(next);
+              router.refresh();
+            }}
+          />
         ) : null}
       </div>
     );
@@ -141,7 +152,17 @@ export function ChallengeParticipantHub({
         </Card>
         <TabBar tab={tab} setTab={setTab} />
         {tab !== "today" ? (
-          <TabPanels hub={localHub} tab={tab} viewerUserId={viewerUserId} />
+          <TabPanels
+            hub={localHub}
+            tab={tab}
+            viewerUserId={viewerUserId}
+            pending={pending}
+            startTransition={startTransition}
+            onMutate={(next) => {
+              setLocalHub(next);
+              router.refresh();
+            }}
+          />
         ) : null}
       </div>
     );
@@ -187,7 +208,17 @@ export function ChallengeParticipantHub({
           startTransition={startTransition}
         />
       ) : (
-        <TabPanels hub={localHub} tab={tab} viewerUserId={viewerUserId} />
+        <TabPanels
+          hub={localHub}
+          tab={tab}
+          viewerUserId={viewerUserId}
+          pending={pending}
+          startTransition={startTransition}
+          onMutate={(next) => {
+            setLocalHub(next);
+            router.refresh();
+          }}
+        />
       )}
     </div>
   );
@@ -283,11 +314,17 @@ function TodayPanel({
               {hub.todayActivities.map((act) => (
                 <li key={act.key} className="rounded-xl border border-border p-3">
                   <ActivityRow
-                    hub={hub}
+                    challengeId={hub.challengeId}
+                    scheduleItemId={hub.scheduleItemId!}
+                    completedOn={hub.todayKey}
                     act={act}
                     pending={pending}
                     startTransition={startTransition}
-                    onMutate={onMutate}
+                    onActChange={(patch) =>
+                      onMutate(
+                        patchHubActivity(hub, hub.scheduleItemId!, hub.todayKey, act.key, patch),
+                      )
+                    }
                   />
                 </li>
               ))}
@@ -361,17 +398,23 @@ function TodayPanel({
 }
 
 function ActivityRow({
-  hub,
+  challengeId,
+  scheduleItemId,
+  completedOn,
   act,
   pending,
   startTransition,
-  onMutate,
+  onActChange,
+  editable = true,
 }: {
-  hub: ChallengeParticipantHub;
-  act: ChallengeParticipantHub["todayActivities"][0];
+  challengeId: string;
+  scheduleItemId: string;
+  completedOn: string;
+  act: HubActivityState;
   pending: boolean;
   startTransition: (fn: () => Promise<void>) => void;
-  onMutate: (h: ChallengeParticipantHub) => void;
+  onActChange: (patch: Partial<HubActivityState>) => void;
+  editable?: boolean;
 }) {
   const [steps, setSteps] = useState(
     act.progressNumber != null ? String(act.progressNumber) : "",
@@ -403,25 +446,19 @@ function ActivityRow({
           <Button
             type="button"
             className="min-h-10 flex-1 px-3 text-sm"
-            disabled={pending || !steps}
+            disabled={pending || !steps || !editable}
             onClick={() =>
               startTransition(async () => {
                 const n = Number(steps);
                 await saveChallengeStepProgressAction(
-                  hub.challengeId,
-                  hub.scheduleItemId!,
+                  challengeId,
+                  scheduleItemId,
                   act.key,
                   n,
                   target,
+                  completedOn,
                 );
-                onMutate({
-                  ...hub,
-                  todayActivities: hub.todayActivities.map((a) =>
-                    a.key === act.key
-                      ? { ...a, progressNumber: n, completed: n >= target }
-                      : a,
-                  ),
-                });
+                onActChange({ progressNumber: n, completed: n >= target });
               })
             }
           >
@@ -430,22 +467,18 @@ function ActivityRow({
           <Button
             type="button"
             variant={act.completed ? "secondary" : "outline"}
-            disabled={pending}
+            disabled={pending || !editable}
             onClick={() =>
               startTransition(async () => {
                 await toggleChallengeScheduleCompletionAction(
-                  hub.challengeId,
-                  hub.scheduleItemId!,
+                  challengeId,
+                  scheduleItemId,
                   !act.completed,
                   act.key,
                   act.completed ? null : target,
+                  completedOn,
                 );
-                onMutate({
-                  ...hub,
-                  todayActivities: hub.todayActivities.map((a) =>
-                    a.key === act.key ? { ...a, completed: !act.completed } : a,
-                  ),
-                });
+                onActChange({ completed: !act.completed });
               })
             }
           >
@@ -459,24 +492,21 @@ function ActivityRow({
   return (
     <button
       type="button"
-      disabled={pending || !hub.scheduleItemId}
+      disabled={pending || !editable}
       onClick={() =>
         startTransition(async () => {
           await toggleChallengeScheduleCompletionAction(
-            hub.challengeId,
-            hub.scheduleItemId!,
+            challengeId,
+            scheduleItemId,
             !act.completed,
             act.key,
+            undefined,
+            completedOn,
           );
-          onMutate({
-            ...hub,
-            todayActivities: hub.todayActivities.map((a) =>
-              a.key === act.key ? { ...a, completed: !act.completed } : a,
-            ),
-          });
+          onActChange({ completed: !act.completed });
         })
       }
-      className="flex w-full items-start gap-3 text-left"
+      className="flex w-full items-start gap-3 text-left disabled:opacity-50"
     >
       <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border text-sm">
         {act.completed ? "✓" : "○"}
@@ -490,35 +520,101 @@ function TabPanels({
   hub,
   tab,
   viewerUserId = null,
+  pending = false,
+  startTransition,
+  onMutate,
 }: {
   hub: ChallengeParticipantHub;
   tab: TabId;
   viewerUserId?: string | null;
+  pending?: boolean;
+  startTransition?: (fn: () => Promise<void>) => void;
+  onMutate?: (h: ChallengeParticipantHub) => void;
 }) {
   if (tab === "progress") {
+    const { done: habitsDone, total: habitsTotal } = habitProgressStats(hub);
+    const canEdit = hub.phase === "active" && Boolean(startTransition && onMutate);
     return (
       <Card className="space-y-4">
         <div>
           <h2 className="font-semibold">Your progress</h2>
           <p className="text-sm text-muted-foreground">
-            Day {hub.dayIndex} of {hub.totalDays} · {hub.progressPercent}% complete
+            Day {hub.dayIndex} of {hub.totalDays} · {habitsDone} of {habitsTotal} habits checked
+            off (through today)
           </p>
           {hub.streakDays > 0 ? (
             <p className="mt-1 text-sm">🔥 {hub.streakDays}-day consistency streak</p>
           ) : null}
+          <p className="mt-2 text-xs text-muted-foreground">
+            Tap each habit to mark it done. Use Today for a focused view of what&apos;s due now.
+          </p>
         </div>
-        <ul className="grid grid-cols-4 gap-2 sm:grid-cols-7">
-          {Array.from({ length: hub.totalDays }, (_, i) => i + 1).map((d) => (
-            <li
-              key={d}
-              className={`rounded-lg border px-1 py-2 text-center text-xs ${
-                hub.dayCompletionMap[d] ? "border-primary/40 bg-primary/10" : "border-border"
-              }`}
-            >
-              {hub.dayCompletionMap[d] ? "✓" : "○"} D{d}
-            </li>
-          ))}
-        </ul>
+        <div className="max-h-[min(520px,55vh)] space-y-2 overflow-y-auto pr-1">
+          {hub.scheduleDays.map((day) => {
+            const isFuture = day.completedOn > hub.todayKey;
+            const isToday = day.completedOn === hub.todayKey;
+            const editable = canEdit && !isFuture && !day.isRest;
+            return (
+              <details
+                key={day.dayIndex}
+                open={isToday || day.allComplete}
+                className={`rounded-xl border px-3 py-2 ${
+                  day.allComplete ? "border-primary/30 bg-primary/5" : "border-border"
+                }`}
+              >
+                <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold">
+                      {day.dayLabel}
+                      <span className="ml-1.5 font-normal text-muted-foreground">
+                        {formatPlanDate(day.completedOn)}
+                      </span>
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {day.isRest
+                        ? "Rest"
+                        : isFuture
+                          ? "Upcoming"
+                          : day.allComplete
+                            ? "All done"
+                            : `${day.activities.filter((a) => a.completed).length}/${day.activities.length}`}
+                    </span>
+                  </div>
+                </summary>
+                <div className="mt-2 space-y-2 border-t border-border pt-2">
+                  {day.isRest ? (
+                    <p className="text-sm text-muted-foreground">Rest / recovery — no habits to check off.</p>
+                  ) : (
+                    day.activities.map((act) => (
+                      <div key={act.key} className="rounded-lg border border-border p-2">
+                        <ActivityRow
+                          challengeId={hub.challengeId}
+                          scheduleItemId={day.scheduleItemId}
+                          completedOn={day.completedOn}
+                          act={act}
+                          pending={pending}
+                          startTransition={startTransition ?? (() => {})}
+                          editable={editable}
+                          onActChange={(patch) =>
+                            onMutate?.(
+                              patchHubActivity(
+                                hub,
+                                day.scheduleItemId,
+                                day.completedOn,
+                                act.key,
+                                patch,
+                              ),
+                            )
+                          }
+                        />
+                      </div>
+                    ))
+                  )}
+                </div>
+              </details>
+            );
+          })}
+        </div>
         <div>
           <h3 className="text-sm font-semibold">Milestones</h3>
           <ul className="mt-2 space-y-1 text-sm">
@@ -587,13 +683,24 @@ function TabPanels({
           <Card key={w.label} padding="sm">
             <h3 className="font-semibold">{w.label}</h3>
             {w.theme ? <p className="mt-1 text-sm text-muted-foreground">{w.theme}</p> : null}
-            <ul className="mt-2 space-y-1 text-sm">
-              {w.items.slice(0, 8).map((item) => (
-                <li key={item.id}>
-                  <span className="font-medium">{item.dayLabel}:</span> {item.title}
-                  {item.isRest ? " (rest)" : ""}
-                </li>
-              ))}
+            <ul className="mt-2 space-y-3 text-sm">
+              {w.items.map((item) => {
+                const habits = planHabitTitles(hub, item);
+                return (
+                  <li key={item.id}>
+                    <p className="font-medium">{item.dayLabel}</p>
+                    {item.isRest ? (
+                      <p className="text-muted-foreground">{item.title || "Rest day"}</p>
+                    ) : (
+                      <ul className="mt-0.5 list-disc space-y-0.5 pl-5 text-muted-foreground">
+                        {habits.map((h) => (
+                          <li key={h}>{h}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </Card>
         ))}
@@ -684,6 +791,100 @@ function TabPanels({
   }
 
   return null;
+}
+
+function planHabitTitles(
+  hub: ChallengeParticipantHub,
+  item: ChallengeParticipantHub["schedule"][0],
+): string[] {
+  return parseScheduleItemActivities(
+    item.id,
+    item.title,
+    item.body,
+    item.isRest,
+    hub.category,
+  ).map((a) => a.title);
+}
+
+function formatPlanDate(isoDate: string) {
+  return new Date(`${isoDate}T12:00:00Z`).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function isRequiredHubActivity(a: HubActivityState) {
+  return a.kind !== "custom" || a.key === "primary";
+}
+
+function habitProgressStats(hub: ChallengeParticipantHub) {
+  let done = 0;
+  let total = 0;
+  for (const day of hub.scheduleDays) {
+    if (day.isRest || day.completedOn > hub.todayKey) continue;
+    for (const act of day.activities.filter(isRequiredHubActivity)) {
+      total += 1;
+      if (act.completed) done += 1;
+    }
+  }
+  return { done, total: Math.max(total, 1) };
+}
+
+function patchHubActivity(
+  hub: ChallengeParticipantHub,
+  scheduleItemId: string,
+  completedOn: string,
+  activityKey: string,
+  patch: Partial<HubActivityState>,
+): ChallengeParticipantHub {
+  const scheduleDays = hub.scheduleDays.map((day) => {
+    if (day.scheduleItemId !== scheduleItemId || day.completedOn !== completedOn) return day;
+    const activities = day.activities.map((a) =>
+      a.key === activityKey ? { ...a, ...patch } : a,
+    );
+    const allComplete =
+      !day.isRest &&
+      activities.filter(isRequiredHubActivity).every((a) => a.completed) &&
+      activities.some(isRequiredHubActivity);
+    return { ...day, activities, allComplete };
+  });
+
+  const dayCompletionMap = { ...hub.dayCompletionMap };
+  for (const day of scheduleDays) {
+    dayCompletionMap[day.dayIndex] = day.allComplete;
+  }
+  const completedDaysCount = Object.values(dayCompletionMap).filter(Boolean).length;
+
+  let todayActivities = hub.todayActivities;
+  if (completedOn === hub.todayKey && hub.scheduleItemId === scheduleItemId) {
+    todayActivities = hub.todayActivities.map((a) =>
+      a.key === activityKey ? { ...a, ...patch } : a,
+    );
+  }
+
+  const milestones = [
+    { key: "first_day", label: "🏆 First day completed", earned: completedDaysCount >= 1 },
+    { key: "streak_7", label: "🔥 7 consistent days", earned: hub.bestStreak >= 7 },
+    {
+      key: "halfway",
+      label: "⭐ Halfway there",
+      earned: completedDaysCount >= Math.floor(hub.totalDays / 2),
+    },
+    {
+      key: "complete",
+      label: "🏁 Challenge completed",
+      earned: hub.phase === "completed" && completedDaysCount >= Math.floor(hub.totalDays * 0.5),
+    },
+  ];
+
+  return {
+    ...hub,
+    scheduleDays,
+    dayCompletionMap,
+    completedDaysCount,
+    todayActivities,
+    milestones,
+  };
 }
 
 function groupByWeekTheme(schedule: ChallengeParticipantHub["schedule"]) {

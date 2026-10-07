@@ -12,6 +12,17 @@ export type HubActivityState = ParsedDailyActivity & {
   progressNumber: number | null;
 };
 
+export type HubScheduleDay = {
+  dayIndex: number;
+  scheduleItemId: string;
+  dayLabel: string;
+  /** Calendar date (UTC key) this plan day maps to. */
+  completedOn: string;
+  isRest: boolean;
+  activities: HubActivityState[];
+  allComplete: boolean;
+};
+
 export type ChallengeMemberRow = {
   id: string;
   displayName: string;
@@ -69,6 +80,8 @@ export type ChallengeParticipantHub = {
     weekTheme: string | null;
   }>;
   dayCompletionMap: Record<number, boolean>;
+  /** One entry per challenge day with check-off state for each habit. */
+  scheduleDays: HubScheduleDay[];
   milestones: Array<{ key: string; label: string; earned: boolean }>;
   completedDaysCount: number;
   bestStreak: number;
@@ -184,24 +197,62 @@ export async function fetchChallengeParticipantHub(
     };
   });
 
-  const dayCompletionMap: Record<number, boolean> = {};
-  for (let d = 1; d <= totalDays; d++) {
-    const item = scheduleItemForDay(schedule, d);
-    if (!item || item.isRest) {
-      dayCompletionMap[d] = false;
-      continue;
-    }
-    const dayDate = addDays(ch.start_date, d - 1);
-    const acts = parseScheduleItemActivities(item.id, item.title, item.body, item.isRest, category);
-    const required = acts.filter((a) => a.kind !== "custom" || a.key === "primary");
-    dayCompletionMap[d] = required.every((a) =>
-      (completionRows ?? []).some(
+  function activitiesForScheduleItem(
+    item: NonNullable<ReturnType<typeof scheduleItemForDay>>,
+    dayDate: string,
+  ): HubActivityState[] {
+    const acts = parseScheduleItemActivities(
+      item.id,
+      item.title,
+      item.body,
+      item.isRest,
+      category,
+    );
+    return acts.map((a) => {
+      const row = (completionRows ?? []).find(
         (c) =>
           c.schedule_item_id === item.id &&
           c.completed_on === dayDate &&
           (c.activity_key ?? "primary") === a.key,
-      ),
-    );
+      );
+      return {
+        ...a,
+        completed: Boolean(row),
+        progressNumber: row?.progress_number != null ? Number(row.progress_number) : null,
+      };
+    });
+  }
+
+  function isDayAllComplete(
+    item: NonNullable<ReturnType<typeof scheduleItemForDay>>,
+    activities: HubActivityState[],
+  ) {
+    if (item.isRest) return false;
+    const required = activities.filter((a) => a.kind !== "custom" || a.key === "primary");
+    return required.length > 0 && required.every((a) => a.completed);
+  }
+
+  const dayCompletionMap: Record<number, boolean> = {};
+  const scheduleDays: HubScheduleDay[] = [];
+  for (let d = 1; d <= totalDays; d++) {
+    const item = scheduleItemForDay(schedule, d);
+    if (!item) {
+      dayCompletionMap[d] = false;
+      continue;
+    }
+    const dayDate = addDays(ch.start_date, d - 1);
+    const activities = activitiesForScheduleItem(item, dayDate);
+    const allComplete = isDayAllComplete(item, activities);
+    dayCompletionMap[d] = allComplete;
+    scheduleDays.push({
+      dayIndex: d,
+      scheduleItemId: item.id,
+      dayLabel: item.dayLabel,
+      completedOn: dayDate,
+      isRest: item.isRest,
+      activities,
+      allComplete,
+    });
   }
 
   const completedDaysCount = Object.values(dayCompletionMap).filter(Boolean).length;
@@ -303,6 +354,7 @@ export async function fetchChallengeParticipantHub(
       weekTheme: s.weekTheme,
     })),
     dayCompletionMap,
+    scheduleDays,
     milestones,
     completedDaysCount,
     bestStreak,
