@@ -433,16 +433,29 @@ export function ChallengeBuilderWizard() {
           <p className="text-xs text-muted-foreground">
             {plannedDayCount} days · {startDate} → {endDate} · Free challenge
           </p>
-          <ul className="space-y-1 text-sm">
-            {schedule.slice(0, 5).map((s, i) => {
-              const dayHabits = habitsFromItem(s).filter(Boolean);
-              return (
-                <li key={i}>
-                  {s.dayLabel}: {s.isRest ? "Rest" : dayHabits.join(" · ") || "—"}
-                </li>
-              );
-            })}
-          </ul>
+          <section aria-labelledby="preview-schedule-heading">
+            <h3 id="preview-schedule-heading" className="text-sm font-semibold">
+              Full schedule ({schedule.length} day{schedule.length === 1 ? "" : "s"})
+            </h3>
+            <ul className="mt-2 max-h-[min(420px,55vh)] space-y-1 overflow-y-auto rounded-xl border border-border bg-muted/30 p-3 text-sm">
+              {schedule.map((s, i) => {
+                const dayHabits = habitsFromItem(s).filter(Boolean);
+                const weekday =
+                  startDate && !s.isRest
+                    ? ` (${WEEKDAY_SHORT[weekdayUtcForChallengeDay(startDate, i + 1)]})`
+                    : "";
+                return (
+                  <li key={i} className="leading-snug">
+                    <span className="font-medium">
+                      {s.dayLabel}
+                      {weekday}:
+                    </span>{" "}
+                    {s.isRest ? "Rest" : dayHabits.join(" · ") || "—"}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => setStep(3)}>
               Back
