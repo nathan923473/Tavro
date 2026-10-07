@@ -541,12 +541,16 @@ function ScheduleStep({
   const [weekdays, setWeekdays] = useState<Set<number>>(() => new Set());
   const [intervalStep, setIntervalStep] = useState<number>(2);
   const [intervalAnchor, setIntervalAnchor] = useState(1);
+  const [removeHabitsText, setRemoveHabitsText] = useState("");
 
   const rangeFrom = Math.min(bulkFrom, bulkTo);
   const rangeTo = Math.max(bulkFrom, bulkTo);
+  const rangeDayCount = Math.max(0, rangeTo - rangeFrom + 1);
 
   const bulkHabits = parseBulkHabits(bulkHabitsText);
+  const habitsToRemove = parseBulkHabits(removeHabitsText);
   const hasBulkHabits = bulkHabits.length > 0;
+  const hasRemoveHabits = habitsToRemove.length > 0;
 
   function applyBulkToIndices(indices: number[], habits: string[], mode: "replace" | "append") {
     if (!habits.length) return;
@@ -641,41 +645,85 @@ function ScheduleStep({
   }
 
   return (
-    <Card className="space-y-3">
+    <div className="space-y-4">
       <div>
         <h2 className="font-semibold">Schedule</h2>
         {plannedDayCount > 0 ? (
           <p className="mt-1 text-sm text-muted-foreground">
-            {plannedDayCount} days · {startDate} → {endDate}. Each day can have multiple habits
-            (participants check off each one on Today).
+            {plannedDayCount} days · {startDate} → {endDate}. Participants check off each habit on
+            the Today tab.
           </p>
         ) : (
           <p className="mt-1 text-sm text-amber-800">
             Set start and end dates on the basics step first.
           </p>
         )}
+        <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+          <li>Write habits and apply them to a day range (or pick days below).</li>
+          <li>Tap <strong className="font-medium text-foreground">Save schedule</strong> so nothing is lost.</li>
+          <li>Scroll the day list to fine-tune or mark rest days.</li>
+        </ol>
       </div>
 
-      <Card padding="sm" className="space-y-3 border-primary/20 bg-secondary/20">
-        <p className="text-sm font-semibold">Add habits to multiple days</p>
-        <label className="block text-xs text-muted-foreground">
-          One habit per line (e.g. 10,000 steps on line 1, Hydration check-in on line 2)
-        </label>
+      <Card padding="sm" className="space-y-2 border-primary/30 bg-primary/5">
+        <Button type="button" fullWidth disabled={pending || schedule.length === 0} onClick={onSave}>
+          {pending ? "Saving…" : "Save schedule"}
+        </Button>
+        {scheduleSavedFlash ? (
+          <p className="text-center text-sm font-medium text-primary" role="status">
+            Saved. You can publish from Preview when ready.
+          </p>
+        ) : (
+          <p className="text-center text-xs text-muted-foreground">
+            Save after you apply habits — changes aren&apos;t stored until you do.
+          </p>
+        )}
+      </Card>
+
+      <Card padding="sm" className="space-y-3">
+        <div>
+          <p className="text-sm font-semibold">1 · Habits to add</p>
+          <p className="text-xs text-muted-foreground">One habit per line.</p>
+        </div>
         <textarea
-          className="w-full rounded-lg border border-border px-3 py-2 text-sm font-medium"
+          className="w-full rounded-lg border border-border px-3 py-2 text-sm"
           rows={3}
           value={bulkHabitsText}
           onChange={(e) => setBulkHabitsText(e.target.value)}
-          placeholder={"10,000 steps\nHydration check-in\nEvening stretch"}
+          placeholder={"10,000 steps\n5 burpees"}
+          aria-label="Habits to add, one per line"
         />
-        <label className="flex items-center gap-2 text-xs">
-          <input
-            type="checkbox"
-            checked={bulkAppend}
-            onChange={(e) => setBulkAppend(e.target.checked)}
-          />
-          Add to existing habits (keep what&apos;s already on each day)
-        </label>
+        <fieldset className="space-y-1">
+          <legend className="text-xs font-medium text-muted-foreground">When applying</legend>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="radio"
+              name="bulk-mode"
+              checked={!bulkAppend}
+              onChange={() => setBulkAppend(false)}
+            />
+            Replace habits on those days
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="radio"
+              name="bulk-mode"
+              checked={bulkAppend}
+              onChange={() => setBulkAppend(true)}
+            />
+            Add to existing habits on those days
+          </label>
+        </fieldset>
+      </Card>
+
+      <Card padding="sm" className="space-y-3">
+        <div>
+          <p className="text-sm font-semibold">2 · Which days</p>
+          <p className="text-xs text-muted-foreground">
+            Day range for bulk actions · {rangeDayCount} day{rangeDayCount === 1 ? "" : "s"} selected
+            {selectedDays.size > 0 ? ` · ${selectedDays.size} checked in the list below` : ""}
+          </p>
+        </div>
         <div className="grid grid-cols-2 gap-2 text-sm">
           <label className="block">
             <span className="text-xs font-medium text-muted-foreground">From day</span>
@@ -700,206 +748,198 @@ function ScheduleStep({
             />
           </label>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <Button type="button" fullWidth disabled={!hasBulkHabits} onClick={applyBulkRange}>
+          Apply habits to days {rangeFrom}–{rangeTo}
+        </Button>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Button
             type="button"
             variant="secondary"
-            className="flex-1"
-            disabled={!hasBulkHabits}
-            onClick={applyBulkRange}
-          >
-            Apply to day range
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            className="flex-1"
             disabled={!hasBulkHabits || selectedDays.size === 0}
             onClick={applyBulkToSelected}
           >
-            Apply to selected ({selectedDays.size})
+            Apply to checked days ({selectedDays.size})
           </Button>
-        </div>
-        <div className="flex flex-wrap gap-2 text-xs">
-          <button type="button" className="font-semibold text-primary" onClick={selectAllDays}>
-            Select all days
-          </button>
-          <span className="text-muted-foreground">·</span>
-          <button type="button" className="font-semibold text-primary" onClick={clearSelectedDays}>
-            Clear selection
-          </button>
-          <span className="text-muted-foreground">·</span>
-          <button
+          <Button
             type="button"
-            className="font-semibold text-primary"
-            onClick={() => {
-              if (!hasBulkHabits) return;
+            variant="secondary"
+            disabled={!hasBulkHabits}
+            onClick={() =>
               applyBulkToIndices(
                 schedule.map((_, i) => i),
                 bulkHabits,
                 bulkAppend ? "append" : "replace",
-              );
-            }}
+              )
+            }
           >
-            Apply to all days
+            Apply to all {schedule.length} days
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-3 text-xs">
+          <button type="button" className="font-semibold text-primary" onClick={selectAllDays}>
+            Check all days
+          </button>
+          <button type="button" className="font-semibold text-primary" onClick={clearSelectedDays}>
+            Uncheck all
           </button>
         </div>
 
-        <div className="border-t border-border/60 pt-3 space-y-2">
-          <p className="text-sm font-semibold">Remove habits</p>
-          <p className="text-xs text-muted-foreground">
-            Uses the same lines in the box above — removes matching habits (not rest days).
-          </p>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1 text-sm"
-              disabled={!hasBulkHabits}
-              onClick={() => removeHabitsFromIndices(indicesForRange(), bulkHabits)}
-            >
-              Remove from day range
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1 text-sm"
-              disabled={!hasBulkHabits || selectedDays.size === 0}
-              onClick={() => removeHabitsFromIndices([...selectedDays], bulkHabits)}
-            >
-              Remove from selected
-            </Button>
+        <details className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm">
+          <summary className="cursor-pointer font-medium">More ways to pick days (optional)</summary>
+          <div className="mt-3 space-y-4 border-t border-border pt-3">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">Same habits every Mon / Thu, etc.</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {WEEKDAY_SHORT.map((label, w) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => toggleWeekday(w)}
+                    className={`min-h-9 rounded-lg border px-2.5 text-xs font-semibold ${
+                      weekdays.has(w)
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="text-sm"
+                  disabled={!hasBulkHabits || weekdays.size === 0 || !startDate}
+                  onClick={applyToWeekdays}
+                >
+                  Apply to those weekdays
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="text-sm"
+                  disabled={weekdays.size === 0 || !startDate}
+                  onClick={selectMatchingWeekdaysInRange}
+                >
+                  Check those weekdays
+                </Button>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">Every 2nd / 3rd day, etc.</p>
+              <label className="mt-1 block text-xs">
+                Start on day
+                <input
+                  type="number"
+                  min={1}
+                  max={schedule.length || 1}
+                  className="mt-0.5 w-full rounded-lg border border-border px-2 py-1.5"
+                  value={intervalAnchor}
+                  onChange={(e) => setIntervalAnchor(Number(e.target.value) || 1)}
+                />
+              </label>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {INTERVAL_PRESETS.map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setIntervalStep(n)}
+                    className={`rounded-lg border px-2 py-1 text-xs font-semibold ${
+                      intervalStep === n
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border"
+                    }`}
+                  >
+                    Every {n}d
+                  </button>
+                ))}
+              </div>
+              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="text-sm"
+                  disabled={!hasBulkHabits}
+                  onClick={() => applyToInterval(intervalStep)}
+                >
+                  Apply every {intervalStep} days
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="text-sm"
+                  onClick={() => selectMatchingIntervalInRange(intervalStep)}
+                >
+                  Check that pattern
+                </Button>
+              </div>
+            </div>
           </div>
+        </details>
+      </Card>
+
+      <Card padding="sm" className="space-y-3 border-red-100 bg-red-50/50 dark:border-red-900/40 dark:bg-red-950/20">
+        <div>
+          <p className="text-sm font-semibold text-red-900 dark:text-red-200">3 · Remove habits</p>
+          <p className="text-xs text-red-900/80 dark:text-red-200/80">
+            Separate list — type habits to remove (one per line). Uses the same day range as above, or
+            checked days.
+          </p>
+        </div>
+        <textarea
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          rows={2}
+          value={removeHabitsText}
+          onChange={(e) => setRemoveHabitsText(e.target.value)}
+          placeholder="5 burpees"
+          aria-label="Habits to remove, one per line"
+        />
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Button
             type="button"
             variant="outline"
-            fullWidth
-            className="border-red-200 text-sm text-red-700"
-            disabled={selectedDays.size === 0}
-            onClick={() => {
-              if (
-                !window.confirm(
-                  `Clear every habit on ${selectedDays.size} selected day(s)? Rest-day flags stay as-is.`,
-                )
-              ) {
-                return;
-              }
-              clearHabitsOnIndices([...selectedDays]);
-            }}
+            disabled={!hasRemoveHabits}
+            onClick={() => removeHabitsFromIndices(indicesForRange(), habitsToRemove)}
           >
-            Clear all habits on selected days
+            Remove from days {rangeFrom}–{rangeTo}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!hasRemoveHabits || selectedDays.size === 0}
+            onClick={() => removeHabitsFromIndices([...selectedDays], habitsToRemove)}
+          >
+            Remove from checked days
           </Button>
         </div>
-
-        <div className="border-t border-border/60 pt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            By weekday (uses From/To day above)
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {WEEKDAY_SHORT.map((label, w) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => toggleWeekday(w)}
-                className={`min-h-9 rounded-lg border px-2.5 text-xs font-semibold ${
-                  weekdays.has(w)
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-            <Button
-              type="button"
-              variant="secondary"
-              className="flex-1 text-sm"
-              disabled={!hasBulkHabits || weekdays.size === 0 || !startDate}
-              onClick={applyToWeekdays}
-            >
-              Apply to selected weekdays
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1 text-sm"
-              disabled={weekdays.size === 0 || !startDate}
-              onClick={selectMatchingWeekdaysInRange}
-            >
-              Highlight those days
-            </Button>
-          </div>
-        </div>
-
-        <div className="border-t border-border/60 pt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Every Nth day (within From/To range)
-          </p>
-          <label className="mt-2 block text-sm">
-            <span className="text-xs font-medium text-muted-foreground">Start pattern on day</span>
-            <input
-              type="number"
-              min={1}
-              max={schedule.length || 1}
-              className="mt-0.5 w-full rounded-lg border border-border px-2 py-1.5"
-              value={intervalAnchor}
-              onChange={(e) => setIntervalAnchor(Number(e.target.value) || 1)}
-            />
-          </label>
-          <p className="mt-1 text-xs text-muted-foreground">
-            e.g. start on day 1 + every 2 days → days 1, 3, 5…
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {INTERVAL_PRESETS.map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setIntervalStep(n)}
-                className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold ${
-                  intervalStep === n
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border"
-                }`}
-              >
-                Every {n} days
-              </button>
-            ))}
-          </div>
-          <label className="mt-2 flex items-center gap-2 text-sm">
-            <span className="shrink-0 text-xs text-muted-foreground">Custom</span>
-            <input
-              type="number"
-              min={1}
-              max={90}
-              className="w-20 rounded-lg border border-border px-2 py-1"
-              value={intervalStep}
-              onChange={(e) => setIntervalStep(Math.max(1, Number(e.target.value) || 1))}
-            />
-            <span className="text-xs text-muted-foreground">days apart</span>
-          </label>
-          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-            <Button
-              type="button"
-              variant="secondary"
-              className="flex-1 text-sm"
-              disabled={!hasBulkHabits}
-              onClick={() => applyToInterval(intervalStep)}
-            >
-              Apply every {intervalStep} days
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1 text-sm"
-              onClick={() => selectMatchingIntervalInRange(intervalStep)}
-            >
-              Highlight pattern
-            </Button>
-          </div>
-        </div>
+        <Button
+          type="button"
+          variant="outline"
+          fullWidth
+          className="border-red-300 text-red-800 dark:text-red-300"
+          disabled={selectedDays.size === 0}
+          onClick={() => {
+            if (
+              !window.confirm(
+                `Clear every habit on ${selectedDays.size} checked day(s)? Rest-day flags stay.`,
+              )
+            ) {
+              return;
+            }
+            clearHabitsOnIndices([...selectedDays]);
+          }}
+        >
+          Clear all habits on checked days
+        </Button>
       </Card>
+
+      <div>
+        <p className="mb-2 text-sm font-semibold">4 · Each day (fine-tune)</p>
+        <p className="mb-2 text-xs text-muted-foreground">
+          Use the checkbox to include a day in &quot;checked days&quot; actions above.
+        </p>
+      </div>
 
       <div className="max-h-[min(420px,50vh)] space-y-2 overflow-y-auto pr-1">
         <ul className="space-y-2">
@@ -963,24 +1003,7 @@ function ScheduleStep({
         </Button>
       ) : null}
 
-      <Card padding="sm" className="space-y-2 border-primary/30 bg-background">
-        <Button type="button" fullWidth disabled={pending || schedule.length === 0} onClick={onSave}>
-          {pending ? "Saving…" : "Save schedule"}
-        </Button>
-        {scheduleSavedFlash ? (
-          <p className="text-center text-sm font-medium text-primary" role="status">
-            Schedule saved — participants will see these habits after you publish (or on open
-            challenges immediately).
-          </p>
-        ) : (
-          <p className="text-center text-xs text-muted-foreground">
-            Apply or edit habits above, then save. You can leave and come back without losing work
-            once saved.
-          </p>
-        )}
-      </Card>
-
-      <div className="flex gap-2">
+      <div className="flex gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onBack}>
           Back
         </Button>
@@ -988,7 +1011,7 @@ function ScheduleStep({
           Save &amp; preview
         </Button>
       </div>
-    </Card>
+    </div>
   );
 }
 
