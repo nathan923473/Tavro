@@ -34,7 +34,7 @@ export default async function JoinedChallengePage({ params }: Props) {
       </div>
       <div className="px-4 py-4">
         <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
-          <ChallengeParticipantHub hub={hub} />
+          <ChallengeParticipantHub hub={hub} viewerUserId={user.id} />
         </Suspense>
       </div>
     </div>

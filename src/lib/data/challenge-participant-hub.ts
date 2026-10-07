@@ -12,6 +12,16 @@ export type HubActivityState = ParsedDailyActivity & {
   progressNumber: number | null;
 };
 
+export type ChallengeMemberRow = {
+  id: string;
+  displayName: string;
+  avatarUrl: string | null;
+  joinedAt: string | null;
+  progressPercent: number | null;
+  checkedInToday: boolean;
+  role: "host" | "member";
+};
+
 export type ChallengeParticipantHub = {
   challengeId: string;
   inviteSlug: string;
@@ -65,6 +75,7 @@ export type ChallengeParticipantHub = {
   canonicalPath: string;
   /** Logged-in user created this challenge (may not be in challenge_participants). */
   isOwner: boolean;
+  members: ChallengeMemberRow[];
 };
 
 function scheduleItemForDay(
@@ -238,6 +249,15 @@ export async function fetchChallengeParticipantHub(
     ? `/creator/${community.slug}/challenges/${ch.invite_slug}`
     : `/join/${ch.invite_slug}`;
 
+  const creatorDisplayName = unwrapOne(ch.creator)?.display_name ?? "Creator";
+  const members = await fetchChallengeMemberRows(
+    supabase,
+    challengeId,
+    ch.created_by,
+    creatorDisplayName,
+    today,
+  );
+
   return {
     challengeId,
     inviteSlug: ch.invite_slug,
@@ -288,7 +308,111 @@ export async function fetchChallengeParticipantHub(
     bestStreak,
     canonicalPath,
     isOwner,
+    members,
   };
+}
+
+type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
+
+async function fetchChallengeMemberRows(
+  supabase: SupabaseServer,
+  challengeId: string,
+  creatorId: string,
+  creatorDisplayName: string,
+  today: string,
+): Promise<ChallengeMemberRow[]> {
+  type ParticipantRow = {
+    user_id: string;
+    joined_at: string;
+    progress_percent: number | null;
+    profile:
+      | { display_name: string | null; avatar_url?: string | null }
+      | { display_name: string | null; avatar_url?: string | null }[]
+      | null;
+  };
+
+  let participantRows: ParticipantRow[] | null = null;
+  const withAvatar = await supabase
+    .from("challenge_participants")
+    .select(
+      `
+      user_id,
+      joined_at,
+      progress_percent,
+      profile:profiles!challenge_participants_user_id_fkey ( display_name, avatar_url )
+    `,
+    )
+    .eq("challenge_id", challengeId)
+    .order("joined_at", { ascending: true })
+    .limit(200);
+
+  participantRows = (withAvatar.data ?? null) as ParticipantRow[] | null;
+  if (withAvatar.error && /avatar_url|schema cache|challenge_participants_user_id_fkey/i.test(withAvatar.error.message)) {
+    const fallback = await supabase
+      .from("challenge_participants")
+      .select(
+        `
+        user_id,
+        joined_at,
+        progress_percent,
+        profile:profiles!challenge_participants_user_id_fkey ( display_name )
+      `,
+      )
+      .eq("challenge_id", challengeId)
+      .order("joined_at", { ascending: true })
+      .limit(200);
+    participantRows = (fallback.data ?? null) as ParticipantRow[] | null;
+  }
+
+  const { data: checkIns } = await supabase
+    .from("challenge_daily_check_ins")
+    .select("user_id")
+    .eq("challenge_id", challengeId)
+    .eq("check_in_date", today);
+
+  const checkedInToday = new Set((checkIns ?? []).map((c) => c.user_id));
+
+  const members: ChallengeMemberRow[] = (participantRows ?? []).map((row) => {
+    const profile = unwrapOne(row.profile);
+    const isHost = row.user_id === creatorId;
+    return {
+      id: row.user_id,
+      displayName: profile?.display_name?.trim() || "Member",
+      avatarUrl: profile?.avatar_url ?? null,
+      joinedAt: row.joined_at,
+      progressPercent: row.progress_percent ?? null,
+      checkedInToday: checkedInToday.has(row.user_id),
+      role: isHost ? "host" : "member",
+    };
+  });
+
+  if (!members.some((m) => m.id === creatorId)) {
+    const { data: hostProfile } = await supabase
+      .from("profiles")
+      .select("display_name, avatar_url")
+      .eq("id", creatorId)
+      .maybeSingle();
+    members.unshift({
+      id: creatorId,
+      displayName: hostProfile?.display_name?.trim() || creatorDisplayName,
+      avatarUrl: hostProfile?.avatar_url ?? null,
+      joinedAt: null,
+      progressPercent: null,
+      checkedInToday: checkedInToday.has(creatorId),
+      role: "host",
+    });
+  } else {
+    for (const m of members) {
+      if (m.id === creatorId) m.role = "host";
+    }
+    members.sort((a, b) => {
+      if (a.role === "host") return -1;
+      if (b.role === "host") return 1;
+      return (a.joinedAt ?? "").localeCompare(b.joinedAt ?? "");
+    });
+  }
+
+  return members;
 }
 
 function addDays(isoDate: string, days: number): string {

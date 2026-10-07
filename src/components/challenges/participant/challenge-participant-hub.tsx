@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { ChallengeParticipantHub } from "@/lib/data/challenge-participant-hub";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { CalendarRange, MoreHorizontal, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -19,6 +20,7 @@ import { useMemo, useState, useTransition } from "react";
 const TABS = [
   { id: "today", label: "Today" },
   { id: "progress", label: "Progress" },
+  { id: "members", label: "Members" },
   { id: "plan", label: "Plan" },
   { id: "updates", label: "Updates" },
   { id: "about", label: "About" },
@@ -33,7 +35,13 @@ const MOODS = [
   { value: "great", emoji: "🔥", label: "Great" },
 ] as const;
 
-export function ChallengeParticipantHub({ hub }: { hub: ChallengeParticipantHub }) {
+export function ChallengeParticipantHub({
+  hub,
+  viewerUserId = null,
+}: {
+  hub: ChallengeParticipantHub;
+  viewerUserId?: string | null;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tab = (searchParams.get("tab") as TabId) || "today";
@@ -90,7 +98,9 @@ export function ChallengeParticipantHub({ hub }: { hub: ChallengeParticipantHub 
           </div>
         </Card>
         <TabBar tab={tab} setTab={setTab} />
-        {tab !== "today" ? <TabPanels hub={localHub} tab={tab} /> : null}
+        {tab !== "today" ? (
+          <TabPanels hub={localHub} tab={tab} viewerUserId={viewerUserId} />
+        ) : null}
       </div>
     );
   }
@@ -130,7 +140,9 @@ export function ChallengeParticipantHub({ hub }: { hub: ChallengeParticipantHub 
           ) : null}
         </Card>
         <TabBar tab={tab} setTab={setTab} />
-        {tab !== "today" ? <TabPanels hub={localHub} tab={tab} /> : null}
+        {tab !== "today" ? (
+          <TabPanels hub={localHub} tab={tab} viewerUserId={viewerUserId} />
+        ) : null}
       </div>
     );
   }
@@ -175,7 +187,7 @@ export function ChallengeParticipantHub({ hub }: { hub: ChallengeParticipantHub 
           startTransition={startTransition}
         />
       ) : (
-        <TabPanels hub={localHub} tab={tab} />
+        <TabPanels hub={localHub} tab={tab} viewerUserId={viewerUserId} />
       )}
     </div>
   );
@@ -474,7 +486,15 @@ function ActivityRow({
   );
 }
 
-function TabPanels({ hub, tab }: { hub: ChallengeParticipantHub; tab: TabId }) {
+function TabPanels({
+  hub,
+  tab,
+  viewerUserId = null,
+}: {
+  hub: ChallengeParticipantHub;
+  tab: TabId;
+  viewerUserId?: string | null;
+}) {
   if (tab === "progress") {
     return (
       <Card className="space-y-4">
@@ -510,6 +530,52 @@ function TabPanels({ hub, tab }: { hub: ChallengeParticipantHub; tab: TabId }) {
           </ul>
         </div>
       </Card>
+    );
+  }
+
+  if (tab === "members") {
+    return (
+      <section aria-labelledby="challenge-members-heading">
+        <h2 id="challenge-members-heading" className="mb-2 text-base font-semibold">
+          {hub.members.length.toLocaleString()} member{hub.members.length === 1 ? "" : "s"}
+        </h2>
+        {hub.members.length === 0 ? (
+          <Card padding="sm">
+            <p className="text-sm text-muted-foreground">
+              No one has joined yet. Share your invite link to grow the group.
+            </p>
+          </Card>
+        ) : (
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {hub.members.map((member) => (
+              <li key={member.id}>
+                <Card padding="sm" className="flex items-center gap-3">
+                  <UserAvatar
+                    displayName={member.displayName}
+                    avatarUrl={member.avatarUrl}
+                    size="sm"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">
+                      {member.displayName}
+                      {viewerUserId === member.id ? (
+                        <span className="font-normal text-muted-foreground"> (you)</span>
+                      ) : null}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {member.role === "host" ? "Host" : "Participant"}
+                      {member.checkedInToday ? " · Checked in today" : ""}
+                      {member.progressPercent != null && member.role !== "host"
+                        ? ` · ${member.progressPercent}% progress`
+                        : ""}
+                    </p>
+                  </div>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     );
   }
 
@@ -595,6 +661,12 @@ function TabPanels({ hub, tab }: { hub: ChallengeParticipantHub; tab: TabId }) {
               {hub.participants} joined
             </span>
           </p>
+          <Link
+            href={`/challenges/${hub.challengeId}?tab=members`}
+            className="inline-flex text-sm font-semibold text-primary"
+          >
+            See all members →
+          </Link>
           <Link href="/community-guidelines" className="text-sm font-medium text-primary">
             Community guidelines
           </Link>
