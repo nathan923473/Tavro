@@ -1,12 +1,14 @@
 -- ONE-SHOT: Challenge daily progress (015 + 017)
 -- How to run:
 --   1. Close every other Supabase SQL Editor tab.
---   2. Stop local dev (Ctrl+C on npm run dev:alt) so nothing else hits the DB.
---   3. New empty query → paste this ENTIRE file → Run once.
---   4. If you see "deadlock detected", wait 30 seconds and Run again (safe to retry).
---   5. "already exists" on policies/indexes is OK.
+--   2. Stop local dev (Ctrl+C on npm run dev:alt).
+--   3. New empty query → paste ENTIRE file → Run once.
+--   4. If deadlock: wait 30s, Run again.
+--
+-- If you already got "activity_key does not exist", run 015c_fix_activity_key.sql first,
+-- then run this file again OR just run 015c (it finishes the job).
 
--- ========== Part A: schedule completions ==========
+-- ========== Part A: schedule completions (base table — matches first 015 run) ==========
 create table if not exists public.challenge_schedule_completions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles (id) on delete cascade,
@@ -14,9 +16,19 @@ create table if not exists public.challenge_schedule_completions (
   schedule_item_id uuid not null references public.challenge_schedule_items (id) on delete cascade,
   completed_on date not null default (timezone('utc', now()))::date,
   created_at timestamptz not null default now(),
-  activity_key text not null default 'primary',
-  progress_number numeric
+  unique (user_id, schedule_item_id, completed_on)
 );
+
+-- ========== Part A2: 017 columns (must run BEFORE index on activity_key) ==========
+alter table public.challenge_schedule_completions
+  add column if not exists activity_key text not null default 'primary';
+alter table public.challenge_schedule_completions
+  add column if not exists progress_number numeric;
+
+alter table public.challenge_schedule_completions
+  drop constraint if exists challenge_schedule_completions_user_id_schedule_item_id_comple_key;
+alter table public.challenge_schedule_completions
+  drop constraint if exists challenge_schedule_completions_user_id_schedule_item_id_completed_on_key;
 
 create unique index if not exists challenge_schedule_completions_unique_per_activity
   on public.challenge_schedule_completions (user_id, schedule_item_id, completed_on, activity_key);
@@ -42,12 +54,6 @@ create policy "Creators read aggregate completions for own challenges"
     )
   );
 
--- Legacy unique constraint from early 015 runs (drop if present)
-alter table public.challenge_schedule_completions
-  drop constraint if exists challenge_schedule_completions_user_id_schedule_item_id_comple_key;
-alter table public.challenge_schedule_completions
-  drop constraint if exists challenge_schedule_completions_user_id_schedule_item_id_completed_on_key;
-
 -- ========== Part B: private daily check-ins ==========
 create table if not exists public.challenge_daily_check_ins (
   user_id uuid not null references public.profiles (id) on delete cascade,
@@ -66,9 +72,3 @@ create policy "Users manage own challenge check-ins"
   on public.challenge_daily_check_ins for all
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
-
--- If table existed without new columns (partial 015):
-alter table public.challenge_schedule_completions
-  add column if not exists activity_key text not null default 'primary';
-alter table public.challenge_schedule_completions
-  add column if not exists progress_number numeric;
