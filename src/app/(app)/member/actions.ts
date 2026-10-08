@@ -19,6 +19,47 @@ async function requireUserId() {
   return { supabase, userId: user.id };
 }
 
+async function upsertChallengeParticipantJoin(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  challengeId: string,
+  creatorId: string,
+) {
+  const { buildChallengeJoinAnalyticsFields, recordChallengeJoinedEvent } = await import(
+    "@/lib/analytics/challenge-join"
+  );
+  const analytics = await buildChallengeJoinAnalyticsFields(userId, challengeId, "challenge_landing");
+  const payload = {
+    challenge_id: challengeId,
+    user_id: userId,
+    progress_percent: 5,
+    join_source: analytics.join_source,
+    referrer_user_id: analytics.referrer_user_id,
+    is_new_platform_user_at_join: analytics.is_new_platform_user_at_join,
+    joined_challenge_id: analytics.joined_challenge_id,
+  };
+  let { error } = await supabase.from("challenge_participants").upsert(payload, {
+    onConflict: "challenge_id,user_id",
+  });
+  if (error && /join_source|referrer_user_id|is_new_platform|joined_challenge/i.test(error.message)) {
+    ({ error } = await supabase.from("challenge_participants").upsert(
+      {
+        challenge_id: challengeId,
+        user_id: userId,
+        progress_percent: 5,
+      },
+      { onConflict: "challenge_id,user_id" },
+    ));
+  }
+  if (error) throw new Error(error.message);
+  await recordChallengeJoinedEvent({
+    userId,
+    challengeId,
+    creatorId,
+    isNewPlatformUser: analytics.is_new_platform_user_at_join,
+  });
+}
+
 function slugify(text: string) {
   return `${text
     .toLowerCase()
@@ -252,15 +293,7 @@ export async function joinChallengeAction(challengeId: string) {
     userId,
   );
 
-  const { error } = await supabase.from("challenge_participants").upsert(
-    {
-      challenge_id: challengeId,
-      user_id: userId,
-      progress_percent: 5,
-    },
-    { onConflict: "challenge_id,user_id" },
-  );
-  if (error) throw new Error(error.message);
+  await upsertChallengeParticipantJoin(supabase, userId, challengeId, ch.created_by);
   await afterChallengeJoinNotifications(supabase, userId, ch, challengeId);
   revalidatePath("/challenges");
   revalidatePath("/");
@@ -332,15 +365,7 @@ export async function joinChallengeAndContinueAction(
     userId,
   );
 
-  const { error } = await supabase.from("challenge_participants").upsert(
-    {
-      challenge_id: challengeId,
-      user_id: userId,
-      progress_percent: 5,
-    },
-    { onConflict: "challenge_id,user_id" },
-  );
-  if (error) throw new Error(error.message);
+  await upsertChallengeParticipantJoin(supabase, userId, challengeId, ch.created_by);
 
   await afterChallengeJoinNotifications(supabase, userId, ch, challengeId);
 
@@ -653,6 +678,13 @@ export async function toggleFollowCommunityAction(communityId: string) {
     await supabase.from("community_follows").insert({
       user_id: userId,
       community_id: communityId,
+    });
+    const { recordPlatformEvent } = await import("@/lib/analytics/record-event");
+    await recordPlatformEvent({
+      eventType: "creator_followed",
+      userId,
+      communityId,
+      idempotencyKey: `creator_followed:${userId}:${communityId}`,
     });
   }
   revalidatePath("/following");

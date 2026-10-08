@@ -271,6 +271,15 @@ export async function publishChallengeAction(challengeId: string) {
     throw new Error(error.message);
   }
 
+  const { recordPlatformEvent } = await import("@/lib/analytics/record-event");
+  await recordPlatformEvent({
+    eventType: "challenge_published",
+    userId: user.id,
+    creatorId: user.id,
+    challengeId,
+    idempotencyKey: `challenge_published:${challengeId}`,
+  });
+
   revalidateStudio(community.slug);
   revalidatePath(`/join/${ch?.invite_slug}`);
   if (community?.slug && ch?.invite_slug) {

@@ -14,6 +14,7 @@ import { publicChallengePath } from "@/lib/site-url";
 import { ChallengeCreatorLine } from "@/components/challenges/challenge-creator-line";
 import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
+import { LandingAttribution } from "@/components/analytics/landing-attribution";
 import { CalendarRange, Gift, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -25,6 +26,39 @@ function authNextPath(path: string) {
 }
 
 export function ChallengeLandingView({
+  data,
+  loggedIn,
+  canonicalPath,
+  joinContinuePath,
+}: {
+  data: ChallengeLandingData;
+  loggedIn: boolean;
+  canonicalPath: string;
+  joinContinuePath: string;
+}) {
+  const { challenge } = data;
+  const creatorId = challenge.creatorId;
+  return (
+    <>
+      {creatorId ? (
+        <LandingAttribution
+          challengeId={challenge.id}
+          creatorId={creatorId}
+          communityId={data.communityId}
+          landingPath={canonicalPath}
+        />
+      ) : null}
+      <ChallengeLandingBody
+        data={data}
+        loggedIn={loggedIn}
+        canonicalPath={canonicalPath}
+        joinContinuePath={joinContinuePath}
+      />
+    </>
+  );
+}
+
+function ChallengeLandingBody({
   data,
   loggedIn,
   canonicalPath,

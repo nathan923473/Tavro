@@ -106,6 +106,12 @@ export async function AccountExperience() {
             >
               Review content reports
             </Link>
+            <Link
+              href="/admin/analytics"
+              className="flex min-h-11 items-center justify-center rounded-xl border border-primary/30 bg-primary/5 text-sm font-semibold"
+            >
+              Founder analytics
+            </Link>
           </>
         ) : null}
         {profile?.role === "creator" || profile?.role === "admin" ? (

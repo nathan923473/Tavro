@@ -18,6 +18,7 @@ export function landingCanonicalPath(data: {
 
 export type ChallengeLandingData = {
   challenge: Challenge;
+  communityId: string | null;
   communitySlug: string | null;
   communityName: string | null;
   creatorBio: string | null;
@@ -124,6 +125,7 @@ export async function fetchChallengeLandingByInviteSlug(
 
   return {
     challenge,
+    communityId: row.community_id ?? null,
     communitySlug: community?.slug ?? null,
     communityName: community?.community_name ?? null,
     creatorBio: community?.bio ?? null,
