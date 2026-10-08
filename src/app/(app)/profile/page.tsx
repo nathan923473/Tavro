@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { AccountExperience } from "@/components/profile/account-experience";
+import { AdminToolsCard } from "@/components/profile/admin-tools-card";
 import { CreatorMediaCard } from "@/components/profile/creator-media-card";
 import { NotificationPreferencesCard } from "@/components/profile/notification-preferences-card";
 import { TimezoneSettingsCard } from "@/components/profile/timezone-settings-card";
@@ -41,6 +42,7 @@ export default async function ProfilePage() {
     <div className="animate-fade-up">
       <PageHeader title="Profile" subtitle="Member or creator · one account" />
       <div className="space-y-4 px-4 py-4">
+        {profile?.role === "admin" ? <AdminToolsCard /> : null}
         <ProfilePhotoCard />
         <CreatorMediaCard />
         <AccountExperience />
