@@ -43,10 +43,12 @@ export default async function ProfilePage() {
     <div className="animate-fade-up">
       <PageHeader title="Profile" subtitle="Member or creator · one account" />
       <div className="space-y-4 px-4 py-4">
-        {profile?.role === "admin" ? <AdminToolsCard /> : null}
         {profile ? (
-          <DisplayNameCard initialName={profile.displayName ?? user?.email?.split("@")[0] ?? "Member"} />
+          <DisplayNameCard
+            initialName={profile.displayName ?? user?.email?.split("@")[0] ?? "Member"}
+          />
         ) : null}
+        {profile?.role === "admin" ? <AdminToolsCard /> : null}
         <ProfilePhotoCard />
         <CreatorMediaCard />
         <AccountExperience />

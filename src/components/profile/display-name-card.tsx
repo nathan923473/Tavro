@@ -27,7 +27,7 @@ export function DisplayNameCard({ initialName }: { initialName: string }) {
   }
 
   return (
-    <Card>
+    <Card id="display-name" className="ring-1 ring-primary/20">
       <h2 className="font-semibold">Display name</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Shown on Profile, challenges, and discover. This is not your login email.
