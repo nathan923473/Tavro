@@ -32,7 +32,7 @@ const goalOptions = [
   "Stay accountable with friends",
 ];
 
-const onboardingHabits = HABIT_PRESETS.slice(0, 8).map((p) => p.label);
+const onboardingHabits = HABIT_PRESETS.map((p) => p.label);
 
 export function OnboardingFlow({
   userId,
@@ -50,8 +50,8 @@ export function OnboardingFlow({
   const [step, setStep] = useState(0);
   const [selectedGoal, setSelectedGoal] = useState(goalOptions[0]);
   const [selectedHabits, setSelectedHabits] = useState<string[]>([
-    onboardingHabits[0],
-    onboardingHabits[4],
+    "Walk for 20 minutes",
+    "Drink water with each meal",
   ]);
   const [wantsGroup, setWantsGroup] = useState(invitedToGroup);
   const [auState, setAuState] = useState<AuStateOrTerritory | "">("");

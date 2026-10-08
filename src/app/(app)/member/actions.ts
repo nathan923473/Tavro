@@ -221,13 +221,12 @@ async function maybeUnlockHabitMilestones(
 
   if ((totalCompletions ?? 0) >= 7) await unlock("first_week");
   if ((totalCompletions ?? 0) >= 30) await unlock("consistency_30d");
-  if (templateKey === "walk" && (totalCompletions ?? 0) >= 10) {
+  const walkKeys = new Set(["walk", "walk_20_min", "walk_after_meal", "steps_8000"]);
+  if (templateKey && walkKeys.has(templateKey) && (totalCompletions ?? 0) >= 10) {
     await unlock("walks_10");
   }
-  if (
-    (templateKey === "gym" || templateKey === "run") &&
-    (totalCompletions ?? 0) >= 25
-  ) {
+  const workoutKeys = new Set(["gym", "run", "complete_workout"]);
+  if (templateKey && workoutKeys.has(templateKey) && (totalCompletions ?? 0) >= 25) {
     await unlock("workouts_25");
   }
 }
