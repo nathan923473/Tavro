@@ -282,7 +282,7 @@ function ChallengeLandingBody({
           href={`/creator/${data.communitySlug}`}
           className="block text-center text-sm font-medium text-primary"
         >
-          More from {data.communityName ?? challenge.creatorName} →
+          More from {challenge.creatorName} →
         </Link>
       ) : null}
     </div>
