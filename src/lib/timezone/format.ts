@@ -116,6 +116,23 @@ export function formatHumanCountdownToStart(startAtUtc: Date, nowMs = Date.now()
   return `${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
 }
 
+/** Compact card countdown — at most two units, no seconds. */
+export function formatCompactCountdownToStart(startAtUtc: Date, nowMs = Date.now()): string {
+  const ms = startAtUtc.getTime() - nowMs;
+  if (ms <= 0) return "Started";
+
+  const totalSeconds = Math.floor(ms / 1000);
+  if (totalSeconds < 60) return "Starting soon";
+
+  const days = Math.floor(totalSeconds / 86_400);
+  const hours = Math.floor((totalSeconds % 86_400) / 3_600);
+  const minutes = Math.floor((totalSeconds % 3_600) / 60);
+
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
 export function msUntilInstant(instant: Date, nowMs = Date.now()): number {
   return Math.max(0, instant.getTime() - nowMs);
 }

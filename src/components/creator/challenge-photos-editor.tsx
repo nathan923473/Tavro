@@ -4,8 +4,10 @@ import { ContentGuidelinesReminder } from "@/components/moderation/content-guide
 import {
   addChallengePhotoAction,
   removeChallengePhotoAction,
-  setChallengeCoverUrlAction,
+  removeChallengeCoverAction,
+  uploadChallengeCoverAction,
 } from "@/app/(app)/studio/media-actions";
+import { ChallengeCoverImage } from "@/components/challenges/challenge-cover-image";
 import { Button } from "@/components/ui/button";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { challengeInvitePath } from "@/lib/site-url";
@@ -42,12 +44,26 @@ export function ChallengePhotosEditor({
   function uploadCover(file: File) {
     startTransition(async () => {
       try {
-        const url = await uploadChallengeMediaFile(creatorId, challengeId, file, "cover");
-        await setChallengeCoverUrlAction(challengeId, url);
+        const formData = new FormData();
+        formData.set("challengeId", challengeId);
+        formData.set("file", file);
+        await uploadChallengeCoverAction(formData);
         setMessage("Cover photo updated.");
         router.refresh();
       } catch (e) {
         setMessage(e instanceof Error ? e.message : "Upload failed.");
+      }
+    });
+  }
+
+  function removeCover() {
+    startTransition(async () => {
+      try {
+        await removeChallengeCoverAction(challengeId);
+        setMessage("Cover image removed.");
+        router.refresh();
+      } catch (e) {
+        setMessage(e instanceof Error ? e.message : "Remove failed.");
       }
     });
   }
@@ -75,15 +91,7 @@ export function ChallengePhotosEditor({
         <ContentGuidelinesReminder className="mt-2" />
       </div>
 
-      <div className="relative aspect-[2/1] w-full overflow-hidden rounded-xl bg-muted">
-        {coverUrl ? (
-          <Image src={coverUrl} alt="" fill className="object-cover" unoptimized />
-        ) : (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            No cover yet
-          </div>
-        )}
-      </div>
+      <ChallengeCoverImage coverUrl={coverUrl} title={title} className="rounded-xl" />
 
       <input
         ref={coverInput}
@@ -137,8 +145,14 @@ export function ChallengePhotosEditor({
           onClick={() => coverInput.current?.click()}
         >
           <ImagePlus className="h-4 w-4" aria-hidden />
-          {coverUrl ? "Replace cover photo" : "Add cover photo"}
+          {coverUrl ? "Replace cover image" : "Add cover image"}
         </Button>
+        {coverUrl ? (
+          <Button type="button" variant="outline" disabled={pending} onClick={removeCover}>
+            <Trash2 className="h-4 w-4" aria-hidden />
+            Remove cover
+          </Button>
+        ) : null}
         <Button
           type="button"
           variant="secondary"

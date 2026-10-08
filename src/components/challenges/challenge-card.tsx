@@ -16,6 +16,7 @@ import type { Challenge } from "@/types";
 import { ReportContentMenu } from "@/components/moderation/report-content-menu";
 import { ChallengeCreatorLine } from "@/components/challenges/challenge-creator-line";
 import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
+import { ChallengeCoverImage } from "@/components/challenges/challenge-cover-image";
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { isChallengeUpcoming } from "@/lib/challenge-countdown";
 import { CalendarRange, Gift, Users } from "lucide-react";
@@ -44,7 +45,7 @@ export function ChallengeCard({
   viewerUserId = null,
 }: ChallengeCardProps) {
   const canReportMedia = Boolean(
-    loggedIn && viewerUserId && viewerUserId !== challenge.creatorId,
+    loggedIn && viewerUserId && viewerUserId !== challenge.creatorId && challenge.coverUrl,
   );
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -64,50 +65,60 @@ export function ChallengeCard({
     });
   }
 
+  const upcoming = isChallengeUpcoming(challenge);
+
   return (
     <Card className="overflow-hidden p-0">
-      {challenge.coverUrl ? (
-        <div className="relative aspect-[2/1] w-full bg-muted">
-          <Image
-            src={challenge.coverUrl}
-            alt=""
-            fill
-            className="object-cover"
-            unoptimized
-          />
-          <ReportContentMenu
-            contentType="challenge_cover"
-            contentId={challenge.id}
-            reportedUserId={challenge.creatorId}
-            canReport={canReportMedia}
-          />
+      <ChallengeCoverImage
+        coverUrl={challenge.coverUrl}
+        title={challenge.title}
+        report={{
+          contentId: challenge.id,
+          reportedUserId: challenge.creatorId,
+          canReport: canReportMedia,
+        }}
+      />
+      <div className="space-y-2 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            {upcoming ? (
+              <Badge tone="warning" className="uppercase tracking-wide">
+                Upcoming
+              </Badge>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {upcoming ? (
+              <ChallengeStartCountdown
+                startAt={challenge.startAt}
+                startDate={challenge.startDate}
+                challengeTimezone={challenge.challengeTimezone}
+                variant="compact"
+                label="Starts in"
+              />
+            ) : null}
+            {isOwner ? (
+              <Badge tone="success">Your challenge</Badge>
+            ) : challenge.joined ? (
+              <Badge tone="success">Joined</Badge>
+            ) : (
+              <Badge tone="muted">Open</Badge>
+            )}
+            <Badge tone="default" className="gap-1">
+              <Gift className="h-3 w-3" aria-hidden />
+              Free
+            </Badge>
+          </div>
         </div>
-      ) : null}
-      <div className="p-4">
-      <div className="flex items-start justify-between gap-2">
         <div>
-          <h2 className="font-semibold">{challenge.title}</h2>
+          <h2 className="font-semibold leading-snug">{challenge.title}</h2>
           <ChallengeCreatorLine
             displayName={challenge.creatorName}
             avatarUrl={challenge.creatorAvatarUrl}
-            className="mt-2"
+            className="mt-1.5"
           />
         </div>
-        <div className="flex flex-col items-end gap-1">
-          {isOwner ? (
-            <Badge tone="success">Your challenge</Badge>
-          ) : challenge.joined ? (
-            <Badge tone="success">Joined</Badge>
-          ) : (
-            <Badge tone="muted">Open</Badge>
-          )}
-          <Badge tone="default" className="gap-1">
-            <Gift className="h-3 w-3" aria-hidden />
-            Free
-          </Badge>
-        </div>
-      </div>
-      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+      <p className="text-sm leading-relaxed text-muted-foreground">
         {challenge.description}
       </p>
       {challenge.galleryPhotos.length > 0 ? (
@@ -143,17 +154,7 @@ export function ChallengeCard({
           </Badge>
         ))}
       </div>
-      {isChallengeUpcoming(challenge) ? (
-        <ChallengeStartCountdown
-          startAt={challenge.startAt}
-          startDate={challenge.startDate}
-          challengeTimezone={challenge.challengeTimezone}
-          variant="prominent"
-          className="mt-3"
-          label="Starting in"
-        />
-      ) : null}
-      <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
+      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1">
           <CalendarRange className="h-3.5 w-3.5" aria-hidden />
           <ChallengeDateRange

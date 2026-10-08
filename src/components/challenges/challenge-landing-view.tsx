@@ -14,6 +14,7 @@ import { challengeCreatorSubtitle } from "@/lib/creator-display-name";
 import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { LandingAttribution } from "@/components/analytics/landing-attribution";
+import { ChallengeCoverImage } from "@/components/challenges/challenge-cover-image";
 import { CalendarRange, Gift, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -117,11 +118,7 @@ function ChallengeLandingBody({
       ) : null}
 
       <Card className="overflow-hidden p-0">
-        {challenge.coverUrl ? (
-          <div className="relative aspect-[2/1] w-full bg-muted">
-            <Image src={challenge.coverUrl} alt="" fill className="object-cover" unoptimized />
-          </div>
-        ) : null}
+        <ChallengeCoverImage coverUrl={challenge.coverUrl} title={challenge.title} priority />
         <div className="p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">

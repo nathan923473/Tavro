@@ -46,6 +46,30 @@ test("Countdown duration from six days before start", () => {
   assert.equal(Math.floor(remaining / 86_400_000), 6);
 });
 
+test("formatCompactCountdownToStart uses at most two units", () => {
+  function formatCompactCountdownToStart(startAtUtc, nowMs = Date.now()) {
+    const ms = startAtUtc.getTime() - nowMs;
+    if (ms <= 0) return "Started";
+    const totalSeconds = Math.floor(ms / 1000);
+    if (totalSeconds < 60) return "Starting soon";
+    const days = Math.floor(totalSeconds / 86_400);
+    const hours = Math.floor((totalSeconds % 86_400) / 3_600);
+    const minutes = Math.floor((totalSeconds % 3_600) / 60);
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  }
+  const now = Date.UTC(2026, 9, 9, 12, 0, 0);
+  const twelveDays = new Date(now + 12 * 86_400_000 + 6 * 3_600_000);
+  assert.equal(formatCompactCountdownToStart(twelveDays, now), "12d 6h");
+  const hoursOnly = new Date(now + 15 * 3_600_000 + 30 * 60_000);
+  assert.equal(formatCompactCountdownToStart(hoursOnly, now), "15h 30m");
+  const minsOnly = new Date(now + 45 * 60_000);
+  assert.equal(formatCompactCountdownToStart(minsOnly, now), "45m");
+  const soon = new Date(now + 30_000);
+  assert.equal(formatCompactCountdownToStart(soon, now), "Starting soon");
+});
+
 test("formatHumanCountdownToStart includes d h m s", () => {
   function formatHumanCountdownToStart(startAtUtc, nowMs = Date.now()) {
     const ms = startAtUtc.getTime() - nowMs;

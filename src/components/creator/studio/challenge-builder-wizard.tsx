@@ -27,6 +27,7 @@ import {
   formatCalendarDateKey,
   formatChallengeDateRange,
 } from "@/lib/timezone/format";
+import { ChallengeCoverField } from "@/components/challenges/challenge-cover-field";
 import { ChallengeBuilderWithPreview } from "@/components/creator/studio/challenge-builder-with-preview";
 import { cn } from "@/lib/cn";
 import Link from "next/link";
@@ -132,7 +133,7 @@ export function ChallengeBuilderWizard({
   defaultChallengeTimezone?: string;
   creatorDisplayName?: string;
   creatorAvatarUrl?: string | null;
-} = {}) {
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTemplate = (searchParams.get("template") ??
@@ -143,6 +144,7 @@ export function ChallengeBuilderWizard({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [challengeId, setChallengeId] = useState<string | undefined>();
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [published, setPublished] = useState<{
     invitePath: string;
     creatorPath: string;
@@ -269,6 +271,7 @@ export function ChallengeBuilderWizard({
     schedule,
     creatorDisplayName,
     creatorAvatarUrl,
+    coverUrl,
   };
 
   return (
@@ -498,6 +501,19 @@ export function ChallengeBuilderWizard({
             value={goalDescription}
             onChange={(e) => setGoalDescription(e.target.value)}
           />
+          {challengeId ? (
+            <ChallengeCoverField
+              challengeId={challengeId}
+              coverUrl={coverUrl}
+              title={title}
+              disabled={pending}
+              onCoverUrlChange={setCoverUrl}
+            />
+          ) : (
+            <p className="rounded-xl border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
+              Save challenge basics first — then you can add an optional cover image here.
+            </p>
+          )}
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => setStep(1)}>
               Back

@@ -34,6 +34,13 @@ export const ALLOWED_IMAGE_TYPES = [
   "image/gif",
 ] as const;
 
+/** Challenge cover uploads — JPEG, PNG, WebP only. */
+export const CHALLENGE_COVER_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+] as const;
+
 export function extensionForMime(mime: string) {
   if (mime === "image/png") return "png";
   if (mime === "image/webp") return "webp";

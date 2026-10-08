@@ -102,41 +102,58 @@ export function ChallengeCreatorLivePreview({
       aria-label="Live challenge page preview"
     >
         <div
-          className="relative aspect-[2/1] w-full bg-muted"
+          className="relative aspect-video w-full bg-muted"
           style={coverUrl ? undefined : { background: COVER_GRADIENT[category] }}
         >
           {coverUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={coverUrl} alt="" className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-full items-end p-3">
-              <span className="rounded-full bg-black/25 px-2 py-0.5 text-[10px] font-medium text-white">
-                Cover photo in Challenge photos
+            <div className="flex h-full items-end justify-between p-3">
+              <span className="rounded-lg bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/90">
+                Tavro
               </span>
+              <span className="text-[10px] font-medium text-white/80">Add cover in builder</span>
             </div>
           )}
         </div>
 
-        <div className="space-y-3 p-4">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex min-w-0 items-start gap-2">
+        <div className="space-y-2 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            {isUpcoming ? (
+              <Badge tone="warning" className="text-[10px] uppercase tracking-wide">
+                Upcoming
+              </Badge>
+            ) : (
+              <span />
+            )}
+            <div className="flex items-center gap-1">
+              {isUpcoming && startAtIso ? (
+                <ChallengeStartCountdown
+                  startAt={startAtIso}
+                  challengeTimezone={tz}
+                  variant="compact"
+                  label="Starts in"
+                />
+              ) : null}
+              <Badge tone="success" className="shrink-0 gap-0.5 text-[10px]">
+                <Gift className="h-3 w-3" aria-hidden />
+                Free
+              </Badge>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold leading-snug">{displayTitle}</h3>
+            <div className="mt-1.5 flex min-w-0 items-center gap-2">
               <UserAvatar
                 displayName={creatorDisplayName}
                 avatarUrl={creatorAvatarUrl}
                 size="sm"
                 className="rounded-xl"
               />
-              <div className="min-w-0">
-                <p className="truncate text-xs text-muted-foreground">{creatorDisplayName}</p>
-                <h3 className="text-base font-semibold leading-snug">
-                  {displayTitle}
-                </h3>
-              </div>
+              <p className="truncate text-xs text-muted-foreground">{creatorDisplayName}</p>
             </div>
-            <Badge tone="success" className="shrink-0 gap-0.5 text-[10px]">
-              <Gift className="h-3 w-3" aria-hidden />
-              Free
-            </Badge>
           </div>
 
           {shortDescription.trim() ? (
@@ -177,15 +194,6 @@ export function ChallengeCreatorLivePreview({
 
           {localStartLine ? (
             <p className="text-[11px] text-muted-foreground">Official start: {localStartLine}</p>
-          ) : null}
-
-          {isUpcoming && startAtIso ? (
-            <ChallengeStartCountdown
-              startAt={startAtIso}
-              challengeTimezone={tz}
-              variant="prominent"
-              label="Starting in"
-            />
           ) : null}
 
           <div

@@ -15,6 +15,7 @@ import {
 } from "@/lib/data/creator-studio";
 import { fetchOwnerCommunity } from "@/lib/data/communities";
 import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
+import { ManageChallengeCover } from "@/components/creator/studio/manage-challenge-cover";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -54,6 +55,12 @@ export default async function ManageChallengePage({ params }: Props) {
           <ChallengeDateRange startDate={challenge.startDate} endDate={challenge.endDate} />
         </p>
       </Card>
+
+      <ManageChallengeCover
+        challengeId={id}
+        initialCoverUrl={challenge.coverUrl}
+        title={challenge.title}
+      />
 
       {!isDraft ? (
         <>

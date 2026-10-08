@@ -1,18 +1,14 @@
 "use client";
 
 import { searchDiscoverAction } from "@/app/(app)/discover/actions";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { DiscoverChallenge, DiscoverCreator } from "@/lib/data/discover";
-import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
-import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
-import { isChallengeUpcoming } from "@/lib/challenge-countdown";
+import { ChallengeSummaryCard } from "@/components/challenges/challenge-summary-card";
+import { Badge } from "@/components/ui/badge";
 import { publicChallengePath } from "@/lib/site-url";
-import { ChallengeCreatorLine } from "@/components/challenges/challenge-creator-line";
-import { LeaveChallengeButton } from "@/components/challenges/leave-challenge-button";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import { CalendarRange, Compass, Gift, Search, Sparkles, Users } from "lucide-react";
+import { Compass, Search, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -36,84 +32,27 @@ function ChallengeRow({
     ? `/challenges/${c.id}`
     : publicChallengePath(c.communitySlug, c.inviteSlug);
   const cta = isOwner || isJoined ? "Open challenge" : "View challenge";
-  const upcoming = isChallengeUpcoming({ startAt: c.startAt, startDate: c.startDate });
   return (
     <li>
-      <Card
-        className={`overflow-hidden p-0 ${upcoming ? "ring-2 ring-amber-400/50" : ""}`}
-      >
-        {upcoming ? (
-          <ChallengeStartCountdown
-            startAt={c.startAt}
-            startDate={c.startDate}
-            challengeTimezone={c.challengeTimezone}
-            variant="strip"
-            label="Starting in"
-          />
-        ) : null}
-        {c.coverUrl ? (
-          <div className="relative h-28 bg-muted">
-            <Image src={c.coverUrl} alt="" fill className="object-cover" unoptimized />
-          </div>
-        ) : null}
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-semibold">{c.title}</h3>
-                {upcoming ? (
-                  <Badge tone="warning" className="uppercase tracking-wide">
-                    Upcoming
-                  </Badge>
-                ) : null}
-              </div>
-              <ChallengeCreatorLine
-                displayName={c.creatorName}
-                avatarUrl={c.creatorAvatarUrl}
-                subtitle={challengeCreatorSubtitle(c.creatorName, c.communityName)}
-                className="mt-1"
-              />
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-1">
-              {isJoined ? <Badge tone="default">Joined</Badge> : null}
-              <Badge tone="success" className="gap-1">
-                <Gift className="h-3 w-3" aria-hidden />
-                Free
-              </Badge>
-            </div>
-          </div>
-          {c.shortDescription ? (
-            <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{c.shortDescription}</p>
-          ) : null}
-          <p className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1">
-              <CalendarRange className="h-3.5 w-3.5" aria-hidden />
-              <ChallengeDateRange
-                startDate={c.startDate}
-                endDate={c.endDate}
-                challengeTimezone={c.challengeTimezone}
-              />
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Users className="h-3.5 w-3.5" aria-hidden />
-              {c.participants} joined
-            </span>
-          </p>
-          <Link
-            href={href}
-            className="mt-3 flex min-h-10 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
-          >
-            {cta}
-          </Link>
-          {isJoined ? (
-            <LeaveChallengeButton
-              challengeId={c.id}
-              className="mt-2"
-              redirectTo="/challenges"
-            />
-          ) : null}
-        </div>
-      </Card>
+      <ChallengeSummaryCard
+        title={c.title}
+        shortDescription={c.shortDescription}
+        coverUrl={c.coverUrl}
+        creatorName={c.creatorName}
+        creatorAvatarUrl={c.creatorAvatarUrl}
+        creatorSubtitle={challengeCreatorSubtitle(c.creatorName, c.communityName)}
+        startDate={c.startDate}
+        endDate={c.endDate}
+        startAt={c.startAt}
+        challengeTimezone={c.challengeTimezone}
+        participants={c.participants}
+        href={href}
+        ctaLabel={cta}
+        joined={isJoined}
+        leaveChallengeId={isJoined ? c.id : undefined}
+        leaveRedirectTo="/challenges"
+        topRightBadges={isJoined ? <Badge tone="default">Joined</Badge> : null}
+      />
     </li>
   );
 }

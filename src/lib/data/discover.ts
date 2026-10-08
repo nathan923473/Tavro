@@ -1,4 +1,3 @@
-import { fetchChallengeGalleryMap } from "@/lib/data/challenge-media";
 import { CHALLENGE_PARTICIPANTS_EMBED, unwrapOne } from "@/lib/data/relations";
 import { createClient } from "@/lib/supabase/server";
 import { resolveCreatorAvatarUrl } from "@/lib/creator-avatar";
@@ -108,9 +107,6 @@ export async function searchDiscover(query: string): Promise<{
     .ilike("title", ilike)
     .limit(30);
 
-  const ids = (challengeRows ?? []).map((r) => r.id);
-  const galleryMap = await fetchChallengeGalleryMap(ids);
-
   const challenges: DiscoverChallenge[] = (challengeRows ?? [])
     .filter((r) => unwrapOne(r.creator)?.creator_status === "approved")
     .map((r) => {
@@ -134,7 +130,7 @@ export async function searchDiscover(query: string): Promise<{
         endAt: r.end_at ?? null,
         challengeTimezone: r.challenge_timezone ?? null,
         participants: r.participants?.[0]?.count ?? 0,
-        coverUrl: r.cover_url ?? galleryMap[r.id]?.[0] ?? null,
+        coverUrl: r.cover_url ?? null,
         timeline: timelineForChallenge(r),
       };
     })
@@ -166,9 +162,6 @@ export async function fetchDiscoverSections(): Promise<{
     .order("start_date", { ascending: true })
     .limit(40);
 
-  const ids = (rows ?? []).map((r) => r.id);
-  const galleryMap = await fetchChallengeGalleryMap(ids);
-
   const all: DiscoverChallenge[] = (rows ?? [])
     .filter((r) => unwrapOne(r.creator)?.creator_status === "approved")
     .map((r) => {
@@ -192,7 +185,7 @@ export async function fetchDiscoverSections(): Promise<{
         endAt: r.end_at ?? null,
         challengeTimezone: r.challenge_timezone ?? null,
         participants: r.participants?.[0]?.count ?? 0,
-        coverUrl: r.cover_url ?? galleryMap[r.id]?.[0] ?? null,
+        coverUrl: r.cover_url ?? null,
         timeline: timelineForChallenge(r),
       };
     })

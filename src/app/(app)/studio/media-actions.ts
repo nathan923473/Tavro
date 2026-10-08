@@ -1,6 +1,13 @@
 "use server";
 
 import { requireUserId } from "@/lib/auth/require-user-id";
+import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  CHALLENGE_COVER_IMAGE_TYPES,
+  CHALLENGE_IMAGE_MAX_BYTES,
+  extensionForMime,
+} from "@/lib/storage/avatars";
+import { formatImageUploadError } from "@/lib/storage/upload-errors";
 import { isAllowedPublicMediaUrl } from "@/lib/storage/validate-image-url";
 import { revalidatePath } from "next/cache";
 
@@ -46,6 +53,61 @@ export async function setCommunityMediaUrlsAction(input: {
     revalidatePath(`/creator/${community.slug}/edit`);
   }
   revalidatePath("/studio");
+}
+
+export async function uploadChallengeCoverAction(formData: FormData) {
+  const { supabase, userId } = await requireUserId();
+  const challengeId = String(formData.get("challengeId") ?? "");
+  const file = formData.get("file");
+
+  if (!challengeId) throw new Error("Challenge not found.");
+  if (!(file instanceof File) || file.size === 0) {
+    throw new Error("Choose an image file.");
+  }
+
+  if (
+    !CHALLENGE_COVER_IMAGE_TYPES.includes(
+      file.type as (typeof CHALLENGE_COVER_IMAGE_TYPES)[number],
+    )
+  ) {
+    throw new Error("Use a JPG, PNG, or WebP image.");
+  }
+  if (file.size > CHALLENGE_IMAGE_MAX_BYTES) {
+    throw new Error("Image must be under 5 MB.");
+  }
+
+  const { data: challenge } = await supabase
+    .from("challenges")
+    .select("id")
+    .eq("id", challengeId)
+    .eq("created_by", userId)
+    .maybeSingle();
+  if (!challenge) throw new Error("Challenge not found.");
+
+  const ext = extensionForMime(file.type);
+  const path = `${userId}/${challengeId}/cover.${ext}`;
+  const bytes = Buffer.from(await file.arrayBuffer());
+
+  const admin = createAdminClient();
+  const storage = admin ?? supabase;
+
+  const { error: uploadError } = await storage.storage.from("challenge-media").upload(path, bytes, {
+    upsert: true,
+    contentType: file.type,
+  });
+  if (uploadError) {
+    throw new Error(formatImageUploadError(uploadError.message));
+  }
+
+  const { data: publicUrlData } = storage.storage.from("challenge-media").getPublicUrl(path);
+  const coverUrl = `${publicUrlData.publicUrl}?v=${Date.now()}`;
+
+  await setChallengeCoverUrlAction(challengeId, coverUrl);
+  return { ok: true as const, coverUrl };
+}
+
+export async function removeChallengeCoverAction(challengeId: string) {
+  await setChallengeCoverUrlAction(challengeId, null);
 }
 
 export async function setChallengeCoverUrlAction(challengeId: string, coverUrl: string | null) {
