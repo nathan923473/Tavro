@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  formatHumanCountdownToStart,
-  hasStarted,
-  msUntilChallengeStartAt,
-} from "@/lib/challenge-countdown";
+import { formatHumanCountdownToStart, hasStarted } from "@/lib/challenge-countdown";
 import {
   formatShortDate,
   formatShortDateTime,
@@ -58,9 +54,7 @@ export function ChallengeStartCountdown({
       setText(formatHumanCountdownToStart(startInstant));
     };
     tick();
-    const ms = msUntilChallengeStartAt(startInstant.toISOString());
-    const interval = ms < 3_600_000 ? 30_000 : 60_000;
-    const id = window.setInterval(tick, interval);
+    const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
   }, [startInstant]);
 
@@ -124,7 +118,7 @@ export function ChallengeStartCountdown({
               <p className="text-xs font-medium text-amber-900/85">{localLine} your time</p>
             </div>
           </div>
-          <p className="text-lg font-bold text-amber-950">{text}</p>
+          <p className="text-right text-lg font-bold tabular-nums text-amber-950">{text}</p>
         </div>
       </div>
     );

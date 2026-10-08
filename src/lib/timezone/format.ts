@@ -100,29 +100,20 @@ export function friendlyTimezoneTitle(iana: string): string {
   return `${label} time`;
 }
 
-/** Human countdown to start instant (no seconds). */
+/** Countdown to start with days, hours, minutes, and seconds (always all four). */
 export function formatHumanCountdownToStart(startAtUtc: Date, nowMs = Date.now()): string {
   const ms = startAtUtc.getTime() - nowMs;
   if (ms <= 0) return "Started";
 
-  const totalMinutes = Math.floor(ms / 60_000);
-  const totalHours = Math.floor(ms / 3_600_000);
-  const totalDays = Math.floor(ms / 86_400_000);
+  const totalSeconds = Math.floor(ms / 1000);
+  const days = Math.floor(totalSeconds / 86_400);
+  const hours = Math.floor((totalSeconds % 86_400) / 3_600);
+  const minutes = Math.floor((totalSeconds % 3_600) / 60);
+  const seconds = totalSeconds % 60;
 
-  if (totalDays > 1) {
-    return `Starts in ${totalDays} days`;
-  }
+  const pad = (n: number) => String(n).padStart(2, "0");
 
-  if (totalDays === 1) {
-    return "Starts tomorrow";
-  }
-
-  if (totalHours >= 1) {
-    return `Starts in ${totalHours} hour${totalHours === 1 ? "" : "s"}`;
-  }
-
-  const mins = Math.max(1, totalMinutes);
-  return `Starts in ${mins} minute${mins === 1 ? "" : "s"}`;
+  return `${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
 }
 
 export function msUntilInstant(instant: Date, nowMs = Date.now()): number {

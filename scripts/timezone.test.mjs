@@ -46,6 +46,14 @@ test("Countdown duration from six days before start", () => {
   assert.equal(Math.floor(remaining / 86_400_000), 6);
 });
 
+test("formatHumanCountdownToStart includes d h m s", async () => {
+  const { formatHumanCountdownToStart } = await import("../src/lib/timezone/format.ts");
+  const now = Date.UTC(2026, 9, 9, 12, 0, 0);
+  const start = new Date(now + (2 * 86_400_000 + 3 * 3_600_000 + 4 * 60_000 + 5) * 1000);
+  assert.equal(formatHumanCountdownToStart(start, now), "2d 03h 04m 05s");
+  assert.equal(formatHumanCountdownToStart(new Date(now), now), "Started");
+});
+
 test("Exclusive end is midnight after final day in challenge TZ", () => {
   const end = exclusiveEndUtc("2026-11-30", "Australia/Melbourne");
   const dayAfter = midnightUtc("2026-12-01", "Australia/Melbourne");

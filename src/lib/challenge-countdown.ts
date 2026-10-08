@@ -42,11 +42,6 @@ export function formatChallengeStartDate(startDateKey: string): string {
 /** @deprecated use formatHumanCountdownToStart */
 export function formatChallengeCountdown(ms: number): string {
   if (ms <= 0) return "Started";
-  const totalDays = Math.floor(ms / 86_400_000);
-  if (totalDays > 1) return `Starts in ${totalDays} days`;
-  if (totalDays === 1) return "Starts tomorrow";
-  const hours = Math.floor(ms / 3_600_000);
-  if (hours >= 1) return `Starts in ${hours} hours`;
-  const mins = Math.max(1, Math.floor(ms / 60_000));
-  return `Starts in ${mins} minutes`;
+  const start = new Date(Date.now() + ms);
+  return formatHumanCountdownToStart(start, Date.now());
 }
