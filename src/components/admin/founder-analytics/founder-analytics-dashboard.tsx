@@ -1,6 +1,6 @@
 "use client";
 
-import { EventHealthStrip } from "@/components/admin/founder-analytics/event-health-strip";
+import { AdminDiagnosticsPanel } from "@/components/admin/founder-analytics/admin-diagnostics-panel";
 import { FounderMetricCard } from "@/components/admin/founder-analytics/metric-card";
 import type { FounderAnalyticsSnapshot } from "@/types/founder-analytics";
 import Link from "next/link";
@@ -17,10 +17,10 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 const PRESETS = [
-  { id: "7d", label: "7d" },
-  { id: "30d", label: "30d" },
-  { id: "90d", label: "90d" },
-  { id: "12m", label: "12m" },
+  { id: "7d", label: "7 days" },
+  { id: "30d", label: "30 days" },
+  { id: "90d", label: "90 days" },
+  { id: "12m", label: "12 months" },
 ] as const;
 
 export function FounderAnalyticsDashboard({
@@ -41,19 +41,23 @@ export function FounderAnalyticsDashboard({
   }, [tab, snapshot]);
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mx-auto w-full max-w-[1600px] space-y-4">
+      <div className="space-y-3">
+        <div className="flex flex-col gap-3">
           <p className="text-sm font-medium text-foreground">{snapshot.range.label}</p>
-          <div className="-mx-1 grid grid-cols-4 gap-1.5 sm:mx-0 sm:flex sm:flex-wrap sm:gap-2">
+          <div
+            className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+            role="group"
+            aria-label="Date range"
+          >
             {PRESETS.map((p) => (
               <Link
                 key={p.id}
                 href={`/admin/analytics?preset=${p.id}`}
-                className={`flex min-h-9 items-center justify-center rounded-lg px-2 text-center text-xs font-semibold sm:rounded-full sm:px-3 ${
+                className={`flex min-h-10 items-center justify-center rounded-lg px-2 text-center text-xs font-semibold leading-tight sm:text-sm ${
                   preset === p.id
                     ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground"
+                    : "border border-border bg-surface text-foreground"
                 }`}
               >
                 {p.label}
@@ -61,14 +65,16 @@ export function FounderAnalyticsDashboard({
             ))}
           </div>
         </div>
-        <EventHealthStrip
+
+        <AdminDiagnosticsPanel
           health={snapshot.eventHealth}
           trackingStartedAt={snapshot.trackingStartedAt}
+          schemaReady={snapshot.schemaReady}
         />
       </div>
 
       <nav
-        className="flex gap-1 overflow-x-auto rounded-xl bg-muted/50 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex gap-1.5 overflow-x-auto rounded-xl bg-muted/50 p-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         aria-label="Metric categories"
       >
         {TABS.map((t) => (
@@ -76,8 +82,8 @@ export function FounderAnalyticsDashboard({
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className={`shrink-0 rounded-lg px-3 py-2 text-xs font-semibold sm:text-sm ${
-              tab === t.id ? "bg-surface shadow-sm" : "text-muted-foreground"
+            className={`shrink-0 rounded-lg px-3 py-2.5 text-xs font-semibold whitespace-nowrap sm:text-sm ${
+              tab === t.id ? "bg-surface text-foreground shadow-sm" : "text-muted-foreground"
             }`}
           >
             {t.label}
@@ -93,7 +99,7 @@ export function FounderAnalyticsDashboard({
         </p>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-3 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 min-[480px]:gap-3 xl:grid-cols-3 min-[1400px]:grid-cols-4">
         {metrics.map((m) => (
           <FounderMetricCard key={`${tab}-${m.id}`} metric={m} />
         ))}

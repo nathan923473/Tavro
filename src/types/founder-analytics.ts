@@ -23,6 +23,10 @@ export type FounderMetric = {
   unavailableReason?: string;
   series?: { date: string; value: number }[];
   seriesEmptyReason?: string;
+  /** Plain-language source for chart / value (e.g. profiles vs events table). */
+  seriesSource?: string;
+  /** Denominator used for rates; 0 means insufficient, not zero percent. */
+  denominator?: number | null;
   extra?: Record<string, string | number | null>;
 };
 

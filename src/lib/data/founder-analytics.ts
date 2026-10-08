@@ -8,7 +8,10 @@ import {
   percentChange,
   safeRate,
 } from "@/lib/analytics/date-range";
-import { resolveMetricDisplayState } from "@/lib/analytics/founder-metric-display";
+import {
+  comparisonChangePercent,
+  resolveMetricDisplayState,
+} from "@/lib/analytics/founder-metric-display";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
   FounderAnalyticsSnapshot,
@@ -25,6 +28,7 @@ function metric(
       value: partial.value,
       status: partial.status,
       unavailableReason: partial.unavailableReason,
+      denominator: partial.denominator,
     }),
   };
 }
@@ -233,7 +237,7 @@ async function computeGrowthMetrics(
 
   const { data: newAttributed } = await admin
     .from("profiles")
-    .select("id, attributed_creator_id")
+    .select("id, attributed_creator_id, created_at")
     .gte("created_at", start)
     .lte("created_at", end)
     .not("attributed_creator_id", "is", null)
@@ -242,7 +246,7 @@ async function computeGrowthMetrics(
 
   const { data: prevAttributed } = await admin
     .from("profiles")
-    .select("id, attributed_creator_id")
+    .select("id, attributed_creator_id, created_at")
     .gte("created_at", pStart)
     .lte("created_at", pEnd)
     .not("attributed_creator_id", "is", null)
@@ -263,6 +267,23 @@ async function computeGrowthMetrics(
     creatorsWithSignups > 0 ? totalAttributed / creatorsWithSignups : null;
 
   const prevTotal = prevAttributed?.length ?? 0;
+  const prevCreatorCounts = new Map<string, number>();
+  for (const row of prevAttributed ?? []) {
+    if (!row.attributed_creator_id) continue;
+    prevCreatorCounts.set(
+      row.attributed_creator_id,
+      (prevCreatorCounts.get(row.attributed_creator_id) ?? 0) + 1,
+    );
+  }
+  const prevCreatorsWithSignups = prevCreatorCounts.size;
+  const prevAvgPerCreator =
+    prevCreatorsWithSignups > 0 ? prevTotal / prevCreatorsWithSignups : null;
+
+  const attributedSignupSeries = bucketCountByUtcDay(
+    (newAttributed ?? []).map((s) => s.created_at as string),
+    range.start,
+    range.end,
+  );
 
   const { data: signups } = await admin
     .from("profiles")
@@ -280,7 +301,7 @@ async function computeGrowthMetrics(
     .lte("occurred_at", end)
     .limit(4000);
 
-  const signupSeries = bucketCountByUtcDay(
+  const allSignupSeries = bucketCountByUtcDay(
     (signups ?? []).map((s) => s.created_at as string),
     range.start,
     range.end,
@@ -339,21 +360,34 @@ async function computeGrowthMetrics(
   return [
     metric({
       id: "new_users_per_creator",
-      label: "New users per creator (avg)",
+      label: "New users per creator (average)",
       definition:
-        "New registrations with first-touch creator attribution in period, divided by creators who acquired at least one.",
-      status: totalAttributed > 0 || creatorsWithSignups > 0 ? "ok" : "partial",
-      value: avgPerCreator,
-      previousValue: prevTotal > 0 ? prevTotal / Math.max(1, creatorsWithSignups) : 0,
-      changePercent: percentChange(avgPerCreator ?? 0, prevTotal / Math.max(1, creatorsWithSignups)),
+        "New registrations with first-touch creator attribution in period, divided by creators who acquired at least one. Chart counts creator-attributed signups from the profiles table (not the analytics events pipeline).",
+      status: creatorsWithSignups > 0 ? "ok" : totalAttributed > 0 ? "partial" : "partial",
+      value: creatorsWithSignups > 0 ? avgPerCreator : null,
+      previousValue: prevAvgPerCreator,
+      changePercent: comparisonChangePercent(
+        avgPerCreator,
+        prevAvgPerCreator,
+        creatorsWithSignups,
+        prevCreatorsWithSignups,
+      ),
       unit: "count",
+      denominator: creatorsWithSignups,
       extra: {
         totalCreatorAttributedSignups: totalAttributed,
         creatorsWithSignups,
       },
-      series: signupSeries.some((d) => d.value > 0) ? signupSeries : undefined,
+      series: attributedSignupSeries.some((d) => d.value > 0) ? attributedSignupSeries : undefined,
+      seriesSource: "profiles.created_at (creator-attributed signups only)",
       seriesEmptyReason:
-        signupSeries.every((d) => d.value === 0) ? "No new signups in this period." : undefined,
+        totalAttributed === 0
+          ? "No creator-attributed signups in this period."
+          : undefined,
+      unavailableReason:
+        creatorsWithSignups === 0
+          ? "No creators with attributed signups in this period."
+          : undefined,
     }),
     metric({
       id: "participant_referral_rate",
@@ -365,11 +399,14 @@ async function computeGrowthMetrics(
       previousValue: null,
       changePercent: null,
       unit: "%",
+      denominator: eligibleParticipants,
       extra: {
         successfulReferrals: referralSignups,
         referrersWithSuccess,
         eligibleParticipants,
       },
+      unavailableReason:
+        eligibleParticipants === 0 ? "No eligible participants in period." : undefined,
     }),
     metric({
       id: "viral_coefficient",
@@ -382,6 +419,7 @@ async function computeGrowthMetrics(
       previousValue: null,
       changePercent: null,
       unit: kValid ? "ratio" : "%",
+      denominator: eligibleParticipants,
     }),
     metric({
       id: "signup_conversion",
@@ -396,7 +434,9 @@ async function computeGrowthMetrics(
       unavailableReason:
         (landingViews ?? 0) === 0 ? "No landing views recorded yet for this period." : undefined,
       extra: { landingViews: landingViews ?? 0, signupsFromLanding: signupsFromLanding ?? 0 },
+      denominator: landingViews ?? 0,
       series: landingSeries.some((d) => d.value > 0) ? landingSeries : undefined,
+      seriesSource: "platform_analytics_events (challenge_page_viewed)",
       seriesEmptyReason:
         (landingViews ?? 0) === 0
           ? "No challenge landing views recorded in this period."
@@ -412,7 +452,9 @@ async function computeGrowthMetrics(
       previousValue: null,
       changePercent: null,
       unit: "%",
+      denominator: signups?.length ?? 0,
       extra: { knownNonPaid, totalSignups: signups?.length ?? 0 },
+      unavailableReason: (signups?.length ?? 0) === 0 ? "No new signups in period." : undefined,
     }),
   ];
 }
@@ -466,6 +508,7 @@ async function cohortRetention(
       unit: "%",
       unavailableReason: `No signups in ${range.label} are ${dayN}+ days old yet — day-${dayN} retention needs older cohorts. Try 30 or 90 days.`,
       seriesEmptyReason: "Cohort not mature for this date range.",
+      denominator: 0,
     });
   }
 
@@ -489,6 +532,7 @@ async function cohortRetention(
       unit: "%",
       unavailableReason: "No signups in the mature portion of this period.",
       seriesEmptyReason: "No cohort members to chart.",
+      denominator: 0,
     });
   }
 
@@ -512,6 +556,7 @@ async function cohortRetention(
     changePercent: null,
     unit: "%",
     extra: { cohortSize: cohort.length, retained },
+    denominator: cohort.length,
     seriesEmptyReason: "Daily cohort trend coming in a later release.",
   });
 }
@@ -587,7 +632,9 @@ async function computeDauMau(
     unit: "%",
     extra: { avgDau: Math.round(avgDau), mau },
     series: series.some((d) => d.value > 0) ? series : undefined,
+    seriesSource: "goal_completions (daily active users proxy)",
     seriesEmptyReason: mau === 0 ? "No habit completions in this period." : undefined,
+    denominator: mau,
   });
 }
 
@@ -628,6 +675,8 @@ async function computeChallengeCompletion(
     changePercent: null,
     unit: "%",
     extra: { eligible, completed },
+    denominator: eligible,
+    unavailableReason: eligible === 0 ? "No ended challenges in this join cohort yet." : undefined,
   });
 }
 
@@ -670,6 +719,7 @@ async function computeRepeatParticipation(
       pctThird: safeRate(third, eligible),
       avgChallengesPerParticipant: avg,
     },
+    denominator: eligible,
   });
 }
 
@@ -705,6 +755,7 @@ async function computeDefensibilityMetrics(
       changePercent: null,
       unit: "%",
       extra: { pctSecond: safeRate(second, creators), pctThird: safeRate(third, creators) },
+      denominator: creators,
     }),
     metric({
       id: "creator_retention",
@@ -756,6 +807,7 @@ async function computeCrossCreator(
     changePercent: null,
     unit: "%",
     extra: { avgDistinctCreators: avgCreators },
+    denominator: participants,
   });
 }
 
