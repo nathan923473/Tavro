@@ -1,3 +1,4 @@
+import { ChallengeCoverImage } from "@/components/challenges/challenge-cover-image";
 import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { Card } from "@/components/ui/card";
@@ -21,15 +22,9 @@ export function CurrentChallengeCard({
       : `/join/${challenge.inviteSlug}`;
 
   return (
-    <Card className={compact ? "border-dashed" : undefined}>
-      {challenge.coverUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={challenge.coverUrl}
-          alt=""
-          className="mb-3 h-32 w-full rounded-xl object-cover"
-        />
-      ) : null}
+    <Card className={`overflow-hidden p-0 ${compact ? "border-dashed" : ""}`}>
+      <ChallengeCoverImage coverUrl={challenge.coverUrl} title={challenge.title} />
+      <div className={compact ? "p-3" : "p-4"}>
       <p className={compact ? "text-sm font-semibold" : "text-lg font-semibold"}>
         {challenge.title}
       </p>
@@ -42,9 +37,12 @@ export function CurrentChallengeCard({
       </p>
       {challenge.bucket === "upcoming" ? (
         <ChallengeStartCountdown
+          startAt={challenge.startAt}
           startDate={challenge.startDate}
-          variant="banner"
+          challengeTimezone={challenge.challengeTimezone}
+          variant="compact"
           className="mt-2"
+          label="Starts in"
         />
       ) : null}
       <div className="mt-3 grid gap-2">
@@ -74,6 +72,7 @@ export function CurrentChallengeCard({
             View public challenge page →
           </Link>
         ) : null}
+      </div>
       </div>
     </Card>
   );
