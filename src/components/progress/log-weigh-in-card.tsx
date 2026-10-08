@@ -18,7 +18,7 @@ export function LogWeighInCard() {
       </p>
       <Button
         className="mt-3"
-        variant="secondary"
+        variant="primary"
         fullWidth
         disabled={pending}
         onClick={() => {

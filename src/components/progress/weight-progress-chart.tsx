@@ -240,7 +240,7 @@ export function WeightProgressChart({
 
       <Button
         className="mt-4"
-        variant="secondary"
+        variant="primary"
         fullWidth
         disabled={pending}
         onClick={() => {
