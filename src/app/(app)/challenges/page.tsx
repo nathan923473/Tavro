@@ -42,6 +42,7 @@ export default async function ChallengesPage() {
           initial={discoverSections}
           variant="embedded"
           viewerUserId={userId}
+          joinedChallengeIds={mine.map((c) => c.id)}
         />
 
         <Link

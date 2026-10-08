@@ -3,9 +3,9 @@
 import { ChallengeGroupChat } from "@/components/challenges/challenge-group-chat";
 import {
   joinChallengeAction,
-  leaveChallengeAction,
   logChallengeActivityAction,
 } from "@/app/(app)/member/actions";
+import { LeaveChallengeButton } from "@/components/challenges/leave-challenge-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -208,19 +208,10 @@ export function ChallengeCard({
             Quick log (legacy)
           </Button>
           {!isOwner ? (
-            <Button
-              variant="outline"
-              fullWidth
-              disabled={pending || !loggedIn}
-              onClick={() =>
-                run(
-                  () => leaveChallengeAction(challenge.id),
-                  "You left this challenge.",
-                )
-              }
-            >
-              Leave challenge
-            </Button>
+            <LeaveChallengeButton
+              challengeId={challenge.id}
+              onStatus={setMessage}
+            />
           ) : null}
           <ChallengeGroupChat
             challengeId={challenge.id}

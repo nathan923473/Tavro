@@ -1,9 +1,7 @@
 "use client";
 
-import {
-  joinChallengeAndContinueAction,
-  leaveChallengeAction,
-} from "@/app/(app)/member/actions";
+import { joinChallengeAndContinueAction } from "@/app/(app)/member/actions";
+import { LeaveChallengeButton } from "@/components/challenges/leave-challenge-button";
 import { ShareChallengeButton } from "@/components/share/share-challenge-button";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { Badge } from "@/components/ui/badge";
@@ -82,18 +80,6 @@ function ChallengeLandingBody({
     challenge.endAt != null
       ? new Date(challenge.endAt).getTime() <= Date.now()
       : challenge.endDate < new Date().toISOString().slice(0, 10);
-
-  function handleWithdraw() {
-    startTransition(async () => {
-      try {
-        await leaveChallengeAction(challenge.id);
-        router.refresh();
-        setStatus("You withdrew from this challenge.");
-      } catch (e) {
-        setStatus(e instanceof Error ? e.message : "Could not withdraw.");
-      }
-    });
-  }
 
   function handleJoin() {
     if (!loggedIn) {
@@ -230,10 +216,17 @@ function ChallengeLandingBody({
                       ? "Open challenge"
                       : "Finish setup"}
                 </Link>
-                {notStarted ? (
-                  <Button type="button" variant="outline" fullWidth disabled={pending} onClick={handleWithdraw}>
-                    Withdraw before start
-                  </Button>
+                {!ended && data.joined && !data.isOwner ? (
+                  <LeaveChallengeButton
+                    challengeId={challenge.id}
+                    label={notStarted ? "Withdraw before start" : "Leave challenge"}
+                    redirectTo={
+                      data.communitySlug
+                        ? publicChallengePath(data.communitySlug, challenge.inviteSlug)
+                        : `/join/${challenge.inviteSlug}`
+                    }
+                    onStatus={setStatus}
+                  />
                 ) : null}
                 {data.communitySlug ? (
                   <Link

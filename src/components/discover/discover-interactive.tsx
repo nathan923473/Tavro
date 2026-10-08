@@ -10,6 +10,7 @@ import { ChallengeStartCountdown } from "@/components/challenges/challenge-start
 import { isChallengeUpcoming } from "@/lib/challenge-countdown";
 import { publicChallengePath } from "@/lib/site-url";
 import { ChallengeCreatorLine } from "@/components/challenges/challenge-creator-line";
+import { LeaveChallengeButton } from "@/components/challenges/leave-challenge-button";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { CalendarRange, Compass, Gift, Search, Sparkles, Users } from "lucide-react";
 import Image from "next/image";
@@ -23,15 +24,18 @@ import { useState, useTransition, type FormEvent } from "react";
 function ChallengeRow({
   c,
   viewerUserId,
+  joinedChallengeIds,
 }: {
   c: DiscoverChallenge;
   viewerUserId?: string | null;
+  joinedChallengeIds: ReadonlySet<string>;
 }) {
   const isOwner = Boolean(viewerUserId && viewerUserId === c.createdById);
-  const href = isOwner
+  const isJoined = Boolean(viewerUserId && joinedChallengeIds.has(c.id) && !isOwner);
+  const href = isOwner || isJoined
     ? `/challenges/${c.id}`
     : publicChallengePath(c.communitySlug, c.inviteSlug);
-  const cta = isOwner ? "Open challenge" : "View challenge";
+  const cta = isOwner || isJoined ? "Open challenge" : "View challenge";
   const upcoming = isChallengeUpcoming({ startAt: c.startAt, startDate: c.startDate });
   return (
     <li>
@@ -70,10 +74,13 @@ function ChallengeRow({
                 className="mt-1"
               />
             </div>
-            <Badge tone="success" className="gap-1 shrink-0">
-              <Gift className="h-3 w-3" aria-hidden />
-              Free
-            </Badge>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              {isJoined ? <Badge tone="default">Joined</Badge> : null}
+              <Badge tone="success" className="gap-1">
+                <Gift className="h-3 w-3" aria-hidden />
+                Free
+              </Badge>
+            </div>
           </div>
           {c.shortDescription ? (
             <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{c.shortDescription}</p>
@@ -98,6 +105,13 @@ function ChallengeRow({
           >
             {cta}
           </Link>
+          {isJoined ? (
+            <LeaveChallengeButton
+              challengeId={c.id}
+              className="mt-2"
+              redirectTo="/challenges"
+            />
+          ) : null}
         </div>
       </Card>
     </li>
@@ -114,13 +128,16 @@ type DiscoverInteractiveProps = {
   /** Full page vs embedded on Challenges tab (shorter lists + link to /discover). */
   variant?: "full" | "embedded";
   viewerUserId?: string | null;
+  joinedChallengeIds?: readonly string[];
 };
 
 export function DiscoverInteractive({
   initial,
   variant = "full",
   viewerUserId = null,
+  joinedChallengeIds: joinedChallengeIdsProp = [],
 }: DiscoverInteractiveProps) {
+  const joinedChallengeIds = new Set(joinedChallengeIdsProp);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<{
     challenges: DiscoverChallenge[];
@@ -225,7 +242,12 @@ export function DiscoverInteractive({
             <>
               <ul className="space-y-3">
                 {results.challenges.map((c) => (
-                  <ChallengeRow key={c.id} c={c} viewerUserId={viewerUserId} />
+                  <ChallengeRow
+                    key={c.id}
+                    c={c}
+                    viewerUserId={viewerUserId}
+                    joinedChallengeIds={joinedChallengeIds}
+                  />
                 ))}
               </ul>
               <ul className="mt-4 space-y-2">
@@ -270,18 +292,21 @@ export function DiscoverInteractive({
             items={initial.featured.slice(0, limits.featured)}
             seeAllHref={embedded && initial.featured.length > limits.featured ? "/discover" : undefined}
             viewerUserId={viewerUserId}
+            joinedChallengeIds={joinedChallengeIds}
           />
           <Section
             title="Active challenges"
             items={initial.active.slice(0, limits.active)}
             seeAllHref={embedded && initial.active.length > limits.active ? "/discover" : undefined}
             viewerUserId={viewerUserId}
+            joinedChallengeIds={joinedChallengeIds}
           />
           <Section
             title="Upcoming challenges"
             items={initial.upcoming.slice(0, limits.upcoming)}
             seeAllHref={embedded && initial.upcoming.length > limits.upcoming ? "/discover" : undefined}
             viewerUserId={viewerUserId}
+            joinedChallengeIds={joinedChallengeIds}
           />
           <section aria-labelledby="discover-creators-heading">
             <div className="mb-2 flex items-center justify-between gap-2 px-1">
@@ -340,11 +365,13 @@ function Section({
   items,
   seeAllHref,
   viewerUserId,
+  joinedChallengeIds,
 }: {
   title: string;
   items: DiscoverChallenge[];
   seeAllHref?: string;
   viewerUserId?: string | null;
+  joinedChallengeIds: ReadonlySet<string>;
 }) {
   if (!items.length) return null;
   return (
@@ -359,7 +386,12 @@ function Section({
       </div>
       <ul className="space-y-3">
         {items.map((c) => (
-          <ChallengeRow key={c.id} c={c} viewerUserId={viewerUserId} />
+          <ChallengeRow
+            key={c.id}
+            c={c}
+            viewerUserId={viewerUserId}
+            joinedChallengeIds={joinedChallengeIds}
+          />
         ))}
       </ul>
     </section>

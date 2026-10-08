@@ -1,13 +1,17 @@
 import { DiscoverInteractive } from "@/components/discover/discover-interactive";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
+import { fetchChallengesForUser } from "@/lib/data/challenges";
 import { fetchDiscoverSections } from "@/lib/data/discover";
 
 export const metadata = { title: "Discover" };
 
 export default async function DiscoverPage() {
   const { user } = await getCurrentUserProfile();
-  const sections = await fetchDiscoverSections();
+  const [sections, joinedMine] = await Promise.all([
+    fetchDiscoverSections(),
+    user?.id ? fetchChallengesForUser(user.id) : Promise.resolve({ mine: [], discover: [] }),
+  ]);
 
   return (
     <div className="animate-fade-up pb-6">
@@ -16,7 +20,11 @@ export default async function DiscoverPage() {
         subtitle="Same search as the Challenges tab — browse everything in one place"
       />
       <div className="px-4 py-4">
-        <DiscoverInteractive initial={sections} viewerUserId={user?.id ?? null} />
+        <DiscoverInteractive
+          initial={sections}
+          viewerUserId={user?.id ?? null}
+          joinedChallengeIds={joinedMine.mine.map((c) => c.id)}
+        />
       </div>
     </div>
   );

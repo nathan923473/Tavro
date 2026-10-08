@@ -30,6 +30,7 @@ export type ChallengeLandingData = {
   category: string | null;
   joined: boolean;
   onboardingCompleted: boolean;
+  isOwner: boolean;
   isApprovedPublic: boolean;
   isLandingVisible: boolean;
 };
@@ -137,6 +138,7 @@ export async function fetchChallengeLandingByInviteSlug(
     category: row.category ?? null,
     joined,
     onboardingCompleted,
+    isOwner,
     isApprovedPublic,
     isLandingVisible,
   };

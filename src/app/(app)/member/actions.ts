@@ -406,13 +406,48 @@ export async function completeChallengeParticipantOnboardingAction(challengeId: 
 
 export async function leaveChallengeAction(challengeId: string) {
   const { supabase, userId } = await requireUserId();
-  await supabase
+
+  const { data: challenge } = await supabase
+    .from("challenges")
+    .select("created_by")
+    .eq("id", challengeId)
+    .maybeSingle();
+
+  if (!challenge) throw new Error("Challenge not found.");
+  if (challenge.created_by === userId) {
+    throw new Error("Creators manage their own challenges in Creator Studio — you can't leave as a participant.");
+  }
+
+  const { data: membership } = await supabase
+    .from("challenge_participants")
+    .select("challenge_id")
+    .eq("challenge_id", challengeId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!membership) {
+    return { ok: true as const, alreadyLeft: true };
+  }
+
+  const { error } = await supabase
     .from("challenge_participants")
     .delete()
     .eq("challenge_id", challengeId)
     .eq("user_id", userId);
+
+  if (error) throw new Error(error.message);
+
+  await supabase
+    .from("challenge_participant_reminders")
+    .delete()
+    .eq("challenge_id", challengeId)
+    .eq("user_id", userId);
+
   revalidatePath("/challenges");
+  revalidatePath("/discover");
   revalidatePath("/");
+  revalidatePath(`/challenges/${challengeId}`);
+  return { ok: true as const, alreadyLeft: false };
 }
 
 async function challengeCompletionContext(

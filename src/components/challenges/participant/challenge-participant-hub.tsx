@@ -5,6 +5,7 @@ import {
   saveChallengeStepProgressAction,
   toggleChallengeScheduleCompletionAction,
 } from "@/app/(app)/member/actions";
+import { LeaveChallengeButton } from "@/components/challenges/leave-challenge-button";
 import { ShareChallengeButton } from "@/components/share/share-challenge-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -105,6 +106,12 @@ export function ChallengeParticipantHub({
           </div>
         </Card>
         <TabBar tab={tab} setTab={setTab} />
+        {!localHub.isOwner ? (
+          <LeaveChallengeButton
+            challengeId={localHub.challengeId}
+            redirectTo="/challenges"
+          />
+        ) : null}
         {tab !== "today" ? (
           <TabPanels
             hub={localHub}
@@ -157,6 +164,12 @@ export function ChallengeParticipantHub({
           ) : null}
         </Card>
         <TabBar tab={tab} setTab={setTab} />
+        {!localHub.isOwner ? (
+          <LeaveChallengeButton
+            challengeId={localHub.challengeId}
+            redirectTo="/challenges"
+          />
+        ) : null}
         {tab !== "today" ? (
           <TabPanels
             hub={localHub}
@@ -226,6 +239,13 @@ export function ChallengeParticipantHub({
           }}
         />
       )}
+
+      {!localHub.isOwner ? (
+        <LeaveChallengeButton
+          challengeId={localHub.challengeId}
+          redirectTo="/challenges"
+        />
+      ) : null}
     </div>
   );
 }
@@ -794,6 +814,14 @@ function TabPanels({
             >
               View creator community →
             </Link>
+          ) : null}
+          {!hub.isOwner ? (
+            <div className="border-t border-border pt-4">
+              <LeaveChallengeButton
+                challengeId={hub.challengeId}
+                redirectTo="/challenges"
+              />
+            </div>
           ) : null}
         </div>
       </Card>

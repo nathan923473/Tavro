@@ -45,7 +45,13 @@ export async function updateDisplayNameAction(displayName: string) {
       communityName.toLowerCase() === previousDisplayName.toLowerCase() &&
       communityName.toLowerCase() !== trimmed.toLowerCase();
 
-    if (shouldSyncCommunity) {
+    const shouldSyncStalePersonalName =
+      communityName &&
+      communityName.toLowerCase() !== trimmed.toLowerCase() &&
+      looksLikeFullPersonalName(communityName) &&
+      looksLikeFullPersonalName(trimmed);
+
+    if (shouldSyncCommunity || shouldSyncStalePersonalName) {
       await supabase
         .from("creator_communities")
         .update({
