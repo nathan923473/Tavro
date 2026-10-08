@@ -6,6 +6,8 @@ import { generateGroupInviteCode, normalizeGroupInviteCode } from "@/lib/groups/
 import {
   ACCOUNTABILITY_GROUP_MAX_MEMBERS,
 } from "@/lib/copy/accountability-groups";
+import { currentWeekStartKey } from "@/lib/groups/week";
+import type { GroupDailyCheckInStatus, GroupFocusType } from "@/types";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 
@@ -13,7 +15,10 @@ export type GroupJoinMode = "approval" | "auto";
 
 export type CreateGroupInput = {
   name: string;
-  goal: string;
+  description?: string;
+  focusType?: GroupFocusType;
+  goal?: string;
+  sharedGoal?: string;
   joinMode?: GroupJoinMode;
   maxMembers?: number;
 };
@@ -66,9 +71,10 @@ async function assertNotInOtherGroup(
 export async function createAccountabilityGroupAction(input: CreateGroupInput) {
   const { supabase, userId } = await requireUserId();
   const name = input.name.trim();
-  const goal = input.goal.trim();
+  const description = (input.description ?? "").trim();
+  const focusType = input.focusType ?? "general";
+  const sharedGoal = (input.sharedGoal ?? input.goal ?? "").trim();
   if (!name) throw new Error("Group name is required.");
-  if (!goal) throw new Error("Add your main fitness or healthy habit goal.");
 
   await assertNotInOtherGroup(supabase, userId);
 
@@ -85,7 +91,10 @@ export async function createAccountabilityGroupAction(input: CreateGroupInput) {
     const { error: groupError } = await supabase.from("accountability_groups").insert({
       id: groupId,
       name,
-      goal,
+      description,
+      focus_type: focusType,
+      goal: sharedGoal,
+      shared_goal: sharedGoal,
       invite_code: inviteCode,
       max_members: maxMembers,
       join_mode: joinMode,
@@ -218,6 +227,9 @@ export async function updateGroupSettingsAction(input: {
   groupId: string;
   name?: string;
   goal?: string;
+  description?: string;
+  focusType?: GroupFocusType;
+  sharedGoal?: string;
   joinMode?: GroupJoinMode;
 }) {
   const { supabase, userId } = await requireUserId();
@@ -233,6 +245,13 @@ export async function updateGroupSettingsAction(input: {
   const patch: Record<string, unknown> = {};
   if (input.name !== undefined) patch.name = input.name.trim();
   if (input.goal !== undefined) patch.goal = input.goal.trim();
+  if (input.description !== undefined) patch.description = input.description.trim();
+  if (input.focusType !== undefined) patch.focus_type = input.focusType;
+  if (input.sharedGoal !== undefined) {
+    const shared = input.sharedGoal.trim();
+    patch.shared_goal = shared;
+    patch.goal = shared;
+  }
   if (input.joinMode !== undefined) patch.join_mode = input.joinMode;
 
   if (Object.keys(patch).length === 0) return { ok: true as const };
@@ -456,4 +475,162 @@ export async function postGroupMessageAction(body: string) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/groups");
+}
+
+export async function saveGroupWeeklyCommitmentAction(input: {
+  groupId: string;
+  commitmentId?: string;
+  title: string;
+  targetCount: number;
+}) {
+  const { supabase, userId } = await requireUserId();
+  const title = input.title.trim();
+  if (title.length < 2) throw new Error("Describe your commitment in a few words.");
+  const targetCount = Math.min(99, Math.max(1, Math.floor(input.targetCount)));
+  const weekStart = currentWeekStartKey();
+
+  if (input.commitmentId) {
+    const { error } = await supabase
+      .from("group_weekly_commitments")
+      .update({ title, target_count: targetCount, updated_at: new Date().toISOString() })
+      .eq("id", input.commitmentId)
+      .eq("user_id", userId)
+      .eq("group_id", input.groupId);
+    if (error) throw migrationHint(error.message, "032_group_accountability_hub.sql");
+  } else {
+    const { error } = await supabase.from("group_weekly_commitments").insert({
+      group_id: input.groupId,
+      user_id: userId,
+      week_start: weekStart,
+      title,
+      target_count: targetCount,
+    });
+    if (error) throw migrationHint(error.message, "032_group_accountability_hub.sql");
+  }
+  revalidatePath("/groups");
+  return { ok: true as const };
+}
+
+export async function deleteGroupWeeklyCommitmentAction(commitmentId: string) {
+  const { supabase, userId } = await requireUserId();
+  const { error } = await supabase
+    .from("group_weekly_commitments")
+    .delete()
+    .eq("id", commitmentId)
+    .eq("user_id", userId);
+  if (error) throw migrationHint(error.message, "032_group_accountability_hub.sql");
+  revalidatePath("/groups");
+  return { ok: true as const };
+}
+
+export async function updateGroupCommitmentProgressAction(
+  commitmentId: string,
+  progressCount: number,
+) {
+  const { supabase, userId } = await requireUserId();
+  const progress = Math.max(0, Math.floor(progressCount));
+  const { error } = await supabase
+    .from("group_weekly_commitments")
+    .update({ progress_count: progress, updated_at: new Date().toISOString() })
+    .eq("id", commitmentId)
+    .eq("user_id", userId);
+  if (error) throw migrationHint(error.message, "032_group_accountability_hub.sql");
+  revalidatePath("/groups");
+  return { ok: true as const };
+}
+
+export async function submitGroupDailyCheckInAction(input: {
+  groupId: string;
+  status: GroupDailyCheckInStatus;
+  note?: string;
+}) {
+  const { supabase, userId } = await requireUserId();
+  const note = (input.note ?? "").trim().slice(0, 280);
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { error } = await supabase.from("group_member_daily_check_ins").upsert(
+    {
+      group_id: input.groupId,
+      user_id: userId,
+      check_in_date: today,
+      status: input.status,
+      note,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "group_id,user_id,check_in_date" },
+  );
+  if (error) throw migrationHint(error.message, "032_group_accountability_hub.sql");
+  revalidatePath("/groups");
+  return { ok: true as const };
+}
+
+export async function sendGroupEncouragementAction(input: {
+  groupId: string;
+  toUserId: string;
+  message: string;
+}) {
+  const { supabase, userId } = await requireUserId();
+  const message = input.message.trim();
+  if (message.length < 2) throw new Error("Write a short encouraging note.");
+  if (input.toUserId === userId) throw new Error("Pick another member to encourage.");
+
+  const { error } = await supabase.from("group_encouragements").insert({
+    group_id: input.groupId,
+    from_user_id: userId,
+    to_user_id: input.toUserId,
+    message,
+  });
+  if (error) throw migrationHint(error.message, "032_group_accountability_hub.sql");
+  revalidatePath("/groups");
+  return { ok: true as const };
+}
+
+export async function toggleGroupMessageReactionAction(messageId: string) {
+  const { supabase, userId } = await requireUserId();
+  const existing = await supabase
+    .from("group_message_reactions")
+    .select("message_id")
+    .eq("message_id", messageId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (existing.data) {
+    const { error } = await supabase
+      .from("group_message_reactions")
+      .delete()
+      .eq("message_id", messageId)
+      .eq("user_id", userId);
+    if (error) throw migrationHint(error.message, "032_group_accountability_hub.sql");
+  } else {
+    const { error } = await supabase.from("group_message_reactions").insert({
+      message_id: messageId,
+      user_id: userId,
+    });
+    if (error) throw migrationHint(error.message, "032_group_accountability_hub.sql");
+  }
+  revalidatePath("/groups");
+  return { ok: true as const };
+}
+
+export async function setGroupParticipationPauseAction(groupId: string, pausedUntil: string | null) {
+  const { supabase, userId } = await requireUserId();
+  const { error } = await supabase.from("group_member_participation").upsert(
+    {
+      group_id: groupId,
+      user_id: userId,
+      paused_until: pausedUntil,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "group_id,user_id" },
+  );
+  if (error) throw migrationHint(error.message, "032_group_accountability_hub.sql");
+  revalidatePath("/groups");
+  return { ok: true as const };
+}
+
+function migrationHint(message: string, migration: string): Error {
+  if (/schema cache|does not exist|group_weekly|group_member_daily|group_encouragements/i.test(message)) {
+    return new Error(`Run migration ${migration} in Supabase, then try again.`);
+  }
+  return new Error(message);
 }

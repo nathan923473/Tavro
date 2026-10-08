@@ -2,7 +2,17 @@ import { createClient } from "@/lib/supabase/server";
 import { listUserGroupCandidateIds } from "@/lib/data/resolve-user-group-id";
 import { unwrapOne } from "@/lib/data/relations";
 import { formatTimeAgo, todayDateKey } from "@/lib/dates";
-import type { AccountabilityGroup, GroupActivity, GroupJoinRequest } from "@/types";
+import { currentWeekStartKey, previousWeekStartKey } from "@/lib/groups/week";
+import { ACCOUNTABILITY_GROUP_MIN_MEMBERS } from "@/lib/copy/accountability-groups";
+import type {
+  AccountabilityGroup,
+  GroupActivity,
+  GroupDailyCheckInStatus,
+  GroupFeedItem,
+  GroupFocusType,
+  GroupJoinRequest,
+  GroupWeeklyRecap,
+} from "@/types";
 
 export type PendingGroupJoin = {
   requestId: string;
@@ -183,38 +193,197 @@ async function loadGroupHub(
   }
 
   const today = todayDateKey();
-  const memberIds = (members ?? []).map((m) => m.user_id);
+  const weekStart = currentWeekStartKey();
 
-  let checkedInToday = new Set<string>();
-  if (memberIds.length) {
-    const { data: checkins } = await supabase
-      .from("daily_check_ins")
-      .select("user_id")
-      .in("user_id", memberIds)
-      .eq("check_in_date", today);
-    checkedInToday = new Set((checkins ?? []).map((c) => c.user_id));
+  let checkInBoard: AccountabilityGroup["checkInBoard"] = [];
+  let viewerCheckInStatus: GroupDailyCheckInStatus | null = null;
+
+  const boardRpc = await supabase.rpc("get_group_check_in_board", {
+    p_group_id: groupId,
+    p_date: today,
+  });
+  if (!boardRpc.error && boardRpc.data) {
+    const rows = Array.isArray(boardRpc.data) ? boardRpc.data : [boardRpc.data];
+    checkInBoard = rows
+      .filter((r): r is Record<string, unknown> => Boolean(r && typeof r === "object"))
+      .map((r) => {
+        const statusRaw = String(r.status ?? "");
+        const status = ["completed", "partial", "missed", "rest"].includes(statusRaw)
+          ? (statusRaw as GroupDailyCheckInStatus)
+          : null;
+        if (r.user_id === userId) viewerCheckInStatus = status;
+        return {
+          userId: String(r.user_id),
+          displayName: String(r.display_name ?? "Member"),
+          avatarUrl: typeof r.avatar_url === "string" ? r.avatar_url : null,
+          status,
+          note: String(r.note ?? ""),
+          checkedIn: Boolean(r.checked_in),
+        };
+      });
   }
 
-  const { data: messages } = await supabase
+  const checkedInToday = new Set(
+    checkInBoard.filter((m) => m.checkedIn).map((m) => m.userId),
+  );
+
+  const weekStartKey = weekStart;
+  let weeklyCommitments: AccountabilityGroup["weeklyCommitments"] = [];
+  const commitmentsRes = await supabase
+    .from("group_weekly_commitments")
+    .select(
+      `
+      id, user_id, title, target_count, progress_count,
+      profile:profiles!group_weekly_commitments_user_id_fkey ( display_name )
+    `,
+    )
+    .eq("group_id", groupId)
+    .eq("week_start", weekStartKey)
+    .order("sort_order", { ascending: true });
+
+  if (!commitmentsRes.error) {
+    weeklyCommitments = (commitmentsRes.data ?? []).map((c) => {
+      const profile = unwrapOne(c.profile);
+      return {
+        id: c.id,
+        userId: c.user_id,
+        displayName: profile?.display_name ?? "Member",
+        title: c.title,
+        targetCount: c.target_count,
+        progressCount: c.progress_count,
+        isOwn: c.user_id === userId,
+      };
+    });
+  }
+
+  let viewerPausedUntil: string | null = null;
+  const participationRes = await supabase
+    .from("group_member_participation")
+    .select("paused_until")
+    .eq("group_id", groupId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!participationRes.error && participationRes.data?.paused_until) {
+    viewerPausedUntil = participationRes.data.paused_until as string;
+  }
+
+  const messagesWithImage = await supabase
     .from("group_messages")
     .select(
       `
-      id, body, created_at, author_id,
+      id, body, created_at, author_id, image_path,
       author:profiles!group_messages_author_id_fkey ( display_name )
     `,
     )
     .eq("group_id", groupId)
     .order("created_at", { ascending: false })
-    .limit(20);
+    .limit(30);
 
-  const feed: GroupActivity[] = (messages ?? []).map((m) => ({
+  const messagesRes =
+    messagesWithImage.error && /image_path|schema cache/i.test(messagesWithImage.error.message)
+      ? await supabase
+          .from("group_messages")
+          .select(
+            `
+            id, body, created_at, author_id,
+            author:profiles!group_messages_author_id_fkey ( display_name )
+          `,
+          )
+          .eq("group_id", groupId)
+          .order("created_at", { ascending: false })
+          .limit(30)
+      : messagesWithImage;
+
+  const messages = messagesRes.data ?? [];
+  const messageIds = messages.map((m) => m.id);
+  const reactionCounts = new Map<string, number>();
+  if (messageIds.length) {
+    const { data: reactions, error: reactionsError } = await supabase
+      .from("group_message_reactions")
+      .select("message_id")
+      .in("message_id", messageIds);
+    if (!reactionsError) {
+      for (const r of reactions ?? []) {
+        reactionCounts.set(r.message_id, (reactionCounts.get(r.message_id) ?? 0) + 1);
+      }
+    }
+  }
+
+  type FeedRow = GroupFeedItem & { sortAt: string };
+  const feedRows: FeedRow[] = messages.map((m) => ({
     id: m.id,
+    kind: "message" as const,
     authorId: m.author_id,
     author: unwrapOne(m.author)?.display_name ?? "Member",
     message: m.body,
     timeAgo: formatTimeAgo(m.created_at),
-    reactions: 0,
+    reactions: reactionCounts.get(m.id) ?? 0,
+    messageId: m.id,
+    sortAt: m.created_at,
   }));
+
+  const { data: shares } = await supabase
+    .from("group_achievement_shares")
+    .select(
+      `
+      id, message, created_at, user_id,
+      profile:profiles!group_achievement_shares_user_id_fkey ( display_name )
+    `,
+    )
+    .eq("group_id", groupId)
+    .order("created_at", { ascending: false })
+    .limit(15);
+
+  for (const s of shares ?? []) {
+    feedRows.push({
+      id: `share-${s.id}`,
+      kind: "achievement",
+      authorId: s.user_id,
+      author: unwrapOne(s.profile)?.display_name ?? "Member",
+      message: s.message,
+      timeAgo: formatTimeAgo(s.created_at),
+      reactions: 0,
+      sortAt: s.created_at,
+    });
+  }
+
+  const encouragementsRes = await supabase
+    .from("group_encouragements")
+    .select(
+      `
+      id, message, created_at, from_user_id,
+      from:profiles!group_encouragements_from_user_id_fkey ( display_name )
+    `,
+    )
+    .eq("group_id", groupId)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (!encouragementsRes.error) {
+    for (const e of encouragementsRes.data ?? []) {
+      feedRows.push({
+        id: `enc-${e.id}`,
+        kind: "encouragement",
+        authorId: e.from_user_id,
+        author: unwrapOne(e.from)?.display_name ?? "Member",
+        message: e.message,
+        timeAgo: formatTimeAgo(e.created_at),
+        reactions: 0,
+        sortAt: e.created_at,
+      });
+    }
+  }
+
+  feedRows.sort((a, b) => new Date(b.sortAt).getTime() - new Date(a.sortAt).getTime());
+  const feed: GroupActivity[] = feedRows.slice(0, 25).map(({ sortAt: _s, ...item }) => item);
+
+  const memberCount = members?.length ?? 0;
+  const weeklyRecap = buildWeeklyRecap({
+    weekStart: previousWeekStartKey(weekStart),
+    commitments: weeklyCommitments,
+    checkInBoard,
+    encouragementsCount: encouragementsRes.data?.length ?? 0,
+  });
 
   const ownerId = String(groupRow.created_by ?? "");
   const isOwner = ownerId === userId;
@@ -250,12 +419,29 @@ async function loadGroupHub(
     }
   }
 
+  const focusRaw = String(groupRow.focus_type ?? "general");
+  const focusType = (
+    ["walking", "gym", "nutrition", "weight_loss", "routines", "general"].includes(focusRaw)
+      ? focusRaw
+      : "general"
+  ) as GroupFocusType;
+
   const group: AccountabilityGroup = {
     id: String(groupRow.id),
     name: String(groupRow.name),
     goal: typeof groupRow.goal === "string" ? groupRow.goal : "",
-    memberCount: members?.length ?? 0,
+    description: typeof groupRow.description === "string" ? groupRow.description : "",
+    focusType,
+    sharedGoal:
+      typeof groupRow.shared_goal === "string" && groupRow.shared_goal
+        ? groupRow.shared_goal
+        : typeof groupRow.goal === "string"
+          ? groupRow.goal
+          : "",
+    memberCount,
     maxMembers: Number(groupRow.max_members ?? 6),
+    minMembers: ACCOUNTABILITY_GROUP_MIN_MEMBERS,
+    isActive: memberCount >= ACCOUNTABILITY_GROUP_MIN_MEMBERS,
     checkInStreak: 0,
     recentMessage: feed[0]?.message ?? "Say hi to your group!",
     inviteCode: String(groupRow.invite_code),
@@ -265,6 +451,12 @@ async function loadGroupHub(
     ownerId,
     isOwner,
     pendingRequests,
+    weekStart,
+    weeklyCommitments,
+    checkInBoard,
+    viewerCheckInStatus,
+    viewerPausedUntil,
+    weeklyRecap,
     members: (members ?? []).map((m) => {
       const profile = unwrapOne(m.profile);
       return {
@@ -274,12 +466,59 @@ async function loadGroupHub(
           profile && "avatar_url" in profile && typeof profile.avatar_url === "string"
             ? profile.avatar_url
             : null,
-        checkedInToday: checkedInToday.has(m.user_id),
+        checkedInToday:
+          checkInBoard.length > 0
+            ? checkInBoard.some((b) => b.userId === m.user_id && b.checkedIn)
+            : checkedInToday.has(m.user_id),
       };
     }),
   };
 
   return { group, feed };
+}
+
+function buildWeeklyRecap(input: {
+  weekStart: string;
+  commitments: AccountabilityGroup["weeklyCommitments"];
+  checkInBoard: AccountabilityGroup["checkInBoard"];
+  encouragementsCount: number;
+}): GroupWeeklyRecap | null {
+  if (!input.commitments.length && !input.checkInBoard.length) return null;
+
+  const totals = input.commitments.reduce(
+    (acc, c) => {
+      acc.target += c.targetCount;
+      acc.done += Math.min(c.progressCount, c.targetCount);
+      return acc;
+    },
+    { target: 0, done: 0 },
+  );
+
+  const pct =
+    totals.target > 0 ? Math.round((totals.done / totals.target) * 100) : 0;
+  const checkInsCount = input.checkInBoard.filter((m) => m.checkedIn).length;
+
+  const highlights: string[] = [];
+  if (pct >= 70) highlights.push("Strong commitment follow-through this week.");
+  if (checkInsCount > 0) {
+    highlights.push(`${checkInsCount} member check-in${checkInsCount === 1 ? "" : "s"} logged today.`);
+  }
+  if (input.encouragementsCount > 0) {
+    highlights.push("Members sent supportive encouragement.");
+  }
+  if (!highlights.length) {
+    highlights.push("Every small step counts — keep showing up for each other.");
+  }
+
+  return {
+    weekStart: input.weekStart,
+    commitmentCompletionPct: pct,
+    checkInsCount,
+    encouragementsCount: input.encouragementsCount,
+    highlights,
+    reflectionPrompt:
+      "What was your biggest challenge this week, and what will you do differently next week?",
+  };
 }
 
 export async function fetchGroupByInviteCode(code: string) {

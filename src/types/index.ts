@@ -69,12 +69,66 @@ export type GroupJoinRequest = {
   createdAt: string;
 };
 
+export type GroupFocusType =
+  | "walking"
+  | "gym"
+  | "nutrition"
+  | "weight_loss"
+  | "routines"
+  | "general";
+
+export type GroupDailyCheckInStatus = "completed" | "partial" | "missed" | "rest";
+
+export type GroupWeeklyCommitment = {
+  id: string;
+  userId: string;
+  displayName: string;
+  title: string;
+  targetCount: number;
+  progressCount: number;
+  isOwn: boolean;
+};
+
+export type GroupCheckInBoardMember = {
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  status: GroupDailyCheckInStatus | null;
+  note: string;
+  checkedIn: boolean;
+};
+
+export type GroupFeedItem = {
+  id: string;
+  kind: "message" | "achievement" | "check_in" | "commitment" | "encouragement";
+  author: string;
+  authorId: string;
+  message: string;
+  timeAgo: string;
+  reactions: number;
+  messageId?: string;
+};
+
+export type GroupWeeklyRecap = {
+  weekStart: string;
+  commitmentCompletionPct: number;
+  checkInsCount: number;
+  encouragementsCount: number;
+  highlights: string[];
+  reflectionPrompt: string;
+};
+
 export type AccountabilityGroup = {
   id: string;
   name: string;
   goal: string;
+  description: string;
+  focusType: GroupFocusType;
+  sharedGoal: string;
   memberCount: number;
   maxMembers: number;
+  minMembers: number;
+  isActive: boolean;
   members: GroupMember[];
   recentMessage: string;
   checkInStreak: number;
@@ -84,16 +138,15 @@ export type AccountabilityGroup = {
   ownerId: string;
   isOwner: boolean;
   pendingRequests: GroupJoinRequest[];
+  weekStart: string;
+  weeklyCommitments: GroupWeeklyCommitment[];
+  checkInBoard: GroupCheckInBoardMember[];
+  viewerCheckInStatus: GroupDailyCheckInStatus | null;
+  viewerPausedUntil: string | null;
+  weeklyRecap: GroupWeeklyRecap | null;
 };
 
-export type GroupActivity = {
-  id: string;
-  author: string;
-  authorId: string;
-  message: string;
-  timeAgo: string;
-  reactions: number;
-};
+export type GroupActivity = GroupFeedItem;
 
 export type ConsistencySnapshot = {
   label: string;
