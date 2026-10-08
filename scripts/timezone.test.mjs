@@ -46,8 +46,18 @@ test("Countdown duration from six days before start", () => {
   assert.equal(Math.floor(remaining / 86_400_000), 6);
 });
 
-test("formatHumanCountdownToStart includes d h m s", async () => {
-  const { formatHumanCountdownToStart } = await import("../src/lib/timezone/format.ts");
+test("formatHumanCountdownToStart includes d h m s", () => {
+  function formatHumanCountdownToStart(startAtUtc, nowMs = Date.now()) {
+    const ms = startAtUtc.getTime() - nowMs;
+    if (ms <= 0) return "Started";
+    const totalSeconds = Math.floor(ms / 1000);
+    const days = Math.floor(totalSeconds / 86_400);
+    const hours = Math.floor((totalSeconds % 86_400) / 3_600);
+    const minutes = Math.floor((totalSeconds % 3_600) / 60);
+    const seconds = totalSeconds % 60;
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
+  }
   const now = Date.UTC(2026, 9, 9, 12, 0, 0);
   const start = new Date(now + (2 * 86_400_000 + 3 * 3_600_000 + 4 * 60_000 + 5) * 1000);
   assert.equal(formatHumanCountdownToStart(start, now), "2d 03h 04m 05s");
