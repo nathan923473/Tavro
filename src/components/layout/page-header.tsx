@@ -31,7 +31,7 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 border-b border-border/50 bg-background/90 px-4 py-3 backdrop-blur-md",
+        "sticky top-0 z-40 border-b border-border/60 bg-surface/95 px-4 py-3.5 backdrop-blur-md",
         className,
       )}
     >
@@ -40,7 +40,7 @@ export function PageHeader({
       ) : null}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             {title}
           </h1>
           {subtitle ? (

@@ -148,7 +148,7 @@ export function DiscoverInteractive({
       <section
         id="discover"
         aria-labelledby="discover-search-heading"
-        className="scroll-mt-4 rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-background to-secondary/20 p-4 shadow-sm ring-1 ring-primary/10"
+        className="scroll-mt-4 rounded-2xl border border-primary/20 bg-surface p-4 shadow-card ring-1 ring-primary/10"
       >
         <div className="flex items-start gap-3">
           <div className="rounded-xl bg-primary/15 p-2.5 text-primary">

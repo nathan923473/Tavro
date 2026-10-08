@@ -22,7 +22,7 @@ export async function bioContainsVerificationCode(
       signal: controller.signal,
       headers: {
         "User-Agent":
-          "StreaklyCreatorVerify/1.0 (+https://streakly.app; ownership-check)",
+          "TavroCreatorVerify/1.0 (+https://streakly.app; ownership-check)",
         Accept: "text/html,application/xhtml+xml",
       },
       redirect: "follow",

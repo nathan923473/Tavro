@@ -1,15 +1,15 @@
 import type { MetadataRoute } from "next";
+import { APP_NAME, APP_TAGLINE, BRAND_COLORS } from "@/lib/branding";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Streakly — Weight Loss Accountability",
-    short_name: "Streakly",
-    description:
-      "Build sustainable habits with personal goals, accountability groups, and creator challenges.",
+    name: `${APP_NAME} — Fitness challenges & accountability`,
+    short_name: APP_NAME,
+    description: APP_TAGLINE,
     start_url: "/",
     display: "standalone",
-    background_color: "#f7f5f1",
-    theme_color: "#3d8b6e",
+    background_color: BRAND_COLORS.white,
+    theme_color: BRAND_COLORS.royalBlue,
     orientation: "portrait-primary",
     categories: ["health", "fitness", "lifestyle"],
     icons: [

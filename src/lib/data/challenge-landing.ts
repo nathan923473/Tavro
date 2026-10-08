@@ -129,7 +129,7 @@ export async function fetchChallengeLandingByInviteSlug(
     communitySlug: community?.slug ?? null,
     communityName: community?.community_name ?? null,
     creatorBio: community?.bio ?? null,
-    brandColor: community?.brand_color ?? "#3d8b6e",
+    brandColor: community?.brand_color ?? "#3156E8",
     avatarUrl: resolveCreatorAvatarUrl(community?.avatar_url ?? null, creator?.avatar_url ?? null),
     bannerUrl: community?.banner_url ?? null,
     shortDescription: row.short_description ?? null,

@@ -13,7 +13,7 @@ export default function OfflinePage() {
       </div>
       <h1 className="text-xl font-semibold">You&apos;re offline</h1>
       <p className="text-sm text-muted-foreground">
-        Streakly saved this page so you can still open the app. Reconnect to
+        Tavro saved this page so you can still open the app. Reconnect to
         sync check-ins and group messages.
       </p>
       <Link

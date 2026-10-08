@@ -6,7 +6,7 @@ export type AvatarPreset = {
 };
 
 export const AVATAR_PRESETS: AvatarPreset[] = [
-  { id: "1", label: "Forest", gradient: "linear-gradient(135deg,#3d8b6e,#2f6f58)", emoji: "🌿" },
+  { id: "1", label: "Royal", gradient: "linear-gradient(135deg,#3156E8,#2442c4)", emoji: "⚡" },
   { id: "2", label: "Ocean", gradient: "linear-gradient(135deg,#3b82f6,#1d4ed8)", emoji: "🌊" },
   { id: "3", label: "Sunset", gradient: "linear-gradient(135deg,#f97316,#db2777)", emoji: "🌅" },
   { id: "4", label: "Lavender", gradient: "linear-gradient(135deg,#a78bfa,#7c3aed)", emoji: "✨" },

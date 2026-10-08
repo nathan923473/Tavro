@@ -13,6 +13,8 @@ import {
 } from "@/lib/timezone/detect";
 import { friendlyTimezoneTitle } from "@/lib/timezone/format";
 import { ProfileAvatarEditor } from "@/components/profile/profile-avatar-editor";
+import { BrandWordmark } from "@/components/brand/brand-wordmark";
+import { APP_NAME } from "@/lib/branding";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
@@ -121,8 +123,9 @@ export function OnboardingFlow({
 
       {step === 0 ? (
         <div className="animate-fade-up flex flex-1 flex-col">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Welcome to Streakly
+          <BrandWordmark size="md" className="mb-3" />
+          <h1 className="text-2xl font-bold tracking-tight">
+            Welcome to {APP_NAME}
           </h1>
           <p className="mt-2 text-muted-foreground">
             Pick one focus — saved to your account.

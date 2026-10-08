@@ -74,11 +74,11 @@ export default async function HomePage() {
         <HomeGroupPreview group={groupData.group} feed={groupData.feed} />
         <WeeklyConsistencyHome summary={consistency} weekDays={weekDays} />
         {milestones[0] ? (
-          <Card>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <Card className="border-accent/40 bg-mint-subtle">
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">
               Recent milestone
             </p>
-            <p className="mt-1 font-semibold">{milestones[0].label}</p>
+            <p className="mt-1 text-lg font-bold text-foreground">{milestones[0].label}</p>
           </Card>
         ) : null}
       </div>

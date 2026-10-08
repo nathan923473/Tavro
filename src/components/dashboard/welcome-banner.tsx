@@ -14,9 +14,9 @@ export function WelcomeBanner({ firstName, groupName }: WelcomeBannerProps) {
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   return (
-    <Card className="relative overflow-hidden border-none bg-gradient-to-br from-primary to-primary-dark text-primary-foreground">
-      <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10" />
-      <div className="absolute -bottom-8 right-8 h-20 w-20 rounded-full bg-white/5" />
+    <Card className="relative overflow-hidden border-none bg-primary text-primary-foreground shadow-md shadow-primary/25">
+      <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-accent/30" />
+      <div className="absolute bottom-0 right-0 h-16 w-32 rounded-tl-full bg-white/10" />
       <div className="relative space-y-2">
         <div className="flex items-center gap-2 text-sm text-white/90">
           <Sparkles className="h-4 w-4" aria-hidden />

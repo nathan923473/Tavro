@@ -1,18 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f5f1;
-  --foreground: #1c2420;
+  --background: #f6f7fb;
+  --foreground: #1b2440;
   --surface: #ffffff;
-  --muted: #ece8e1;
-  --muted-foreground: #5c6760;
-  --border: #ddd6cb;
-  --primary: #3d8b6e;
-  --primary-dark: #2f6f58;
-  --primary-foreground: #f8fffb;
-  --secondary: #e8f3ed;
-  --secondary-foreground: #245a47;
-  --accent: #e07a5f;
+  --muted: #eef0f6;
+  --muted-foreground: #5a6478;
+  --border: #dfe3ef;
+  --primary: #3156e8;
+  --primary-dark: #2442c4;
+  --primary-foreground: #ffffff;
+  --secondary: #e8fbf3;
+  --secondary-foreground: #1b2440;
+  --accent: #b8f4da;
+  --accent-foreground: #1b2440;
+  --success: #b8f4da;
+  --success-foreground: #1b2440;
+  --warning: #fef3c7;
+  --warning-foreground: #78350f;
+  --ring: #3156e8;
+  --shadow-color: 27 36 64;
 }
 
 @theme inline {
@@ -28,7 +35,17 @@
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-accent: var(--accent);
-  --font-sans: var(--font-geist-sans);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-inter);
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --shadow-card: 0 1px 2px rgb(var(--shadow-color) / 0.04),
+    0 4px 12px rgb(var(--shadow-color) / 0.05);
 }
 
 @layer base {
@@ -45,8 +62,36 @@
     @apply min-h-full bg-background font-sans text-foreground antialiased;
   }
 
+  h1,
+  h2,
+  h3 {
+    @apply text-foreground tracking-tight;
+  }
+
   ::selection {
-    @apply bg-primary/20;
+    @apply bg-primary/15 text-foreground;
+  }
+}
+
+@layer utilities {
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .surface-elevated {
+    @apply rounded-2xl border border-border/70 bg-surface shadow-card;
+  }
+
+  .text-brand {
+    color: var(--primary);
+  }
+
+  .bg-brand-subtle {
+    background-color: rgb(49 86 232 / 0.08);
+  }
+
+  .bg-mint-subtle {
+    background-color: rgb(184 244 218 / 0.45);
   }
 }
 

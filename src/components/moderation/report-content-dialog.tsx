@@ -62,7 +62,7 @@ export function ReportContentDialog({
           {label}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Reports go to Streakly admins for review. We do not automatically remove content.
+          Reports go to Tavro admins for review. We do not automatically remove content.
         </p>
 
         <fieldset className="mt-4 space-y-2">

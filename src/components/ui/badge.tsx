@@ -8,9 +8,9 @@ type BadgeProps = {
 };
 
 const toneStyles = {
-  default: "bg-primary/10 text-primary",
-  success: "bg-emerald-100 text-emerald-800",
-  warning: "bg-amber-100 text-amber-900",
+  default: "bg-brand-subtle text-primary",
+  success: "bg-mint-subtle text-success-foreground",
+  warning: "bg-warning text-warning-foreground",
   muted: "bg-muted text-muted-foreground",
 };
 

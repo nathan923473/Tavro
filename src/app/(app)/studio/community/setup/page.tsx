@@ -20,7 +20,7 @@ export default async function StudioCommunitySetupPage() {
         ownerId={user.id}
         communityName=""
         bio=""
-        brandColor="#3d8b6e"
+        brandColor="#3156E8"
         shopUrl=""
         affiliateDisclosure=""
         avatarUrl={null}

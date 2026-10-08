@@ -258,7 +258,7 @@ function ChallengeLandingBody({
             <ShareChallengeButton
               path={canonicalPath}
               title={challenge.title}
-              text={`Join ${challenge.title} — free on Streakly`}
+              text={`Join ${challenge.title} — free on Tavro`}
               fullWidth
             />
           </div>

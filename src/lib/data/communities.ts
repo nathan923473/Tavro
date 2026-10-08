@@ -112,7 +112,7 @@ export async function fetchCommunityBySlug(
 
   const challengeIds = (challenges ?? []).map((c) => c.id);
   const galleryMap = await fetchChallengeGalleryMap(challengeIds);
-  const brand = row.brand_color ?? "#3d8b6e";
+  const brand = row.brand_color ?? "#3156E8";
 
   const mappedChallenges: CreatorCommunityChallenge[] = (challenges ?? []).map(
     (c) => ({
@@ -124,7 +124,7 @@ export async function fetchCommunityBySlug(
       participants: c.participants?.[0]?.count ?? 0,
       inviteSlug: c.invite_slug,
       timeline: challengeTimeline(c.start_date, c.end_date),
-      coverGradient: `linear-gradient(145deg, ${brand}, #2f6f58)`,
+      coverGradient: `linear-gradient(145deg, ${brand}, #2442c4)`,
       coverUrl: c.cover_url ?? galleryMap[c.id]?.[0] ?? null,
     }),
   );
@@ -166,11 +166,11 @@ export async function fetchCommunityBySlug(
     bio: row.bio ?? "",
     memberCount: row.member_count_cache ?? 0,
     challengesHosted: mappedChallenges.length,
-    brandColor: row.brand_color ?? "#3d8b6e",
+    brandColor: row.brand_color ?? "#3156E8",
     avatarInitials: initials,
     avatarUrl: resolvedAvatarUrl,
     bannerUrl: row.banner_url ?? null,
-    bannerGradient: `linear-gradient(135deg, ${row.brand_color ?? "#3d8b6e"} 0%, #2f6f58 100%)`,
+    bannerGradient: `linear-gradient(135deg, ${row.brand_color ?? "#3156E8"} 0%, #2442c4 100%)`,
     isApproved: true,
     ownerUserId: row.owner_id,
     socialLinks,
@@ -242,7 +242,7 @@ export async function fetchCommunitiesList(): Promise<
       id: row.id,
       slug: row.slug,
       communityName: row.community_name,
-      brandColor: row.brand_color ?? "#3d8b6e",
+      brandColor: row.brand_color ?? "#3156E8",
       avatarInitials: initials,
       memberCount: row.member_count_cache ?? 0,
       challengesHosted: challengesHostedByCommunity[row.id] ?? 0,

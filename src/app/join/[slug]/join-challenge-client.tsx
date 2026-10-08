@@ -21,7 +21,7 @@ export function JoinChallengeClient({
       <Card className="border-dashed">
         <p className="text-sm text-muted-foreground">
           You were invited to a <strong className="text-foreground">free</strong>{" "}
-          challenge. Joining saves to your Streakly account.
+          challenge. Joining saves to your Tavro account.
         </p>
       </Card>
       <ChallengeCard

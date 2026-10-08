@@ -185,7 +185,7 @@ export function ChallengeParticipantHub({
         </p>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full rounded-full bg-primary transition-all"
+            className="h-full rounded-full bg-primary transition-all duration-300"
             style={{ width: `${progressBarPct}%` }}
           />
         </div>

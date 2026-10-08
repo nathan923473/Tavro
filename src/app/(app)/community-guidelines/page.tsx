@@ -9,7 +9,7 @@ export default function CommunityGuidelinesPage() {
     <div className="animate-fade-up">
       <PageHeader
         title="Community guidelines"
-        subtitle="Keep Streakly safe and supportive for everyone"
+        subtitle="Keep Tavro safe and supportive for everyone"
       />
       <div className="space-y-4 px-4 py-4">
         <Card>
@@ -38,7 +38,7 @@ export default function CommunityGuidelinesPage() {
             Use <strong className="text-foreground">Report</strong> on profile photos, creator pages,
             challenge images, and group or challenge messages. Each person can submit one report per
             item. Our team reviews reports manually — we do not use automated takedowns in this version
-            of Streakly.
+            of Tavro.
           </p>
         </Card>
 

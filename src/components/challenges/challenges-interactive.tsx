@@ -3,6 +3,7 @@
 import { ChallengeCard } from "@/components/challenges/challenge-card";
 import type { ChallengeChatMessage } from "@/lib/challenge-chat";
 import type { Challenge } from "@/types";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Heart } from "lucide-react";
 
 type ChallengesInteractiveProps = {
@@ -31,9 +32,11 @@ export function ChallengesInteractive({
           My challenges
         </h2>
         {mine.length === 0 ? (
-          <p className="px-1 text-sm text-muted-foreground">
-            Search above to join a free challenge — it will show up here.
-          </p>
+          <EmptyState
+            icon={Heart}
+            title="No challenges yet"
+            description="Search above to join a free challenge — it will show up here."
+          />
         ) : (
           <ul className="space-y-3">
             {mine.map((challenge) => (

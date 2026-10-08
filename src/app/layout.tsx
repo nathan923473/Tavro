@@ -1,30 +1,26 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import { NavigationStackRecorder } from "@/components/layout/navigation-stack-recorder";
+import { APP_NAME, APP_TAGLINE, BRAND_COLORS } from "@/lib/branding";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "Streakly",
-    template: "%s · Streakly",
+    default: APP_NAME,
+    template: `%s · ${APP_NAME}`,
   },
-  description:
-    "Sustainable weight-loss accountability through personal goals, small groups, and creator challenges.",
-  applicationName: "Streakly",
+  description: APP_TAGLINE,
+  applicationName: APP_NAME,
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Streakly",
+    title: APP_NAME,
   },
   formatDetection: {
     telephone: false,
@@ -40,7 +36,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#3d8b6e",
+  themeColor: BRAND_COLORS.royalBlue,
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -55,7 +51,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full`}
+      className={`${inter.variable} h-full`}
     >
       <body className="min-h-full">
         <NavigationStackRecorder />

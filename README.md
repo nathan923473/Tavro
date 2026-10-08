@@ -1,6 +1,6 @@
-# Streakly
+# Tavro
 
-Mobile-first Progressive Web App for sustainable weight-loss accountability: personal goals, optional small groups, and creator challenges.
+Mobile-first Progressive Web App for fitness challenges and accountability: personal goals, optional private accountability groups, and creator-led challenges.
 
 **Current phase:** Supabase-backed member + creator features (no localStorage demo mode). Run migration **006** for goals, groups, messaging, and weigh-ins.
 
@@ -85,7 +85,7 @@ So “Copy invite link” buttons use your local URL while testing.
 
 1. Open the app in **Safari** (installation from Chrome on iOS is limited).
 2. Tap **Share** → **Add to Home Screen**.
-3. Launch **Streakly** from your home screen for standalone mode.
+3. Launch **Tavro** from your home screen for standalone mode.
 
 ### Android (Chrome)
 

@@ -20,7 +20,7 @@ export type ChallengePreviewScheduleDay = {
 };
 
 const COVER_GRADIENT: Record<ChallengeCategory, string> = {
-  walking: "linear-gradient(145deg, #3d8b6e, #2f6f58)",
+  walking: "linear-gradient(145deg, #3156E8, #2442c4)",
   strength: "linear-gradient(145deg, #6366f1, #4338ca)",
   running: "linear-gradient(145deg, #0ea5e9, #0369a1)",
   general_fitness: "linear-gradient(145deg, #14b8a6, #0f766e)",

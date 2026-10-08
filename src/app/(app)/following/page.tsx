@@ -21,7 +21,7 @@ export default async function FollowingPage() {
           slug: c.slug,
           communityName: c.community_name,
           bio: c.bio ?? "",
-          brandColor: c.brand_color ?? "#3d8b6e",
+          brandColor: c.brand_color ?? "#3156E8",
           avatarInitials: (unwrapOne(c.owner)?.display_name ?? "CR")
             .split(/\s+/)
             .map((w: string) => w[0])

@@ -1,7 +1,9 @@
 "use client";
 
+import { BrandWordmark } from "@/components/brand/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { APP_NAME } from "@/lib/branding";
 import { loginMember, signUpMember } from "@/app/(auth)/actions";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -119,13 +121,14 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
 
   return (
     <Card className="mx-auto max-w-md">
-      <h1 className="text-xl font-semibold">
+      <BrandWordmark size="sm" className="mb-4" />
+      <h1 className="text-xl font-bold">
         {mode === "signup" ? "Create your account" : "Welcome back"}
       </h1>
       <p className="mt-1 text-sm text-muted-foreground">
         {mode === "signup"
           ? "Everyone starts as a member — creators apply separately."
-          : "Log in to Streakly"}
+          : `Log in to ${APP_NAME}`}
       </p>
       <form onSubmit={handleSubmit} className="mt-4 space-y-3">
         {mode === "signup" ? (
@@ -133,7 +136,7 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
             <input
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full rounded-xl border border-border px-3 py-2.5 text-sm"
+              className="w-full rounded-2xl border border-border bg-surface px-3 py-3 text-sm outline-none ring-primary focus:ring-2"
               autoComplete="name"
             />
           </Field>
@@ -144,7 +147,7 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl border border-border px-3 py-2.5 text-sm"
+            className="w-full rounded-2xl border border-border bg-surface px-3 py-3 text-sm outline-none ring-primary focus:ring-2"
             autoComplete="email"
           />
         </Field>
@@ -155,7 +158,7 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
             minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-xl border border-border px-3 py-2.5 text-sm"
+            className="w-full rounded-2xl border border-border bg-surface px-3 py-3 text-sm outline-none ring-primary focus:ring-2"
             autoComplete={
               mode === "signup" ? "new-password" : "current-password"
             }

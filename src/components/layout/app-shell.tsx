@@ -8,7 +8,7 @@ type AppShellProps = {
 
 export function AppShell({ children, notificationSlot }: AppShellProps) {
   return (
-    <div className="mx-auto min-h-dvh w-full max-w-lg bg-background">
+    <div className="mx-auto min-h-dvh w-full max-w-lg bg-background md:max-w-2xl lg:max-w-3xl">
       {notificationSlot ? (
         <div className="pointer-events-none fixed right-0 top-0 z-50 flex justify-end p-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
           <div className="pointer-events-auto">{notificationSlot}</div>

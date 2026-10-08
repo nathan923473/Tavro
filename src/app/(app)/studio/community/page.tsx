@@ -13,7 +13,7 @@ export default async function StudioCommunityPage() {
 
   if (!owner) {
     return (
-      <StudioLayout title="Community" subtitle="Your permanent audience on Streakly">
+      <StudioLayout title="Community" subtitle="Your permanent audience on Tavro">
         <Card>
           <p className="text-sm text-muted-foreground">
             Followers stay with you after each challenge ends — set up your page once.

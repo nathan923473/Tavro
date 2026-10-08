@@ -712,7 +712,7 @@ export async function saveCommunityAction(formData: FormData) {
 
   const communityName = String(formData.get("community_name") ?? "").trim();
   const bio = String(formData.get("bio") ?? "").trim();
-  const brandColor = String(formData.get("brand_color") ?? "#3d8b6e");
+  const brandColor = String(formData.get("brand_color") ?? "#3156E8");
   const shopUrl = String(formData.get("shop_url") ?? "").trim();
   const affiliateDisclosure = String(
     formData.get("affiliate_disclosure") ?? "",
