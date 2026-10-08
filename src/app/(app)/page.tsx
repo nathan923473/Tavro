@@ -58,7 +58,6 @@ export default async function HomePage() {
           firstName={firstName}
           groupName={groupData.group?.name}
         />
-        <JoinFreeChallengeCta />
         <TodaysHabits goals={goals} loggedIn={Boolean(userId)} />
         <DailyCheckInCard
           checkedIn={checkIn.checkedIn}

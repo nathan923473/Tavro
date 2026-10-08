@@ -30,6 +30,7 @@ export function WelcomeBanner({ firstName, groupName }: WelcomeBannerProps) {
         ) : (
           <Badge className="bg-white/15 text-white">Solo journey · You&apos;ve got this</Badge>
         )}
+        <JoinFreeChallengeCta variant="onPrimary" />
       </div>
     </Card>
   );
