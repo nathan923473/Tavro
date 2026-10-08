@@ -4,7 +4,7 @@ import {
   fetchChallengeGalleryMap,
 } from "@/lib/data/challenge-media";
 import { resolveCreatorAvatarUrl } from "@/lib/creator-avatar";
-import { unwrapOne } from "@/lib/data/relations";
+import { CHALLENGE_PARTICIPANTS_EMBED, unwrapOne } from "@/lib/data/relations";
 import type { Challenge } from "@/types";
 
 type ChallengeRow = {
@@ -79,14 +79,14 @@ export async function fetchChallengesForUser(userId: string | null): Promise<{
       cover_url, created_by, visibility,
       creator:profiles!challenges_created_by_fkey ( display_name, avatar_url ),
       community:creator_communities ( avatar_url ),
-      participants:challenge_participants ( count )
+      participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count )
     `;
   const selectLegacy = `
       id, title, description, start_date, end_date, invite_slug,
       cover_url, created_by, visibility,
       creator:profiles!challenges_created_by_fkey ( display_name, avatar_url ),
       community:creator_communities ( avatar_url ),
-      participants:challenge_participants ( count )
+      participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count )
     `;
 
   let rows: ChallengeRow[] | null = null;
@@ -180,7 +180,7 @@ export async function fetchJoinedChallengesForHome(
       invite_slug, cover_url, created_by, visibility,
       creator:profiles!challenges_created_by_fkey ( display_name, avatar_url ),
       community:creator_communities ( avatar_url ),
-      participants:challenge_participants ( count )
+      participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count )
     `;
 
   const { data: rows, error } = await supabase
@@ -218,7 +218,7 @@ export async function fetchChallengeByInviteSlug(
       invite_slug, focus_areas,
       cover_url, created_by, visibility,
       creator:profiles!challenges_created_by_fkey ( display_name ),
-      participants:challenge_participants ( count )
+      participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count )
     `,
     )
     .eq("invite_slug", slug)

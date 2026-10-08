@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchChallengeGalleryMap } from "@/lib/data/challenge-media";
-import { unwrapOne } from "@/lib/data/relations";
+import { CHALLENGE_PARTICIPANTS_EMBED, unwrapOne } from "@/lib/data/relations";
 import { resolveCreatorAvatarUrl } from "@/lib/creator-avatar";
 import type { CreatorCommunity, CreatorCommunityChallenge } from "@/types/creator-community";
 
@@ -85,7 +85,7 @@ export async function fetchCommunityBySlug(
     .select(
       `
       id, title, description, start_date, end_date, invite_slug, cover_url, publish_status,
-      participants:challenge_participants ( count )
+      participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count )
     `,
     )
     .eq("community_id", row.id)
@@ -101,7 +101,7 @@ export async function fetchCommunityBySlug(
       .select(
         `
         id, title, description, start_date, end_date, invite_slug, cover_url,
-        participants:challenge_participants ( count )
+        participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count )
       `,
       )
       .eq("community_id", row.id)

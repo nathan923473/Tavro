@@ -1,6 +1,6 @@
 import { fetchChallengeGalleryDetailsMap } from "@/lib/data/challenge-media";
 import { resolveCreatorAvatarUrl } from "@/lib/creator-avatar";
-import { unwrapOne } from "@/lib/data/relations";
+import { CHALLENGE_PARTICIPANTS_EMBED, unwrapOne } from "@/lib/data/relations";
 import { publicChallengePath } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
 import type { Challenge } from "@/types";
@@ -48,7 +48,7 @@ export async function fetchChallengeLandingByInviteSlug(
       invite_slug, focus_areas, cover_url, created_by,
       visibility, publish_status, community_id,
       creator:profiles!challenges_created_by_fkey ( display_name, creator_status, avatar_url ),
-      participants:challenge_participants ( count ),
+      participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count ),
       community:creator_communities (
         slug, community_name, bio, brand_color, avatar_url, banner_url, owner_id
       )

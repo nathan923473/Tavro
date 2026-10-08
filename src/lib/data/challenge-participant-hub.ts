@@ -2,7 +2,7 @@ import { challengeTotalDays } from "@/lib/challenge-day";
 import { parseScheduleItemActivities, type ParsedDailyActivity } from "@/lib/challenge-activities";
 import { fetchChallengeSchedule } from "@/lib/data/creator-studio";
 import { fetchChallengeGalleryDetailsMap } from "@/lib/data/challenge-media";
-import { unwrapOne } from "@/lib/data/relations";
+import { CHALLENGE_PARTICIPANTS_EMBED, unwrapOne } from "@/lib/data/relations";
 import { createClient } from "@/lib/supabase/server";
 import {
   challengeDateKeyForDay,
@@ -165,14 +165,14 @@ export async function fetchChallengeParticipantHub(
       invite_slug, cover_url, created_by, community_id,
       creator:profiles!challenges_created_by_fkey ( display_name ),
       community:creator_communities ( slug, community_name, avatar_url, owner_id ),
-      participants:challenge_participants ( count )
+      participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count )
     `;
   const legacySelect = `
       id, title, description, short_description, goal_description, category,
       start_date, end_date, invite_slug, cover_url, created_by, community_id,
       creator:profiles!challenges_created_by_fkey ( display_name ),
       community:creator_communities ( slug, community_name, avatar_url, owner_id ),
-      participants:challenge_participants ( count )
+      participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count )
     `;
   const first = await supabase.from("challenges").select(fullSelect).eq("id", challengeId).maybeSingle();
   if (first.error && /start_at|challenge_timezone|schema cache/i.test(first.error.message)) {

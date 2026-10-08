@@ -1,5 +1,6 @@
 import { buildCreatorChallengeWindow } from "@/lib/challenge-lifecycle/creator-windows";
 import { CREATOR_CHALLENGE_LIMITS } from "@/lib/challenge-lifecycle/config";
+import { CHALLENGE_PARTICIPANTS_EMBED } from "@/lib/data/relations";
 import { createClient } from "@/lib/supabase/server";
 import type {
   ChallengePublishStatus,
@@ -126,12 +127,12 @@ export async function fetchCreatorStudioChallenges(
   const fullSelect = `
     id, title, short_description, invite_slug, cover_url, start_date, end_date,
     start_at, end_at, challenge_timezone, publish_status, category,
-    participants:challenge_participants ( count )
+    participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count )
   `;
   const legacySelect = `
     id, title, invite_slug, cover_url, start_date, end_date,
     start_at, end_at, challenge_timezone,
-    participants:challenge_participants ( count )
+    participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count )
   `;
 
   let { data: rows, error } = await supabase
@@ -234,7 +235,7 @@ export async function fetchCreatorStudioOverview(
 
   const { data: recentJoins } = await supabase
     .from("challenges")
-    .select("id, title, challenge_participants ( joined_at )")
+    .select(`id, title, ${CHALLENGE_PARTICIPANTS_EMBED} ( joined_at )`)
     .eq("community_id", community.id)
     .eq("visibility", "public")
     .order("created_at", { ascending: false })

@@ -1,5 +1,5 @@
 import { fetchChallengeGalleryMap } from "@/lib/data/challenge-media";
-import { unwrapOne } from "@/lib/data/relations";
+import { CHALLENGE_PARTICIPANTS_EMBED, unwrapOne } from "@/lib/data/relations";
 import { createClient } from "@/lib/supabase/server";
 import { resolveCreatorAvatarUrl } from "@/lib/creator-avatar";
 import { challengeTimeline } from "@/lib/data/communities";
@@ -100,7 +100,7 @@ export async function searchDiscover(query: string): Promise<{
       start_at, end_at, challenge_timezone, cover_url, created_by,
       community:creator_communities ( slug, community_name, avatar_url ),
       creator:profiles!challenges_created_by_fkey ( display_name, creator_status, avatar_url ),
-      participants:challenge_participants ( count )
+      participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count )
     `,
     )
     .eq("visibility", "public")
@@ -158,7 +158,7 @@ export async function fetchDiscoverSections(): Promise<{
       start_at, end_at, challenge_timezone, cover_url, created_by,
       community:creator_communities ( slug, community_name, avatar_url ),
       creator:profiles!challenges_created_by_fkey ( display_name, creator_status, avatar_url ),
-      participants:challenge_participants ( count )
+      participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count )
     `,
     )
     .eq("visibility", "public")
