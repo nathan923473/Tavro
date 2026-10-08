@@ -19,6 +19,10 @@ async function requireUserId() {
   return { supabase, userId: user.id };
 }
 
+function isMissingParticipantsColumnError(message: string, column: string) {
+  return new RegExp(`'${column}'|schema cache`, "i").test(message);
+}
+
 async function upsertChallengeParticipantJoin(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
@@ -29,29 +33,52 @@ async function upsertChallengeParticipantJoin(
     "@/lib/analytics/challenge-join"
   );
   const analytics = await buildChallengeJoinAnalyticsFields(userId, challengeId, "challenge_landing");
-  const payload = {
+  const minimal = {
     challenge_id: challengeId,
     user_id: userId,
+  };
+  const withProgress = {
+    ...minimal,
     progress_percent: 5,
+  };
+  const withAnalytics = {
+    ...withProgress,
     join_source: analytics.join_source,
     referrer_user_id: analytics.referrer_user_id,
     is_new_platform_user_at_join: analytics.is_new_platform_user_at_join,
     joined_challenge_id: analytics.joined_challenge_id,
   };
+
+  let payload: Record<string, unknown> = withAnalytics;
   let { error } = await supabase.from("challenge_participants").upsert(payload, {
     onConflict: "challenge_id,user_id",
   });
-  if (error && /join_source|referrer_user_id|is_new_platform|joined_challenge/i.test(error.message)) {
-    ({ error } = await supabase.from("challenge_participants").upsert(
-      {
-        challenge_id: challengeId,
-        user_id: userId,
-        progress_percent: 5,
-      },
-      { onConflict: "challenge_id,user_id" },
-    ));
+
+  if (
+    error &&
+    /join_source|referrer_user_id|is_new_platform|joined_challenge/i.test(error.message)
+  ) {
+    payload = withProgress;
+    ({ error } = await supabase.from("challenge_participants").upsert(payload, {
+      onConflict: "challenge_id,user_id",
+    }));
   }
-  if (error) throw new Error(error.message);
+
+  if (error && isMissingParticipantsColumnError(error.message, "progress_percent")) {
+    payload = minimal;
+    ({ error } = await supabase.from("challenge_participants").upsert(payload, {
+      onConflict: "challenge_id,user_id",
+    }));
+  }
+
+  if (error) {
+    if (isMissingParticipantsColumnError(error.message, "progress_percent")) {
+      throw new Error(
+        "Join needs database migration 025_challenge_participants_progress.sql (or 006_member_activity_and_messaging.sql) in Supabase SQL Editor.",
+      );
+    }
+    throw new Error(error.message);
+  }
   await recordChallengeJoinedEvent({
     userId,
     challengeId,

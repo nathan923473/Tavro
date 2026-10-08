@@ -85,12 +85,30 @@ export async function fetchChallengeLandingByInviteSlug(
   let joined = false;
   let onboardingCompleted = false;
   if (userId) {
-    const { data: membership } = await supabase
+    let membership: {
+      progress_percent?: number | null;
+      onboarding_completed_at?: string | null;
+    } | null = null;
+    const membershipFull = await supabase
       .from("challenge_participants")
       .select("progress_percent, onboarding_completed_at")
       .eq("challenge_id", row.id)
       .eq("user_id", userId)
       .maybeSingle();
+    if (
+      membershipFull.error &&
+      /progress_percent|onboarding_completed_at|schema cache/i.test(membershipFull.error.message)
+    ) {
+      const legacy = await supabase
+        .from("challenge_participants")
+        .select("challenge_id")
+        .eq("challenge_id", row.id)
+        .eq("user_id", userId)
+        .maybeSingle();
+      membership = legacy.data;
+    } else if (!membershipFull.error) {
+      membership = membershipFull.data;
+    }
     joined = Boolean(membership) || isOwner;
     onboardingCompleted =
       isOwner || Boolean(membership?.onboarding_completed_at);
