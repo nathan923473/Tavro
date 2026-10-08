@@ -105,7 +105,7 @@ export async function fetchChallengeLandingByInviteSlug(
         .eq("challenge_id", row.id)
         .eq("user_id", userId)
         .maybeSingle();
-      membership = legacy.data;
+      membership = legacy.data ? { onboarding_completed_at: null } : null;
     } else if (!membershipFull.error) {
       membership = membershipFull.data;
     }
