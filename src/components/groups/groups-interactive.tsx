@@ -371,8 +371,13 @@ export function GroupsInteractive({
                     disabled={pending}
                     onClick={() =>
                       startTransition(async () => {
-                        await removeGroupMemberAction(group.id, member.id);
-                        router.refresh();
+                        try {
+                          await removeGroupMemberAction(group.id, member.id);
+                          setStatus(null);
+                          router.refresh();
+                        } catch (e) {
+                          setStatus(e instanceof Error ? e.message : "Could not remove member.");
+                        }
                       })
                     }
                   >
@@ -501,7 +506,8 @@ export function GroupsInteractive({
         onClick={() =>
           startTransition(async () => {
             try {
-              await leaveGroupAction();
+              await leaveGroupAction(group.id);
+              setStatus(null);
               router.refresh();
             } catch (e) {
               setStatus(e instanceof Error ? e.message : "Failed");
@@ -513,7 +519,14 @@ export function GroupsInteractive({
       </Button>
 
       {status ? (
-        <p className="text-sm text-muted-foreground" role="status">
+        <p
+          className={
+            /transfer|failed|only the owner|could not|log in/i.test(status)
+              ? "text-sm text-red-600"
+              : "text-sm text-muted-foreground"
+          }
+          role="status"
+        >
           {status}
         </p>
       ) : null}

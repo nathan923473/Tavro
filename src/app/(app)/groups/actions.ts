@@ -18,6 +18,13 @@ export type CreateGroupInput = {
   maxMembers?: number;
 };
 
+function parseOkRpc(data: unknown, messages: Record<string, string>): void {
+  const row = data as { ok?: boolean; error?: string } | null;
+  if (row?.ok) return;
+  const key = row?.error ?? "unknown";
+  throw new Error(messages[key] ?? "Something went wrong — try again.");
+}
+
 function parseJoinRpcResult(data: unknown):
   | { ok: true; status: string; groupId?: string }
   | { ok: false; error: string } {
@@ -277,23 +284,44 @@ export async function setGroupInvitesEnabledAction(groupId: string, enabled: boo
 
 export async function removeGroupMemberAction(groupId: string, memberUserId: string) {
   const { supabase, userId } = await requireUserId();
-  const { data: group } = await supabase
-    .from("accountability_groups")
-    .select("created_by")
-    .eq("id", groupId)
-    .maybeSingle();
-  if (!group || group.created_by !== userId) {
-    throw new Error("Only the owner can remove members.");
-  }
   if (memberUserId === userId) {
     throw new Error("Transfer ownership before leaving, or delete the group.");
   }
-  const { error } = await supabase
-    .from("group_members")
-    .delete()
-    .eq("group_id", groupId)
-    .eq("user_id", memberUserId);
-  if (error) throw new Error(error.message);
+
+  const { data, error } = await supabase.rpc("remove_group_member_by_owner", {
+    p_group_id: groupId,
+    p_member_user_id: memberUserId,
+  });
+
+  if (error) {
+    if (/remove_group_member_by_owner|schema cache/i.test(error.message)) {
+      const { data: group } = await supabase
+        .from("accountability_groups")
+        .select("created_by")
+        .eq("id", groupId)
+        .maybeSingle();
+      if (!group || group.created_by !== userId) {
+        throw new Error("Only the group owner can remove members.");
+      }
+      const { error: deleteError } = await supabase
+        .from("group_members")
+        .delete()
+        .eq("group_id", groupId)
+        .eq("user_id", memberUserId);
+      if (deleteError) throw new Error(deleteError.message);
+      revalidatePath("/groups");
+      return { ok: true as const };
+    }
+    throw new Error(error.message);
+  }
+
+  parseOkRpc(data, {
+    forbidden: "Only the group owner can remove members.",
+    cannot_remove_self: "Transfer ownership before leaving, or delete the group.",
+    not_found: "That member is no longer in the group.",
+    unauthenticated: "Log in to manage members.",
+  });
+
   revalidatePath("/groups");
   return { ok: true as const };
 }
@@ -350,40 +378,64 @@ export async function deleteAccountabilityGroupAction(groupId: string, confirmNa
   return { ok: true as const };
 }
 
-export async function leaveGroupAction() {
+export async function leaveGroupAction(groupIdFromHub?: string) {
   const { supabase, userId } = await requireUserId();
 
-  const groupId = await resolveUserGroupId(supabase, userId);
+  const groupId =
+    groupIdFromHub?.trim() || (await resolveUserGroupId(supabase, userId));
   if (!groupId) return { ok: true as const };
 
-  const { data: group } = await supabase
-    .from("accountability_groups")
-    .select("created_by")
-    .eq("id", groupId)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("leave_accountability_group", {
+    p_group_id: groupId,
+  });
 
-  if (group?.created_by === userId) {
-    const { count } = await supabase
-      .from("group_members")
-      .select("*", { count: "exact", head: true })
-      .eq("group_id", groupId);
-    if ((count ?? 0) > 1) {
-      throw new Error(
-        "Transfer ownership to another member before leaving, or delete the group.",
-      );
+  if (error) {
+    if (/leave_accountability_group|schema cache/i.test(error.message)) {
+      const { data: group } = await supabase
+        .from("accountability_groups")
+        .select("created_by")
+        .eq("id", groupId)
+        .maybeSingle();
+
+      if (group?.created_by === userId) {
+        const { count } = await supabase
+          .from("group_members")
+          .select("*", { count: "exact", head: true })
+          .eq("group_id", groupId);
+        if ((count ?? 0) > 1) {
+          throw new Error(
+            "Transfer ownership to another member before leaving, or delete the group.",
+          );
+        }
+        const { error: deleteGroupError } = await supabase
+          .from("accountability_groups")
+          .delete()
+          .eq("id", groupId)
+          .eq("created_by", userId);
+        if (deleteGroupError) throw new Error(deleteGroupError.message);
+      } else {
+        const { error: leaveError } = await supabase
+          .from("group_members")
+          .delete()
+          .eq("group_id", groupId)
+          .eq("user_id", userId);
+        if (leaveError) throw new Error(leaveError.message);
+      }
+      revalidatePath("/groups");
+      return { ok: true as const };
     }
-    await supabase
-      .from("accountability_groups")
-      .delete()
-      .eq("id", groupId)
-      .eq("created_by", userId);
-  } else {
-    await supabase
-      .from("group_members")
-      .delete()
-      .eq("group_id", groupId)
-      .eq("user_id", userId);
+    throw new Error(error.message);
   }
+
+  parseOkRpc(data, {
+    owner_must_transfer:
+      "Transfer ownership to another member before leaving, or delete the group.",
+    not_member: "You are not in this group anymore.",
+    leave_failed: "Could not leave the group — try again.",
+    delete_failed: "Could not delete the group — try again.",
+    missing_group: "No group selected.",
+    unauthenticated: "Log in to leave the group.",
+  });
 
   revalidatePath("/groups");
   return { ok: true as const };
