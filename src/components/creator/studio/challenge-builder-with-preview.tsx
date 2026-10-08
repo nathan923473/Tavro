@@ -19,35 +19,44 @@ type ChallengeBuilderWithPreviewProps = {
   schedule: Array<{ dayLabel: string; title: string; body: string; isRest: boolean }>;
   creatorDisplayName: string;
   creatorAvatarUrl?: string | null;
-  /** Hide side preview on step 0 if desired */
   showPreview?: boolean;
 };
 
+/** Form on top, phone-width participant preview below — same on mobile and desktop. */
 export function ChallengeBuilderWithPreview({
   children,
   showPreview = true,
   ...preview
 }: ChallengeBuilderWithPreviewProps) {
   if (!showPreview) {
-    return <div className="space-y-4">{children}</div>;
+    return <div className="mx-auto w-full max-w-2xl space-y-4">{children}</div>;
   }
 
   return (
-    <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-start lg:gap-6">
+    <div className="mx-auto w-full max-w-2xl space-y-8 pb-4">
       <div className="min-w-0 space-y-4">{children}</div>
-      <aside className="lg:sticky lg:top-4">
-        <div className="hidden lg:block">
-          <ChallengeCreatorLivePreview {...preview} />
+
+      <section
+        aria-labelledby="challenge-live-preview-heading"
+        className="border-t border-border pt-8"
+      >
+        <div className="mb-4 text-center">
+          <h2
+            id="challenge-live-preview-heading"
+            className="text-sm font-semibold text-foreground"
+          >
+            Participant preview
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Updates live as you edit · {preview.templateLabel}
+          </p>
         </div>
-        <details className="rounded-xl border border-border bg-surface/80 lg:hidden">
-          <summary className="cursor-pointer px-3 py-2.5 text-sm font-semibold">
-            Show participant preview
-          </summary>
-          <div className="border-t border-border p-3">
-            <ChallengeCreatorLivePreview {...preview} compact />
+        <div className="mx-auto w-full max-w-[400px]">
+          <div className="rounded-[1.75rem] bg-muted/50 p-2 ring-1 ring-border/80 shadow-sm">
+            <ChallengeCreatorLivePreview {...preview} framed />
           </div>
-        </details>
-      </aside>
+        </div>
+      </section>
     </div>
   );
 }

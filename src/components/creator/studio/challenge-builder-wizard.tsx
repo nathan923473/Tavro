@@ -28,6 +28,7 @@ import {
   formatChallengeDateRange,
 } from "@/lib/timezone/format";
 import { ChallengeBuilderWithPreview } from "@/components/creator/studio/challenge-builder-with-preview";
+import { cn } from "@/lib/cn";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition, type Dispatch, type SetStateAction } from "react";
@@ -272,23 +273,39 @@ export function ChallengeBuilderWizard({
 
   return (
     <ChallengeBuilderWithPreview {...previewProps} showPreview={step >= 0 && step <= 4}>
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        Step {step + 1} of 5
-      </p>
+      <div className="flex items-center justify-between gap-2 rounded-xl bg-muted/50 px-3 py-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Step {step + 1} of 5
+        </p>
+        <p className="truncate text-xs text-muted-foreground">{template.label}</p>
+      </div>
 
       {step === 0 ? (
-        <Card className="space-y-3">
-          <h2 className="font-semibold">What type of challenge?</h2>
-          <div className="grid gap-2">
-            {CHALLENGE_TEMPLATES.map((t) => (
-              <Link
-                key={t.key}
-                href={`/studio/challenges/new?template=${t.key}`}
-                className="rounded-xl border border-border px-3 py-3 text-sm font-medium"
-              >
-                {t.label}
-              </Link>
-            ))}
+        <Card className="space-y-4">
+          <div>
+            <h2 className="font-semibold">What type of challenge?</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Pick a template — you can change everything in the next steps.
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {CHALLENGE_TEMPLATES.map((t) => {
+              const selected = t.key === initialTemplate;
+              return (
+                <Link
+                  key={t.key}
+                  href={`/studio/challenges/new?template=${t.key}`}
+                  className={cn(
+                    "rounded-xl border px-3 py-3 text-sm font-medium transition-colors",
+                    selected
+                      ? "border-primary bg-primary/10 text-foreground ring-1 ring-primary/30"
+                      : "border-border hover:bg-muted/40",
+                  )}
+                >
+                  {t.label}
+                </Link>
+              );
+            })}
           </div>
           <Button type="button" fullWidth onClick={() => setStep(1)}>
             Continue with {template.label}

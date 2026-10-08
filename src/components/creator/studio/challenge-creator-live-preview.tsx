@@ -9,7 +9,7 @@ import type { ChallengeCategory } from "@/types/creator-studio";
 import { challengeStartInstantUtc, parseTimeLocal } from "@/lib/timezone/instant";
 import { formatShortDateTime, formatTimeOnly } from "@/lib/timezone/format";
 import { normalizeTimezone } from "@/lib/timezone/validate";
-import { CalendarRange, Gift, Smartphone, Users } from "lucide-react";
+import { CalendarRange, Gift, Users } from "lucide-react";
 import { useMemo } from "react";
 
 export type ChallengePreviewScheduleDay = {
@@ -45,7 +45,8 @@ type ChallengeCreatorLivePreviewProps = {
   creatorDisplayName: string;
   creatorAvatarUrl?: string | null;
   coverUrl?: string | null;
-  compact?: boolean;
+  /** Inner card only (used inside phone frame wrapper). */
+  framed?: boolean;
 };
 
 function habitsFromDay(day: ChallengePreviewScheduleDay): string[] {
@@ -74,7 +75,7 @@ export function ChallengeCreatorLivePreview({
   creatorDisplayName,
   creatorAvatarUrl,
   coverUrl,
-  compact = false,
+  framed = false,
 }: ChallengeCreatorLivePreviewProps) {
   const displayTitle = title.trim() || "Your challenge name";
   const tz = normalizeTimezone(challengeTimezone);
@@ -96,18 +97,12 @@ export function ChallengeCreatorLivePreview({
   const schedulePreview = schedule.filter((d) => d.title.trim() || d.body.trim() || d.isRest);
 
   return (
-    <div className={compact ? "space-y-2" : "space-y-3"}>
-      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-        <Smartphone className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-        <span>Participant preview · {templateLabel}</span>
-      </div>
-
-      <Card
-        className={`overflow-hidden p-0 shadow-md ring-1 ring-border/60 ${compact ? "text-[13px]" : ""}`}
-        aria-label="Live challenge page preview"
-      >
+    <Card
+      className={`overflow-hidden border-0 p-0 shadow-none ${framed ? "rounded-2xl bg-surface" : "shadow-md ring-1 ring-border/60"}`}
+      aria-label="Live challenge page preview"
+    >
         <div
-          className={`relative w-full bg-muted ${compact ? "aspect-[2.2/1]" : "aspect-[2/1]"}`}
+          className="relative aspect-[2/1] w-full bg-muted"
           style={coverUrl ? undefined : { background: COVER_GRADIENT[category] }}
         >
           {coverUrl ? (
@@ -122,7 +117,7 @@ export function ChallengeCreatorLivePreview({
           )}
         </div>
 
-        <div className={`space-y-3 ${compact ? "p-3" : "p-4"}`}>
+        <div className="space-y-3 p-4">
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 items-start gap-2">
               <UserAvatar
@@ -133,7 +128,7 @@ export function ChallengeCreatorLivePreview({
               />
               <div className="min-w-0">
                 <p className="truncate text-xs text-muted-foreground">{creatorDisplayName}</p>
-                <h3 className={`font-semibold leading-snug ${compact ? "text-sm" : "text-base"}`}>
+                <h3 className="text-base font-semibold leading-snug">
                   {displayTitle}
                 </h3>
               </div>
@@ -190,12 +185,11 @@ export function ChallengeCreatorLivePreview({
               challengeTimezone={tz}
               variant="prominent"
               label="Starting in"
-              className="scale-[0.98] origin-top"
             />
           ) : null}
 
           <div
-            className={`flex min-h-10 items-center justify-center rounded-xl bg-primary/90 text-sm font-semibold text-primary-foreground ${compact ? "min-h-9 text-xs" : ""}`}
+            className="flex min-h-11 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
             aria-hidden
           >
             Join free
@@ -206,8 +200,8 @@ export function ChallengeCreatorLivePreview({
               <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Plan preview
               </h4>
-              <ul className={`mt-2 space-y-1.5 ${compact ? "max-h-36" : "max-h-52"} overflow-y-auto`}>
-                {schedulePreview.slice(0, compact ? 4 : 8).map((day, i) => {
+              <ul className="mt-2 max-h-48 space-y-1.5 overflow-y-auto">
+                {schedulePreview.slice(0, 6).map((day, i) => {
                   const habits = habitsFromDay(day);
                   return (
                     <li
@@ -226,15 +220,14 @@ export function ChallengeCreatorLivePreview({
                   );
                 })}
               </ul>
-              {schedulePreview.length > (compact ? 4 : 8) ? (
+              {schedulePreview.length > 6 ? (
                 <p className="mt-1 text-[10px] text-muted-foreground">
-                  +{schedulePreview.length - (compact ? 4 : 8)} more days in full plan
+                  +{schedulePreview.length - 6} more days in full plan
                 </p>
               ) : null}
             </section>
           ) : null}
         </div>
       </Card>
-    </div>
   );
 }
