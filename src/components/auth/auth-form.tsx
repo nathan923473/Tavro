@@ -3,6 +3,7 @@
 import { BrandWordmark } from "@/components/brand/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { PasswordInput } from "@/components/ui/password-input";
 import { APP_NAME } from "@/lib/branding";
 import { loginMember, signUpMember } from "@/app/(auth)/actions";
 import { createClient } from "@/lib/supabase/client";
@@ -152,13 +153,11 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
           />
         </Field>
         <Field label="Password">
-          <input
-            type="password"
+          <PasswordInput
             required
             minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-2xl border border-border bg-surface px-3 py-3 text-sm outline-none ring-primary focus:ring-2"
             autoComplete={
               mode === "signup" ? "new-password" : "current-password"
             }

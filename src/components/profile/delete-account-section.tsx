@@ -8,6 +8,7 @@ import {
 import { APP_NAME } from "@/lib/branding";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { PasswordInput } from "@/components/ui/password-input";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 
@@ -143,12 +144,11 @@ export function DeleteAccountSection() {
                 Required for email/password accounts. Leave blank if you only sign in with a
                 provider.
               </span>
-              <input
-                type="password"
+              <PasswordInput
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
-                className="mt-1 w-full rounded-2xl border border-border px-3 py-3 text-sm outline-none ring-primary focus:ring-2"
+                className="mt-1"
               />
             </label>
 
