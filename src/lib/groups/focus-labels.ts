@@ -7,8 +7,16 @@ export const GROUP_FOCUS_OPTIONS: { value: GroupFocusType; label: string }[] = [
   { value: "weight_loss", label: "Weight-loss accountability" },
   { value: "routines", label: "Building healthy routines" },
   { value: "general", label: "General fitness & habits" },
+  { value: "custom", label: "Custom focus…" },
 ];
 
-export function groupFocusLabel(focus: GroupFocusType): string {
+export function groupFocusLabel(
+  focus: GroupFocusType,
+  focusCustomLabel?: string | null,
+): string {
+  if (focus === "custom") {
+    const custom = focusCustomLabel?.trim();
+    return custom || "Custom focus";
+  }
   return GROUP_FOCUS_OPTIONS.find((o) => o.value === focus)?.label ?? "General fitness & habits";
 }

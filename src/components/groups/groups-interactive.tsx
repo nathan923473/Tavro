@@ -45,6 +45,7 @@ export function GroupsInteractive({
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDescription, setNewGroupDescription] = useState("");
   const [newGroupFocus, setNewGroupFocus] = useState<GroupFocusType>("general");
+  const [newGroupFocusCustom, setNewGroupFocusCustom] = useState("");
   const [newGroupSharedGoal, setNewGroupSharedGoal] = useState("");
   const [joinMode, setJoinMode] = useState<GroupJoinMode>("approval");
 
@@ -128,6 +129,17 @@ export function GroupsInteractive({
               ))}
             </select>
           </label>
+          {newGroupFocus === "custom" ? (
+            <label className="mt-3 block text-sm">
+              <span className="font-medium">Your custom focus</span>
+              <input
+                value={newGroupFocusCustom}
+                onChange={(e) => setNewGroupFocusCustom(e.target.value)}
+                placeholder="e.g. Postpartum strength, Couch to 5K, Desk-break stretches"
+                className="mt-1 w-full rounded-xl border border-border px-3 py-2.5 text-sm"
+              />
+            </label>
+          ) : null}
           <label className="mt-3 block text-sm">
             <span className="font-medium">Group description</span>
             <textarea
@@ -164,7 +176,12 @@ export function GroupsInteractive({
           <Button
             className="mt-3"
             fullWidth
-            disabled={pending || Boolean(pendingJoin) || existingGroupBlocked}
+            disabled={
+              pending ||
+              Boolean(pendingJoin) ||
+              existingGroupBlocked ||
+              (newGroupFocus === "custom" && newGroupFocusCustom.trim().length < 2)
+            }
             onClick={() =>
               startTransition(async () => {
                 try {
@@ -172,6 +189,8 @@ export function GroupsInteractive({
                     name: newGroupName.trim() || "My group",
                     description: newGroupDescription.trim(),
                     focusType: newGroupFocus,
+                    focusCustomLabel:
+                      newGroupFocus === "custom" ? newGroupFocusCustom.trim() : undefined,
                     sharedGoal: newGroupSharedGoal.trim(),
                     joinMode,
                   });

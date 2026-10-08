@@ -75,7 +75,8 @@ export type GroupFocusType =
   | "nutrition"
   | "weight_loss"
   | "routines"
-  | "general";
+  | "general"
+  | "custom";
 
 export type GroupDailyCheckInStatus = "completed" | "partial" | "missed" | "rest";
 
@@ -124,6 +125,7 @@ export type AccountabilityGroup = {
   goal: string;
   description: string;
   focusType: GroupFocusType;
+  focusCustomLabel: string;
   sharedGoal: string;
   memberCount: number;
   maxMembers: number;

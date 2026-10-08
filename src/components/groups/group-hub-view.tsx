@@ -147,7 +147,7 @@ export function GroupHubView({
                   </p>
                   <h2 className="mt-1 text-xl font-bold leading-snug">{group.name}</h2>
                   <p className="mt-1 text-xs font-medium text-primary/90">
-                    {groupFocusLabel(group.focusType)}
+                    {groupFocusLabel(group.focusType, group.focusCustomLabel)}
                   </p>
                   {group.description ? (
                     <p className="mt-2 text-sm text-muted-foreground">{group.description}</p>

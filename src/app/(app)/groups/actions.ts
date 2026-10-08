@@ -17,6 +17,7 @@ export type CreateGroupInput = {
   name: string;
   description?: string;
   focusType?: GroupFocusType;
+  focusCustomLabel?: string;
   goal?: string;
   sharedGoal?: string;
   joinMode?: GroupJoinMode;
@@ -73,8 +74,12 @@ export async function createAccountabilityGroupAction(input: CreateGroupInput) {
   const name = input.name.trim();
   const description = (input.description ?? "").trim();
   const focusType = input.focusType ?? "general";
+  const focusCustomLabel = (input.focusCustomLabel ?? "").trim();
   const sharedGoal = (input.sharedGoal ?? input.goal ?? "").trim();
   if (!name) throw new Error("Group name is required.");
+  if (focusType === "custom" && focusCustomLabel.length < 2) {
+    throw new Error("Describe your custom group focus.");
+  }
 
   await assertNotInOtherGroup(supabase, userId);
 
@@ -93,6 +98,7 @@ export async function createAccountabilityGroupAction(input: CreateGroupInput) {
       name,
       description,
       focus_type: focusType,
+      focus_custom_label: focusType === "custom" ? focusCustomLabel : "",
       goal: sharedGoal,
       shared_goal: sharedGoal,
       invite_code: inviteCode,
@@ -107,7 +113,7 @@ export async function createAccountabilityGroupAction(input: CreateGroupInput) {
       inviteCode = generateGroupInviteCode();
       continue;
     }
-    if (/goal|join_mode|invites_enabled|schema cache/i.test(groupError.message)) {
+    if (/goal|join_mode|invites_enabled|focus_custom|schema cache/i.test(groupError.message)) {
       const { error: legacyError } = await supabase.from("accountability_groups").insert({
         id: groupId,
         name,

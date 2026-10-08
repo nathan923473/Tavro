@@ -421,10 +421,14 @@ async function loadGroupHub(
 
   const focusRaw = String(groupRow.focus_type ?? "general");
   const focusType = (
-    ["walking", "gym", "nutrition", "weight_loss", "routines", "general"].includes(focusRaw)
+    ["walking", "gym", "nutrition", "weight_loss", "routines", "general", "custom"].includes(
+      focusRaw,
+    )
       ? focusRaw
       : "general"
   ) as GroupFocusType;
+  const focusCustomLabel =
+    typeof groupRow.focus_custom_label === "string" ? groupRow.focus_custom_label : "";
 
   const group: AccountabilityGroup = {
     id: String(groupRow.id),
@@ -432,6 +436,7 @@ async function loadGroupHub(
     goal: typeof groupRow.goal === "string" ? groupRow.goal : "",
     description: typeof groupRow.description === "string" ? groupRow.description : "",
     focusType,
+    focusCustomLabel,
     sharedGoal:
       typeof groupRow.shared_goal === "string" && groupRow.shared_goal
         ? groupRow.shared_goal
