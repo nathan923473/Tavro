@@ -1,13 +1,10 @@
 "use client";
 
 import {
-  approveGroupJoinRequestAction,
   createAccountabilityGroupAction,
-  declineGroupJoinRequestAction,
   deleteAccountabilityGroupAction,
   leaveGroupAction,
   postGroupMessageAction,
-  regenerateGroupInviteAction,
   removeGroupMemberAction,
   requestJoinGroupByInviteCodeAction,
   transferGroupOwnershipAction,
@@ -252,59 +249,13 @@ export function GroupsInteractive({
       <GroupInvitePanel
         inviteCode={group.inviteCode}
         invitesEnabled={group.invitesEnabled}
-        canManageInvites={group.isOwner}
+        isOwner={group.isOwner}
         groupId={group.id}
+        memberCount={group.memberCount}
+        maxMembers={group.maxMembers}
+        joinMode={group.joinMode}
+        pendingRequests={group.pendingRequests}
       />
-
-      {group.isOwner && group.pendingRequests.length > 0 ? (
-        <Card>
-          <h3 className="font-semibold">Pending join requests</h3>
-          <ul className="mt-3 space-y-2">
-            {group.pendingRequests.map((req) => (
-              <li
-                key={req.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-2"
-              >
-                <div className="flex items-center gap-2">
-                  <UserAvatar
-                    displayName={req.displayName}
-                    avatarUrl={req.avatarUrl}
-                    size="sm"
-                  />
-                  <span className="text-sm font-medium">{req.displayName}</span>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    className="min-h-9 px-3 text-xs"
-                    disabled={pending}
-                    onClick={() =>
-                      startTransition(async () => {
-                        await approveGroupJoinRequestAction(req.id);
-                        router.refresh();
-                      })
-                    }
-                  >
-                    Approve
-                  </Button>
-                  <Button
-                    className="min-h-9 px-3 text-xs"
-                    variant="outline"
-                    disabled={pending}
-                    onClick={() =>
-                      startTransition(async () => {
-                        await declineGroupJoinRequestAction(req.id);
-                        router.refresh();
-                      })
-                    }
-                  >
-                    Decline
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      ) : null}
 
       <Card>
         <h3 className="font-semibold capitalize">{ACCOUNTABILITY_GROUP_SINGULAR} chat</h3>
@@ -440,25 +391,6 @@ export function GroupsInteractive({
                   onChange={(e) => setEditGoal(e.target.value)}
                 />
               </label>
-              <label className="block text-sm">
-                Who can join?
-                <select
-                  className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
-                  value={group.joinMode}
-                  onChange={(e) =>
-                    startTransition(async () => {
-                      await updateGroupSettingsAction({
-                        groupId: group.id,
-                        joinMode: e.target.value as GroupJoinMode,
-                      });
-                      router.refresh();
-                    })
-                  }
-                >
-                  <option value="approval">Owner approval required</option>
-                  <option value="auto">Valid invite joins automatically</option>
-                </select>
-              </label>
               <Button
                 type="button"
                 variant="secondary"
@@ -476,20 +408,6 @@ export function GroupsInteractive({
                 }
               >
                 Save name & goal
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                fullWidth
-                disabled={pending}
-                onClick={() =>
-                  startTransition(async () => {
-                    await regenerateGroupInviteAction(group.id);
-                    router.refresh();
-                  })
-                }
-              >
-                Regenerate invite code & link
               </Button>
               {group.members.length > 1 ? (
                 <label className="block text-sm">

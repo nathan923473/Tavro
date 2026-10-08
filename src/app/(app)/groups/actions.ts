@@ -30,6 +30,9 @@ function parseJoinRpcResult(data: unknown):
     if (err === "invites_disabled") return { ok: false, error: "Invites are disabled for this group." };
     if (err === "full") return { ok: false, error: "This group is full." };
     if (err === "not_authenticated") return { ok: false, error: "Log in to join." };
+    if (err === "rate_limited") {
+      return { ok: false, error: "Too many attempts — wait a few minutes and try again." };
+    }
     return { ok: false, error: "Could not join group." };
   }
   return {
