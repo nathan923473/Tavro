@@ -12,7 +12,10 @@ import {
   type GroupJoinMode,
 } from "@/app/(app)/groups/actions";
 import { GroupInvitePanel } from "@/components/groups/group-invite-panel";
+import { GroupPendingJoinCard } from "@/components/groups/group-pending-join-card";
+import { GroupPendingRequestsAlert } from "@/components/groups/group-pending-requests-alert";
 import { GroupsMotivationBanner } from "@/components/groups/groups-motivation-banner";
+import type { PendingGroupJoin } from "@/lib/data/groups";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -40,7 +43,7 @@ export function GroupsInteractive({
   feed: GroupActivity[];
   loggedIn: boolean;
   viewerUserId?: string | null;
-  pendingJoin?: { groupId: string; groupName: string } | null;
+  pendingJoin?: PendingGroupJoin | null;
 }) {
   const router = useRouter();
   const createFormRef = useRef<HTMLDivElement>(null);
@@ -70,20 +73,6 @@ export function GroupsInteractive({
     );
   }
 
-  if (pendingJoin && !group) {
-    return (
-      <div className="space-y-4">
-        <Card className="text-center">
-          <h2 className="text-lg font-semibold">Request sent</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Waiting for the owner to approve your request to join{" "}
-            <strong className="text-foreground">{pendingJoin.groupName}</strong>.
-          </p>
-        </Card>
-      </div>
-    );
-  }
-
   if (!group) {
     return (
       <div className="space-y-4">
@@ -93,11 +82,15 @@ export function GroupsInteractive({
           }
         />
 
+        {pendingJoin ? <GroupPendingJoinCard pendingJoin={pendingJoin} /> : null}
+
         <div ref={createFormRef}>
-        <Card>
+        <Card className={pendingJoin ? "opacity-90" : undefined}>
           <h2 className="font-semibold">Create a {ACCOUNTABILITY_GROUP_SINGULAR}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {ACCOUNTABILITY_GROUP_SIZE_LABEL} · private invite link & code
+            {pendingJoin
+              ? `Finish or cancel your pending join request before creating a new ${ACCOUNTABILITY_GROUP_SINGULAR}.`
+              : `${ACCOUNTABILITY_GROUP_SIZE_LABEL} · private invite link & code`}
           </p>
           <label className="mt-3 block text-sm">
             <span className="font-medium">Group name</span>
@@ -134,7 +127,7 @@ export function GroupsInteractive({
           <Button
             className="mt-3"
             fullWidth
-            disabled={pending}
+            disabled={pending || Boolean(pendingJoin)}
             onClick={() =>
               startTransition(async () => {
                 try {
@@ -158,7 +151,11 @@ export function GroupsInteractive({
 
         <Card>
           <h2 className="font-semibold">Join with a code</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Enter a code from a friend</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {pendingJoin
+              ? "Cancel your pending request above to join a different group, or wait for approval."
+              : "Enter a code from a friend"}
+          </p>
           <div className="mt-3 flex gap-2">
             <input
               value={joinCode}
@@ -168,7 +165,7 @@ export function GroupsInteractive({
             />
             <Button
               variant="secondary"
-              disabled={pending || !joinCode.trim()}
+              disabled={pending || !joinCode.trim() || Boolean(pendingJoin)}
               onClick={() =>
                 startTransition(async () => {
                   try {
@@ -207,6 +204,10 @@ export function GroupsInteractive({
 
   return (
     <div className="space-y-4">
+      {group.isOwner && group.pendingRequests.length > 0 ? (
+        <GroupPendingRequestsAlert pendingRequests={group.pendingRequests} />
+      ) : null}
+
       <Card className="overflow-hidden p-0">
         <div className="bg-gradient-to-br from-primary/15 via-background to-secondary/30 p-4">
           <div className="flex items-start justify-between gap-3">

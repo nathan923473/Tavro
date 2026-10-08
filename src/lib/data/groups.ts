@@ -3,10 +3,20 @@ import { unwrapOne } from "@/lib/data/relations";
 import { formatTimeAgo, todayDateKey } from "@/lib/dates";
 import type { AccountabilityGroup, GroupActivity, GroupJoinRequest } from "@/types";
 
+export type PendingGroupJoin = {
+  requestId: string;
+  groupId: string;
+  groupName: string;
+  groupGoal: string;
+  memberCount: number | null;
+  maxMembers: number;
+  joinMode: "approval" | "auto";
+};
+
 export type UserGroupState = {
   group: AccountabilityGroup | null;
   feed: GroupActivity[];
-  pendingJoin: { groupId: string; groupName: string } | null;
+  pendingJoin: PendingGroupJoin | null;
 };
 
 export async function fetchUserGroup(userId: string): Promise<UserGroupState> {
@@ -31,18 +41,36 @@ export async function fetchUserGroup(userId: string): Promise<UserGroupState> {
 
 async function fetchPendingJoinForUser(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
-) {
+  _userId: string,
+): Promise<PendingGroupJoin | null> {
+  const rpc = await supabase.rpc("get_my_pending_group_join");
+  if (!rpc.error && rpc.data) {
+    const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
+    if (row && typeof row === "object" && "request_id" in row) {
+      const r = row as Record<string, unknown>;
+      return {
+        requestId: String(r.request_id),
+        groupId: String(r.group_id),
+        groupName: String(r.group_name ?? "Private group"),
+        groupGoal: String(r.group_goal ?? ""),
+        memberCount: typeof r.member_count === "number" ? r.member_count : null,
+        maxMembers: Number(r.max_members ?? 6),
+        joinMode: r.join_mode === "auto" ? "auto" : "approval",
+      };
+    }
+  }
+
   const pendingReq = await supabase
     .from("group_join_requests")
     .select(
       `
+      id,
       group_id,
       status,
-      group:accountability_groups ( name )
+      group:accountability_groups ( name, goal, max_members, join_mode )
     `,
     )
-    .eq("user_id", userId)
+    .eq("user_id", _userId)
     .eq("status", "pending")
     .limit(1)
     .maybeSingle();
@@ -57,8 +85,14 @@ async function fetchPendingJoinForUser(
   if (!pendingReq.data) return null;
   const group = unwrapOne(pendingReq.data.group);
   return {
+    requestId: String(pendingReq.data.id),
     groupId: pendingReq.data.group_id as string,
     groupName: group?.name ?? "Private group",
+    groupGoal: group && "goal" in group && typeof group.goal === "string" ? group.goal : "",
+    memberCount: null,
+    maxMembers: Number(group && "max_members" in group ? group.max_members : 6),
+    joinMode:
+      group && "join_mode" in group && group.join_mode === "auto" ? "auto" : "approval",
   };
 }
 

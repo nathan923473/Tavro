@@ -187,6 +187,30 @@ export async function declineGroupJoinRequestAction(requestId: string) {
   return { ok: true as const };
 }
 
+export async function cancelGroupJoinRequestAction(requestId: string) {
+  const { supabase } = await requireUserId();
+  const { data, error } = await supabase.rpc("cancel_group_join_request", {
+    p_request_id: requestId,
+  });
+  if (error) {
+    if (/cancel_group_join_request|schema cache/i.test(error.message)) {
+      throw new Error(
+        "Run migration 028_group_join_request_cancel.sql in Supabase, then try again.",
+      );
+    }
+    throw new Error(error.message);
+  }
+  const row = data as { ok?: boolean; error?: string };
+  if (!row?.ok) {
+    if (row?.error === "not_pending") {
+      throw new Error("This request is no longer pending.");
+    }
+    throw new Error("Could not cancel request.");
+  }
+  revalidatePath("/groups");
+  return { ok: true as const };
+}
+
 export async function updateGroupSettingsAction(input: {
   groupId: string;
   name?: string;
