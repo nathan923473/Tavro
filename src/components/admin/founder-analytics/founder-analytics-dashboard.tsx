@@ -1,5 +1,6 @@
 "use client";
 
+import { EventHealthStrip } from "@/components/admin/founder-analytics/event-health-strip";
 import { FounderMetricCard } from "@/components/admin/founder-analytics/metric-card";
 import type { FounderAnalyticsSnapshot } from "@/types/founder-analytics";
 import Link from "next/link";
@@ -14,6 +15,13 @@ const TABS = [
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
+
+const PRESETS = [
+  { id: "7d", label: "7d" },
+  { id: "30d", label: "30d" },
+  { id: "90d", label: "90d" },
+  { id: "12m", label: "12m" },
+] as const;
 
 export function FounderAnalyticsDashboard({
   snapshot,
@@ -33,47 +41,43 @@ export function FounderAnalyticsDashboard({
   }, [tab, snapshot]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">{snapshot.range.label}</p>
-          {snapshot.trackingStartedAt ? (
-            <p className="text-xs text-muted-foreground">
-              Event tracking from {new Date(snapshot.trackingStartedAt).toLocaleDateString()}
-            </p>
-          ) : (
-            <p className="text-xs text-amber-700">No events recorded yet — metrics may be partial.</p>
-          )}
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm font-medium text-foreground">{snapshot.range.label}</p>
+          <div className="-mx-1 grid grid-cols-4 gap-1.5 sm:mx-0 sm:flex sm:flex-wrap sm:gap-2">
+            {PRESETS.map((p) => (
+              <Link
+                key={p.id}
+                href={`/admin/analytics?preset=${p.id}`}
+                className={`flex min-h-9 items-center justify-center rounded-lg px-2 text-center text-xs font-semibold sm:rounded-full sm:px-3 ${
+                  preset === p.id
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-foreground"
+                }`}
+              >
+                {p.label}
+              </Link>
+            ))}
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {(["7d", "30d", "90d", "12m"] as const).map((p) => (
-            <Link
-              key={p}
-              href={`/admin/analytics?preset=${p}`}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-                preset === p ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-              }`}
-            >
-              {p === "7d"
-                ? "7 days"
-                : p === "30d"
-                  ? "30 days"
-                  : p === "90d"
-                    ? "90 days"
-                    : "12 months"}
-            </Link>
-          ))}
-        </div>
+        <EventHealthStrip
+          health={snapshot.eventHealth}
+          trackingStartedAt={snapshot.trackingStartedAt}
+        />
       </div>
 
-      <nav className="flex gap-1 overflow-x-auto rounded-xl bg-muted/50 p-1">
+      <nav
+        className="flex gap-1 overflow-x-auto rounded-xl bg-muted/50 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        aria-label="Metric categories"
+      >
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className={`shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              tab === t.id ? "bg-surface shadow-sm" : "text-muted-foreground hover:text-foreground"
+            className={`shrink-0 rounded-lg px-3 py-2 text-xs font-semibold sm:text-sm ${
+              tab === t.id ? "bg-surface shadow-sm" : "text-muted-foreground"
             }`}
           >
             {t.label}
@@ -82,16 +86,16 @@ export function FounderAnalyticsDashboard({
       </nav>
 
       {!snapshot.schemaReady ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Analytics schema not ready. Run{" "}
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Run{" "}
           <code className="text-xs">supabase/migrations/023_founder_analytics.sql</code> in Supabase,
           then refresh.
         </p>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-3 xl:grid-cols-3">
         {metrics.map((m) => (
-          <FounderMetricCard key={m.id} metric={m} />
+          <FounderMetricCard key={`${tab}-${m.id}`} metric={m} />
         ))}
       </div>
     </div>

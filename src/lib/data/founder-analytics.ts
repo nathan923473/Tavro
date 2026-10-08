@@ -8,11 +8,99 @@ import {
   percentChange,
   safeRate,
 } from "@/lib/analytics/date-range";
+import { resolveMetricDisplayState } from "@/lib/analytics/founder-metric-display";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { FounderAnalyticsSnapshot, FounderMetric } from "@/types/founder-analytics";
+import type {
+  FounderAnalyticsSnapshot,
+  FounderEventHealth,
+  FounderMetric,
+} from "@/types/founder-analytics";
 
-function metric(partial: Omit<FounderMetric, "id"> & { id: string }): FounderMetric {
-  return partial;
+function metric(
+  partial: Omit<FounderMetric, "id" | "displayState"> & { id: string },
+): FounderMetric {
+  return {
+    ...partial,
+    displayState: resolveMetricDisplayState({
+      value: partial.value,
+      status: partial.status,
+      unavailableReason: partial.unavailableReason,
+    }),
+  };
+}
+
+function bucketCountByUtcDay(
+  timestamps: string[],
+  rangeStart: Date,
+  rangeEnd: Date,
+): { date: string; value: number }[] {
+  const startKey = rangeStart.toISOString().slice(0, 10);
+  const endKey = rangeEnd.toISOString().slice(0, 10);
+  const counts = new Map<string, number>();
+  for (const ts of timestamps) {
+    const key = ts.slice(0, 10);
+    if (key < startKey || key > endKey) continue;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const out: { date: string; value: number }[] = [];
+  const cursor = new Date(rangeStart);
+  cursor.setUTCHours(0, 0, 0, 0);
+  const endDay = new Date(rangeEnd);
+  endDay.setUTCHours(0, 0, 0, 0);
+  while (cursor <= endDay) {
+    const key = cursor.toISOString().slice(0, 10);
+    out.push({ date: key, value: counts.get(key) ?? 0 });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return out;
+}
+
+async function fetchEventHealth(
+  admin: NonNullable<ReturnType<typeof createAdminClient>>,
+  range: FounderDateRange,
+): Promise<FounderEventHealth> {
+  const start = iso(range.start);
+  const end = iso(range.end);
+
+  const { count: totalEvents } = await admin
+    .from("platform_analytics_events")
+    .select("*", { count: "exact", head: true });
+
+  const { count: eventsInRange } = await admin
+    .from("platform_analytics_events")
+    .select("*", { count: "exact", head: true })
+    .gte("occurred_at", start)
+    .lte("occurred_at", end);
+
+  const { data: lastRow } = await admin
+    .from("platform_analytics_events")
+    .select("occurred_at")
+    .order("occurred_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const { data: typeRows } = await admin
+    .from("platform_analytics_events")
+    .select("event_type")
+    .gte("occurred_at", start)
+    .lte("occurred_at", end)
+    .limit(5000);
+
+  const typeCounts = new Map<string, number>();
+  for (const row of typeRows ?? []) {
+    typeCounts.set(row.event_type, (typeCounts.get(row.event_type) ?? 0) + 1);
+  }
+  const topTypes = [...typeCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([eventType, count]) => ({ eventType, count }));
+
+  return {
+    totalEvents: totalEvents ?? 0,
+    eventsInRange: eventsInRange ?? 0,
+    lastEventAt: lastRow?.occurred_at ?? null,
+    topTypes,
+  };
 }
 
 function iso(d: Date) {
@@ -40,6 +128,7 @@ export async function fetchFounderAnalyticsSnapshot(input: {
     return {
       schemaReady: false,
       trackingStartedAt: null,
+      eventHealth: null,
       range,
       overview: unavailableOverview("Service role not configured."),
       growth: [],
@@ -54,6 +143,7 @@ export async function fetchFounderAnalyticsSnapshot(input: {
     return {
       schemaReady: false,
       trackingStartedAt: null,
+      eventHealth: null,
       range,
       overview: unavailableOverview("Run migration 023_founder_analytics.sql in Supabase."),
       growth: [],
@@ -72,12 +162,8 @@ export async function fetchFounderAnalyticsSnapshot(input: {
 
   const trackingStartedAt = trackingRow?.occurred_at ?? null;
 
-  const [
-    growth,
-    retention,
-    defensibility,
-    revenue,
-  ] = await Promise.all([
+  const [eventHealth, growth, retention, defensibility, revenue] = await Promise.all([
+    fetchEventHealth(admin, range),
     computeGrowthMetrics(admin, range),
     computeRetentionMetrics(admin, range),
     computeDefensibilityMetrics(admin, range),
@@ -89,6 +175,7 @@ export async function fetchFounderAnalyticsSnapshot(input: {
   return {
     schemaReady: true,
     trackingStartedAt,
+    eventHealth,
     range,
     overview,
     growth,
@@ -179,11 +266,30 @@ async function computeGrowthMetrics(
 
   const { data: signups } = await admin
     .from("profiles")
-    .select("id, signup_acquisition_source, referrer_user_id")
+    .select("id, signup_acquisition_source, referrer_user_id, created_at")
     .gte("created_at", start)
     .lte("created_at", end)
     .eq("is_test_account", false)
     .eq("is_admin", false);
+
+  const { data: landingEventRows } = await admin
+    .from("platform_analytics_events")
+    .select("occurred_at")
+    .eq("event_type", "challenge_page_viewed")
+    .gte("occurred_at", start)
+    .lte("occurred_at", end)
+    .limit(4000);
+
+  const signupSeries = bucketCountByUtcDay(
+    (signups ?? []).map((s) => s.created_at as string),
+    range.start,
+    range.end,
+  );
+  const landingSeries = bucketCountByUtcDay(
+    (landingEventRows ?? []).map((r) => r.occurred_at as string),
+    range.start,
+    range.end,
+  );
 
   const eligibleParticipants = await countEligibleReferrers(admin, end);
   const referrersWithSuccess = new Set(
@@ -245,6 +351,9 @@ async function computeGrowthMetrics(
         totalCreatorAttributedSignups: totalAttributed,
         creatorsWithSignups,
       },
+      series: signupSeries.some((d) => d.value > 0) ? signupSeries : undefined,
+      seriesEmptyReason:
+        signupSeries.every((d) => d.value === 0) ? "No new signups in this period." : undefined,
     }),
     metric({
       id: "participant_referral_rate",
@@ -287,6 +396,11 @@ async function computeGrowthMetrics(
       unavailableReason:
         (landingViews ?? 0) === 0 ? "No landing views recorded yet for this period." : undefined,
       extra: { landingViews: landingViews ?? 0, signupsFromLanding: signupsFromLanding ?? 0 },
+      series: landingSeries.some((d) => d.value > 0) ? landingSeries : undefined,
+      seriesEmptyReason:
+        (landingViews ?? 0) === 0
+          ? "No challenge landing views recorded in this period."
+          : undefined,
     }),
     metric({
       id: "organic_acquisition_pct",
@@ -332,19 +446,26 @@ async function cohortRetention(
   range: FounderDateRange,
   dayN: number,
 ): Promise<FounderMetric> {
-  const eligibleEnd = new Date(range.end);
-  eligibleEnd.setUTCDate(eligibleEnd.getUTCDate() - dayN);
-  if (eligibleEnd < range.start) {
+  const periodEnd = new Date(range.end);
+  const now = new Date();
+  if (periodEnd.getTime() > now.getTime()) periodEnd.setTime(now.getTime());
+
+  /** Latest signup date that has had a full day-N window before period end. */
+  const matureSignupEnd = new Date(periodEnd);
+  matureSignupEnd.setUTCDate(matureSignupEnd.getUTCDate() - dayN);
+
+  if (matureSignupEnd < range.start) {
     return metric({
       id: dayN === 7 ? "day_7_retention" : "day_30_retention",
       label: `Day ${dayN} retention`,
-      definition: `Share of signup cohort active on day ${dayN} (meaningful activity).`,
-      status: "unavailable",
+      definition: `Share of users who signed up in the selected period and reached day ${dayN} with meaningful activity on that day.`,
+      status: "partial",
       value: null,
       previousValue: null,
       changePercent: null,
       unit: "%",
-      unavailableReason: `Selected range is shorter than ${dayN} days for cohort maturity.`,
+      unavailableReason: `No signups in ${range.label} are ${dayN}+ days old yet — day-${dayN} retention needs older cohorts. Try 30 or 90 days.`,
+      seriesEmptyReason: "Cohort not mature for this date range.",
     });
   }
 
@@ -352,7 +473,7 @@ async function cohortRetention(
     .from("profiles")
     .select("id, created_at")
     .gte("created_at", iso(range.start))
-    .lte("created_at", iso(eligibleEnd))
+    .lte("created_at", iso(matureSignupEnd))
     .eq("is_test_account", false)
     .eq("is_admin", false);
 
@@ -360,13 +481,14 @@ async function cohortRetention(
     return metric({
       id: dayN === 7 ? "day_7_retention" : "day_30_retention",
       label: `Day ${dayN} retention`,
-      definition: `Share of signup cohort active on day ${dayN}.`,
+      definition: `Share of users who signed up in the selected period and reached day ${dayN} with meaningful activity on that day.`,
       status: "partial",
       value: null,
       previousValue: null,
       changePercent: null,
       unit: "%",
-      unavailableReason: "No eligible signup cohort in range.",
+      unavailableReason: "No signups in the mature portion of this period.",
+      seriesEmptyReason: "No cohort members to chart.",
     });
   }
 
@@ -390,6 +512,7 @@ async function cohortRetention(
     changePercent: null,
     unit: "%",
     extra: { cohortSize: cohort.length, retained },
+    seriesEmptyReason: "Daily cohort trend coming in a later release.",
   });
 }
 
@@ -446,17 +569,25 @@ async function computeDauMau(
   const mau = new Set((goals ?? []).map((g) => g.user_id)).size;
   const ratio = mau > 0 ? avgDau / mau : null;
 
+  const series = bucketCountByUtcDay(
+    (goals ?? []).map((g) => `${g.completion_date}T12:00:00.000Z`),
+    range.start,
+    range.end,
+  );
+
   return metric({
     id: "dau_mau",
     label: "DAU / MAU (habit completions proxy)",
     definition:
-      "Distinct users with habit completions per day (avg) ÷ distinct users in period. Extend with schedule check-ins in future.",
+      "Distinct users with habit completions per day (avg) ÷ distinct users in period. Chart: daily active users (habits).",
     status: "partial",
     value: ratio != null ? ratio * 100 : null,
     previousValue: null,
     changePercent: null,
     unit: "%",
     extra: { avgDau: Math.round(avgDau), mau },
+    series: series.some((d) => d.value > 0) ? series : undefined,
+    seriesEmptyReason: mau === 0 ? "No habit completions in this period." : undefined,
   });
 }
 
@@ -666,21 +797,31 @@ async function computeAudienceGrowth(
   admin: NonNullable<ReturnType<typeof createAdminClient>>,
   range: FounderDateRange,
 ): Promise<FounderMetric> {
-  const { count: newFollows } = await admin
+  const { data: followRows } = await admin
     .from("community_follows")
-    .select("*", { count: "exact", head: true })
+    .select("created_at")
     .gte("created_at", iso(range.start))
-    .lte("created_at", iso(range.end));
+    .lte("created_at", iso(range.end))
+    .limit(4000);
+
+  const followSeries = bucketCountByUtcDay(
+    (followRows ?? []).map((r) => r.created_at as string),
+    range.start,
+    range.end,
+  );
 
   return metric({
     id: "creator_audience_growth",
     label: "New creator follows",
     definition: "Net new community follows in period.",
     status: "ok",
-    value: newFollows ?? 0,
+    value: followRows?.length ?? 0,
     previousValue: null,
     changePercent: null,
     unit: "count",
+    series: followSeries.some((d) => d.value > 0) ? followSeries : undefined,
+    seriesEmptyReason:
+      (followRows?.length ?? 0) === 0 ? "No new follows in this period." : undefined,
   });
 }
 
@@ -728,30 +869,31 @@ async function computeRevenueMetrics(
 
   const cac = newUsers && newUsers > 0 && spendCents > 0 ? spendCents / 100 / newUsers : null;
 
-  return base.map((m) =>
-    m.id === "cac"
-      ? {
-          ...m,
-          label: "Customer acquisition cost (CAC)",
-          definition:
-            "Recorded acquisition expenses ÷ new users in period. Excludes organic time cost; add expenses in founder_acquisition_expenses.",
-          status: cac != null ? "partial" : "unavailable",
-          value: cac,
-          unavailableReason: cac == null ? "Add acquisition expenses or wait for signups in range." : undefined,
-          unit: "currency",
-        }
-      : {
-          ...m,
-          label:
-            m.id === "mrr"
-              ? "Monthly recurring revenue (MRR)"
-              : m.id === "revenue_per_active_creator"
-                ? "Revenue per active creator"
-                : m.id === "creator_paid_conversion"
-                  ? "Creator paid conversion"
-                  : m.id === "revenue_retention"
-                    ? "Revenue retention (GRR / NRR)"
-                    : m.label,
-        },
-  );
+  return base.map((m) => {
+    if (m.id === "cac") {
+      return metric({
+        id: "cac",
+        label: "Customer acquisition cost (CAC)",
+        definition:
+          "Recorded acquisition expenses ÷ new users in period. Excludes organic time cost; add expenses in founder_acquisition_expenses.",
+        status: cac != null ? "partial" : "unavailable",
+        value: cac,
+        unavailableReason:
+          cac == null ? "Add acquisition expenses or wait for signups in range." : undefined,
+        unit: "currency",
+        previousValue: null,
+        changePercent: null,
+      });
+    }
+    const labels: Record<string, string> = {
+      mrr: "Monthly recurring revenue (MRR)",
+      revenue_per_active_creator: "Revenue per active creator",
+      creator_paid_conversion: "Creator paid conversion",
+      revenue_retention: "Revenue retention (GRR / NRR)",
+    };
+    return metric({
+      ...m,
+      label: labels[m.id] ?? m.label,
+    });
+  });
 }
