@@ -17,11 +17,16 @@ import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchMemberGoals } from "@/lib/data/member";
 import { userReferralPath } from "@/lib/site-url";
 import Link from "next/link";
-import { Shield, Users } from "lucide-react";
+import { BarChart3, Shield, Users } from "lucide-react";
 
 export const metadata = { title: "Profile" };
 
-export default async function ProfilePage() {
+type ProfilePageProps = {
+  searchParams: Promise<{ error?: string }>;
+};
+
+export default async function ProfilePage({ searchParams }: ProfilePageProps) {
+  const { error: profileError } = await searchParams;
   const { user, profile } = await getCurrentUserProfile();
   const referralCode = profile?.referralCode ?? "sign-in-for-code";
   const goals = user ? await fetchMemberGoals(user.id) : [];
@@ -42,6 +47,23 @@ export default async function ProfilePage() {
   return (
     <div className="animate-fade-up">
       <PageHeader title="Profile" subtitle="Member or creator · one account" />
+      {profileError === "admin_only" ? (
+        <p className="mx-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          That page is admin-only. If you should have access, set{" "}
+          <code className="text-xs">is_admin = true</code> on your profile in Supabase.
+        </p>
+      ) : null}
+      {profile?.isAdmin ? (
+        <div className="px-4">
+          <Link
+            href="/admin/analytics"
+            className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground shadow-sm"
+          >
+            <BarChart3 className="h-4 w-4 shrink-0" aria-hidden />
+            Founder analytics
+          </Link>
+        </div>
+      ) : null}
       <div className="space-y-4 px-4 py-4">
         {profile ? (
           <DisplayNameCard
