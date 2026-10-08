@@ -185,10 +185,19 @@ export async function approveGroupJoinRequestAction(requestId: string) {
   const { data, error } = await supabase.rpc("approve_group_join_request", {
     p_request_id: requestId,
   });
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (/approve_group_join_request|schema cache/i.test(error.message)) {
+      throw new Error(
+        "Run migrations 029 and 036 in Supabase (approve_group_join_request), then try again.",
+      );
+    }
+    throw new Error(error.message);
+  }
   const row = data as { ok?: boolean; error?: string };
   if (!row?.ok) {
     if (row?.error === "full") throw new Error("Group is full — free a spot first.");
+    if (row?.error === "forbidden") throw new Error("Only the group owner can approve requests.");
+    if (row?.error === "not_pending") throw new Error("This request is no longer pending.");
     throw new Error("Could not approve request.");
   }
   revalidatePath("/groups");
@@ -200,7 +209,16 @@ export async function declineGroupJoinRequestAction(requestId: string) {
   const { data, error } = await supabase.rpc("decline_group_join_request", {
     p_request_id: requestId,
   });
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (/decline_group_join_request|schema cache/i.test(error.message)) {
+      throw new Error("Run migration 026 in Supabase, then try again.");
+    }
+    throw new Error(error.message);
+  }
+  const row = data as { ok?: boolean; error?: string };
+  if (row?.ok === false && row.error === "forbidden") {
+    throw new Error("Only the group owner can decline requests.");
+  }
   revalidatePath("/groups");
   return { ok: true as const };
 }

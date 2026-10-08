@@ -9,7 +9,7 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import type { GroupJoinRequest } from "@/types";
 import { UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 
 export function GroupPendingRequestsAlert({
   pendingRequests,
@@ -18,6 +18,7 @@ export function GroupPendingRequestsAlert({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [status, setStatus] = useState<string | null>(null);
 
   if (pendingRequests.length === 0) return null;
 
@@ -65,8 +66,13 @@ export function GroupPendingRequestsAlert({
                 disabled={pending}
                 onClick={() =>
                   startTransition(async () => {
-                    await approveGroupJoinRequestAction(req.id);
-                    router.refresh();
+                    try {
+                      await approveGroupJoinRequestAction(req.id);
+                      setStatus(null);
+                      router.refresh();
+                    } catch (e) {
+                      setStatus(e instanceof Error ? e.message : "Could not approve.");
+                    }
                   })
                 }
               >
@@ -78,8 +84,13 @@ export function GroupPendingRequestsAlert({
                 disabled={pending}
                 onClick={() =>
                   startTransition(async () => {
-                    await declineGroupJoinRequestAction(req.id);
-                    router.refresh();
+                    try {
+                      await declineGroupJoinRequestAction(req.id);
+                      setStatus(null);
+                      router.refresh();
+                    } catch (e) {
+                      setStatus(e instanceof Error ? e.message : "Could not decline.");
+                    }
                   })
                 }
               >
@@ -89,6 +100,11 @@ export function GroupPendingRequestsAlert({
           </li>
         ))}
       </ul>
+      {status ? (
+        <p className="border-t border-primary/20 px-4 py-2 text-sm text-red-600" role="status">
+          {status}
+        </p>
+      ) : null}
     </div>
   );
 }

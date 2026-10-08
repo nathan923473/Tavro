@@ -386,36 +386,52 @@ async function loadGroupHub(
   });
 
   const ownerId = String(groupRow.created_by ?? "");
-  const isOwner = ownerId === userId;
+  let isOwner = ownerId === userId;
+
+  if (!isOwner) {
+    const ownerRpc = await supabase.rpc("is_accountability_group_owner", {
+      p_group_id: groupId,
+    });
+    if (!ownerRpc.error && ownerRpc.data === true) {
+      isOwner = true;
+    }
+  }
 
   let pendingRequests: GroupJoinRequest[] = [];
-  if (isOwner) {
+  const pendingRpc = await supabase.rpc("list_group_pending_join_requests", {
+    p_group_id: groupId,
+  });
+
+  if (!pendingRpc.error && pendingRpc.data) {
+    const rows = Array.isArray(pendingRpc.data) ? pendingRpc.data : [pendingRpc.data];
+    pendingRequests = rows
+      .filter((r): r is Record<string, unknown> => Boolean(r && typeof r === "object"))
+      .map((r) => ({
+        id: String(r.id),
+        userId: String(r.user_id),
+        displayName: String(r.display_name ?? "Member"),
+        avatarUrl: typeof r.avatar_url === "string" ? r.avatar_url : null,
+        createdAt: String(r.created_at ?? ""),
+      }));
+    if (pendingRequests.length > 0) {
+      isOwner = true;
+    }
+  } else if (isOwner) {
     const reqRes = await supabase
       .from("group_join_requests")
-      .select(
-        `
-        id, user_id, created_at,
-        profile:profiles!group_join_requests_user_id_fkey ( display_name, avatar_url )
-      `,
-      )
+      .select("id, user_id, created_at")
       .eq("group_id", groupId)
       .eq("status", "pending")
       .order("created_at", { ascending: true });
 
     if (!reqRes.error) {
-      pendingRequests = (reqRes.data ?? []).map((r) => {
-        const profile = unwrapOne(r.profile);
-        return {
-          id: r.id,
-          userId: r.user_id,
-          displayName: profile?.display_name ?? "Member",
-          avatarUrl:
-            profile && "avatar_url" in profile && typeof profile.avatar_url === "string"
-              ? profile.avatar_url
-              : null,
-          createdAt: r.created_at,
-        };
-      });
+      pendingRequests = (reqRes.data ?? []).map((r) => ({
+        id: r.id,
+        userId: r.user_id,
+        displayName: "Member",
+        avatarUrl: null,
+        createdAt: r.created_at,
+      }));
     }
   }
 

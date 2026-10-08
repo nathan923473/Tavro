@@ -148,8 +148,12 @@ export function GroupInviteSettings({
                     disabled={pending}
                     onClick={() =>
                       startTransition(async () => {
-                        await approveGroupJoinRequestAction(req.id);
-                        router.refresh();
+                        try {
+                          await approveGroupJoinRequestAction(req.id);
+                          router.refresh();
+                        } catch (e) {
+                          setStatus(e instanceof Error ? e.message : "Could not approve.");
+                        }
                       })
                     }
                   >
@@ -161,8 +165,12 @@ export function GroupInviteSettings({
                     disabled={pending}
                     onClick={() =>
                       startTransition(async () => {
-                        await declineGroupJoinRequestAction(req.id);
-                        router.refresh();
+                        try {
+                          await declineGroupJoinRequestAction(req.id);
+                          router.refresh();
+                        } catch (e) {
+                          setStatus(e instanceof Error ? e.message : "Could not decline.");
+                        }
                       })
                     }
                   >
