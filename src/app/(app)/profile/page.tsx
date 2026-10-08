@@ -12,6 +12,7 @@ import type { AuStateOrTerritory } from "@/lib/timezone/constants";
 import { ProfilePhotoCard } from "@/components/profile/profile-photo-card";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { AdminSupabaseDiagnostics } from "@/components/admin/admin-supabase-diagnostics";
+import { DeleteAccountSection } from "@/components/profile/delete-account-section";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchMemberGoals } from "@/lib/data/member";
@@ -154,6 +155,11 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
               group chats
             </li>
             <li>
+              <Link href="/privacy" className="font-medium text-primary">
+                Privacy &amp; account deletion
+              </Link>
+            </li>
+            <li>
               <Link href="/community-guidelines" className="font-medium text-primary">
                 Community guidelines
               </Link>
@@ -165,6 +171,8 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
             </li>
           </ul>
         </Card>
+
+        {user ? <DeleteAccountSection /> : null}
       </div>
     </div>
   );
