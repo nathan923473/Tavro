@@ -212,6 +212,9 @@ create policy "Members read weekly recaps"
   on public.group_weekly_recaps for select
   using (public.is_group_member(group_id, auth.uid()));
 
+-- Return type changed vs migration 030; must drop before replace.
+drop function if exists public.get_accountability_group_for_viewer(uuid);
+
 create or replace function public.get_accountability_group_for_viewer(p_group_id uuid)
 returns table (
   id uuid,
