@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { AccountExperience } from "@/components/profile/account-experience";
 import { AdminToolsCard } from "@/components/profile/admin-tools-card";
+import { DisplayNameCard } from "@/components/profile/display-name-card";
 import { CreatorMediaCard } from "@/components/profile/creator-media-card";
 import { NotificationPreferencesCard } from "@/components/profile/notification-preferences-card";
 import { TimezoneSettingsCard } from "@/components/profile/timezone-settings-card";
@@ -43,6 +44,9 @@ export default async function ProfilePage() {
       <PageHeader title="Profile" subtitle="Member or creator · one account" />
       <div className="space-y-4 px-4 py-4">
         {profile?.role === "admin" ? <AdminToolsCard /> : null}
+        {profile ? (
+          <DisplayNameCard initialName={profile.displayName ?? user?.email?.split("@")[0] ?? "Member"} />
+        ) : null}
         <ProfilePhotoCard />
         <CreatorMediaCard />
         <AccountExperience />

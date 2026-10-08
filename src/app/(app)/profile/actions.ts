@@ -11,6 +11,25 @@ import { formatImageUploadError } from "@/lib/storage/upload-errors";
 import { isAllowedProfileAvatarUrl } from "@/lib/storage/validate-image-url";
 import { revalidatePath } from "next/cache";
 
+export async function updateDisplayNameAction(displayName: string) {
+  const { supabase, userId } = await requireUserId();
+  const trimmed = displayName.trim().slice(0, 80);
+  if (!trimmed) throw new Error("Enter a display name.");
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ display_name: trimmed, updated_at: new Date().toISOString() })
+    .eq("id", userId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/profile");
+  revalidatePath("/");
+  revalidatePath("/challenges");
+  revalidatePath("/discover");
+  revalidatePath("/studio");
+}
+
 export async function setProfileAvatarUrlAction(avatarUrl: string) {
   const { supabase, userId } = await requireUserId();
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
