@@ -1,4 +1,8 @@
+"use client";
+
 import { createBrowserClient } from "@supabase/ssr";
+import { getOrCreateTabId } from "@/lib/auth/tab-id.client";
+import { supabaseAuthCookieOptions } from "@/lib/auth/tab-session";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 export function createClient() {
@@ -11,7 +15,13 @@ export function createClient() {
     );
   }
 
-  return createBrowserClient(url, anonKey);
+  const tabId = typeof window !== "undefined" ? getOrCreateTabId() : null;
+  const cookieOptions = supabaseAuthCookieOptions(url, tabId);
+
+  return createBrowserClient(url, anonKey, {
+    ...(cookieOptions ? { cookieOptions } : {}),
+    isSingleton: false,
+  });
 }
 
 export function tryCreateClient() {

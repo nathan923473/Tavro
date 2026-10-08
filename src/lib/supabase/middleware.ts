@@ -1,5 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
+import {
+  TAB_HINT_COOKIE,
+  TAB_ID_HEADER,
+  sanitizeTabId,
+  supabaseAuthCookieOptions,
+} from "@/lib/auth/tab-session";
 import { NextResponse, type NextRequest } from "next/server";
+
+function resolveTabId(request: NextRequest): string | null {
+  const fromHeader = sanitizeTabId(request.headers.get(TAB_ID_HEADER));
+  if (fromHeader) return fromHeader;
+  return sanitizeTabId(request.cookies.get(TAB_HINT_COOKIE)?.value ?? null);
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -11,7 +23,11 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  const tabId = resolveTabId(request);
+  const cookieOptions = supabaseAuthCookieOptions(url, tabId);
+
   const supabase = createServerClient(url, anonKey, {
+    ...(cookieOptions ? { cookieOptions } : {}),
     cookies: {
       getAll() {
         return request.cookies.getAll();

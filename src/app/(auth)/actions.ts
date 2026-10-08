@@ -133,6 +133,7 @@ export async function signUpMember(input: {
 export async function loginMember(input: {
   email: string;
   password: string;
+  tabId?: string | null;
 }): Promise<{ ok: true } | { ok: false; message: string }> {
   const email = input.email.trim().toLowerCase();
   const password = input.password;
@@ -141,7 +142,7 @@ export async function loginMember(input: {
     return { ok: false, message: "Enter your email and password (8+ characters)." };
   }
 
-  const supabase = await createClient();
+  const supabase = await createClient(input.tabId);
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {

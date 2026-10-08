@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { PasswordInput } from "@/components/ui/password-input";
 import { APP_NAME } from "@/lib/branding";
 import { loginMember, signUpMember } from "@/app/(auth)/actions";
+import { getOrCreateTabId, syncTabHintCookie } from "@/lib/auth/tab-id.client";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -37,6 +38,8 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
     setMessage(null);
 
     try {
+      const tabId = getOrCreateTabId();
+      syncTabHintCookie(tabId);
       const supabase = createClient();
       const normalizedEmail = email.trim().toLowerCase();
       const normalizedPassword = password;
@@ -87,6 +90,7 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
         const result = await loginMember({
           email: normalizedEmail,
           password: normalizedPassword,
+          tabId,
         });
         if (!result.ok) throw new Error(result.message);
         router.push(next);

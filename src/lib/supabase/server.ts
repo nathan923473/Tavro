@@ -1,8 +1,29 @@
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import {
+  TAB_HINT_COOKIE,
+  TAB_ID_HEADER,
+  sanitizeTabId,
+  supabaseAuthCookieOptions,
+} from "@/lib/auth/tab-session";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { cookies, headers } from "next/headers";
 
-export async function createClient() {
+async function resolveTabId(explicitTabId?: string | null): Promise<string | null> {
+  const direct = sanitizeTabId(explicitTabId ?? null);
+  if (direct) return direct;
+
+  const headerStore = await headers();
+  const fromHeader = sanitizeTabId(headerStore.get(TAB_ID_HEADER));
+  if (fromHeader) return fromHeader;
+
+  const cookieStore = await cookies();
+  const fromHint = sanitizeTabId(
+    cookieStore.get(TAB_HINT_COOKIE)?.value ?? null,
+  );
+  return fromHint;
+}
+
+export async function createClient(tabIdOverride?: string | null) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -12,9 +33,12 @@ export async function createClient() {
     );
   }
 
+  const tabId = await resolveTabId(tabIdOverride);
+  const cookieOptions = supabaseAuthCookieOptions(url, tabId);
   const cookieStore = await cookies();
 
   return createServerClient(url, anonKey, {
+    ...(cookieOptions ? { cookieOptions } : {}),
     cookies: {
       getAll() {
         return cookieStore.getAll();

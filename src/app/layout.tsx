@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { TabAuthSync } from "@/components/auth/tab-auth-sync";
 import { NavigationStackRecorder } from "@/components/layout/navigation-stack-recorder";
 import { APP_NAME, APP_TAGLINE, BRAND_COLORS } from "@/lib/branding";
 import "./globals.css";
@@ -54,6 +55,7 @@ export default function RootLayout({
       className={`${inter.variable} h-full`}
     >
       <body className="min-h-full">
+        <TabAuthSync />
         <NavigationStackRecorder />
         {children}
       </body>
