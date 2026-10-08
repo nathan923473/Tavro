@@ -3,7 +3,12 @@ import { ChallengeStartCountdown } from "@/components/challenges/challenge-start
 import { StudioLayout } from "@/components/creator/studio/studio-layout";
 import { Card } from "@/components/ui/card";
 import { requireApprovedCreator } from "@/lib/auth/profile";
-import { fetchCreatorStudioChallenges } from "@/lib/data/creator-studio";
+import {
+  creatorChallengeLimitSummary,
+  fetchCreatorStudioChallenges,
+} from "@/lib/data/creator-studio";
+import { buildCreatorChallengeWindow } from "@/lib/challenge-lifecycle/creator-windows";
+import { RECOMMENDED_REGISTRATION_OPEN_DAYS_BEFORE_START } from "@/lib/challenge-lifecycle/config";
 import type { StudioChallengeBucket } from "@/types/creator-studio";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
@@ -20,9 +25,29 @@ const BUCKETS: { key: StudioChallengeBucket; label: string }[] = [
 export default async function StudioChallengesPage() {
   const { user } = await requireApprovedCreator();
   const challenges = await fetchCreatorStudioChallenges(user.id);
+  const windows = challenges
+    .map((c) =>
+      buildCreatorChallengeWindow({
+        id: c.id,
+        title: c.title,
+        publish_status: c.publishStatus,
+        start_date: c.startDate,
+        end_date: c.endDate,
+        start_at: c.startAt ?? null,
+        end_at: c.endAt ?? null,
+        challenge_timezone: c.challengeTimezone ?? null,
+      }),
+    )
+    .filter(Boolean);
+  const limits = creatorChallengeLimitSummary(windows);
 
   return (
     <StudioLayout title="Challenges" subtitle="Active, upcoming, drafts, and completed">
+      <p className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+        Limits: {limits.active}/{limits.maxActive} active · {limits.upcoming}/{limits.maxUpcoming}{" "}
+        upcoming · unlimited drafts. Published schedules cannot overlap. Tip: open registrations
+        ~{RECOMMENDED_REGISTRATION_OPEN_DAYS_BEFORE_START} days early when you can.
+      </p>
       <Link
         href="/studio/challenges/new"
         className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground"

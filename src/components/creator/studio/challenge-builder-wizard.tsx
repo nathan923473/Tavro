@@ -151,6 +151,8 @@ export function ChallengeBuilderWizard({
   const [endDate, setEndDate] = useState("");
   const [startTimeLocal, setStartTimeLocal] = useState("09:00");
   const [challengeTimezone, setChallengeTimezone] = useState(defaultChallengeTimezone);
+  const [allowLateJoin, setAllowLateJoin] = useState(false);
+  const [lateJoinUntilDate, setLateJoinUntilDate] = useState("");
   const [lengthShortcut, setLengthShortcut] = useState("30");
   const [schedule, setSchedule] = useState<ScheduleDraftItem[]>(
     template.schedule.map((s) => ({
@@ -210,6 +212,8 @@ export function ChallengeBuilderWizard({
           startTimeLocal,
           challengeTimezone,
           schedule,
+          allowLateJoin,
+          lateJoinUntilDate: allowLateJoin && lateJoinUntilDate ? lateJoinUntilDate : null,
         });
         setChallengeId(result.challengeId);
         if (step === 3) {
@@ -338,8 +342,43 @@ export function ChallengeBuilderWizard({
           </div>
           <p className="text-xs text-muted-foreground">
             Participants in other timezones will automatically see this converted to their local
-            time.
+            time. You can publish and open registrations anytime before the start — many creators
+            share 2 weeks ahead.
           </p>
+
+          <fieldset className="space-y-2 rounded-xl border border-border px-3 py-3">
+            <legend className="px-1 text-sm font-semibold">Registration after start</legend>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={allowLateJoin}
+                onChange={(e) => setAllowLateJoin(e.target.checked)}
+              />
+              <span>
+                Allow participants to join after the challenge starts
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  Default: registration closes at the official start time. Late joiners start on
+                  today&apos;s challenge day, not day 1.
+                </span>
+              </span>
+            </label>
+            {allowLateJoin ? (
+              <label className="block text-sm">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Optional late-join cutoff date (through end of day)
+                </span>
+                <input
+                  type="date"
+                  className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+                  value={lateJoinUntilDate}
+                  min={startDate || undefined}
+                  max={endDate || undefined}
+                  onChange={(e) => setLateJoinUntilDate(e.target.value)}
+                />
+              </label>
+            ) : null}
+          </fieldset>
 
           {startDate && endDate ? (
             datesInvalid ? (

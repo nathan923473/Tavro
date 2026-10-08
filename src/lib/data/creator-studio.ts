@@ -1,3 +1,5 @@
+import { buildCreatorChallengeWindow } from "@/lib/challenge-lifecycle/creator-windows";
+import { CREATOR_CHALLENGE_LIMITS } from "@/lib/challenge-lifecycle/config";
 import { createClient } from "@/lib/supabase/server";
 import type {
   ChallengePublishStatus,
@@ -15,14 +17,42 @@ function todayKey() {
 
 function bucketChallenge(
   publishStatus: ChallengePublishStatus,
-  start: string,
-  end: string,
+  row: {
+    start_date: string;
+    end_date: string;
+    start_at?: string | null;
+    end_at?: string | null;
+    challenge_timezone?: string | null;
+  },
 ): StudioChallengeBucket {
-  const today = todayKey();
   if (publishStatus === "draft") return "drafts";
-  if (end < today || publishStatus === "archived") return "completed";
-  if (start > today) return "upcoming";
+  if (publishStatus === "archived") return "completed";
+  const window = buildCreatorChallengeWindow({
+    id: "",
+    title: "",
+    publish_status: publishStatus,
+    ...row,
+  });
+  if (!window) return "drafts";
+  if (window.phase === "completed") return "completed";
+  if (window.phase === "upcoming") return "upcoming";
   return "active";
+}
+
+export function creatorChallengeLimitSummary(windows: ReturnType<typeof buildCreatorChallengeWindow>[]) {
+  const published = windows.filter(Boolean) as NonNullable<ReturnType<typeof buildCreatorChallengeWindow>>[];
+  let upcoming = 0;
+  let active = 0;
+  for (const w of published) {
+    if (w.phase === "upcoming") upcoming += 1;
+    if (w.phase === "active") active += 1;
+  }
+  return {
+    upcoming,
+    active,
+    maxUpcoming: CREATOR_CHALLENGE_LIMITS.maxUpcomingPublished,
+    maxActive: CREATOR_CHALLENGE_LIMITS.maxActivePublished,
+  };
 }
 
 async function activeParticipantsThisWeek(
@@ -59,6 +89,9 @@ function mapChallengeRow(
     cover_url: string | null;
     start_date: string;
     end_date: string;
+    start_at?: string | null;
+    end_at?: string | null;
+    challenge_timezone?: string | null;
     publish_status?: ChallengePublishStatus | null;
     category?: string | null;
     participants?: { count: number }[] | null;
@@ -74,11 +107,14 @@ function mapChallengeRow(
     coverUrl: row.cover_url,
     startDate: row.start_date,
     endDate: row.end_date,
+    startAt: row.start_at ?? null,
+    endAt: row.end_at ?? null,
+    challengeTimezone: row.challenge_timezone ?? null,
     publishStatus,
     category: (row.category as CreatorStudioChallenge["category"]) ?? null,
     participantCount: row.participants?.[0]?.count ?? 0,
     activeThisWeek,
-    bucket: bucketChallenge(publishStatus, row.start_date, row.end_date),
+    bucket: bucketChallenge(publishStatus, row),
   };
 }
 
@@ -89,11 +125,12 @@ export async function fetchCreatorStudioChallenges(
 
   const fullSelect = `
     id, title, short_description, invite_slug, cover_url, start_date, end_date,
-    publish_status, category,
+    start_at, end_at, challenge_timezone, publish_status, category,
     participants:challenge_participants ( count )
   `;
   const legacySelect = `
     id, title, invite_slug, cover_url, start_date, end_date,
+    start_at, end_at, challenge_timezone,
     participants:challenge_participants ( count )
   `;
 

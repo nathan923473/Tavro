@@ -176,9 +176,10 @@ export async function fetchJoinedChallengesForHome(
 
   const ids = [...joinedIds];
   const select = `
-      id, title, description, start_date, end_date, invite_slug,
-      cover_url, created_by, visibility,
-      creator:profiles!challenges_created_by_fkey ( display_name ),
+      id, title, description, start_date, end_date, start_at, end_at, challenge_timezone,
+      invite_slug, cover_url, created_by, visibility,
+      creator:profiles!challenges_created_by_fkey ( display_name, avatar_url ),
+      community:creator_communities ( avatar_url ),
       participants:challenge_participants ( count )
     `;
 

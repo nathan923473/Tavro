@@ -5,7 +5,14 @@ import { templateByKey, type ChallengeTemplateKey } from "@/lib/creator/challeng
 import { creatorChallengePath } from "@/lib/data/creator-studio";
 import type { ChallengeCategory, ChallengePublishStatus } from "@/types/creator-studio";
 import { revalidatePath } from "next/cache";
-import { buildFixedInstantScheduleFields } from "@/lib/timezone/challenge-fields";
+import { publishedWindowsFromRows } from "@/lib/challenge-lifecycle/creator-windows";
+import { validatePublishAgainstLimits } from "@/lib/challenge-lifecycle/schedule-validation";
+import {
+  buildFixedInstantScheduleFields,
+  resolveChallengeEndAt,
+  resolveChallengeStartAt,
+} from "@/lib/timezone/challenge-fields";
+import { zonedExclusiveEndToUtc } from "@/lib/timezone/instant";
 import { isValidIanaTimezone } from "@/lib/timezone/validate";
 
 function slugify(title: string): string {
@@ -74,6 +81,8 @@ export async function saveChallengeDraftAction(input: {
     isRest: boolean;
     weekTheme?: string;
   }>;
+  allowLateJoin?: boolean;
+  lateJoinUntilDate?: string | null;
 }) {
   const { user } = await requireApprovedCreator();
   const { createClient } = await import("@/lib/supabase/server");
@@ -110,6 +119,11 @@ export async function saveChallengeDraftAction(input: {
     ...instantFields,
     visibility: "public",
     publish_status: "draft" satisfies ChallengePublishStatus,
+    allow_late_join: Boolean(input.allowLateJoin),
+    late_join_until:
+      input.allowLateJoin && input.lateJoinUntilDate
+        ? zonedExclusiveEndToUtc(input.lateJoinUntilDate, instantFields.challenge_timezone).toISOString()
+        : null,
   };
 
   let challengeId = input.challengeId;
@@ -199,10 +213,50 @@ export async function publishChallengeAction(challengeId: string) {
     .eq("id", challengeId)
     .single();
 
-  if (ch?.schedule_mode !== "start_anytime" && !ch?.start_at) {
+  const { data: full } = await supabase
+    .from("challenges")
+    .select(
+      "id, title, publish_status, start_date, end_date, start_at, end_at, challenge_timezone, schedule_mode",
+    )
+    .eq("id", challengeId)
+    .single();
+
+  if (full?.schedule_mode !== "start_anytime" && !full?.start_at) {
     throw new Error(
       "Set a start date, time, and timezone before publishing. Save the challenge again after migration 021.",
     );
+  }
+
+  const { data: siblingRows } = await supabase
+    .from("challenges")
+    .select(
+      "id, title, publish_status, start_date, end_date, start_at, end_at, challenge_timezone",
+    )
+    .eq("created_by", user.id)
+    .in("publish_status", ["published", "scheduled"]);
+
+  const windows = publishedWindowsFromRows(siblingRows ?? []);
+  const startAt = full
+    ? resolveChallengeStartAt({
+        start_date: full.start_date,
+        start_at: full.start_at,
+        challenge_timezone: full.challenge_timezone,
+      })
+    : null;
+  const endAt = full
+    ? resolveChallengeEndAt({
+        end_date: full.end_date,
+        end_at: full.end_at,
+        challenge_timezone: full.challenge_timezone,
+      })
+    : null;
+
+  const validation = validatePublishAgainstLimits(
+    { id: challengeId, startAt, endAtExclusive: endAt },
+    windows,
+  );
+  if (!validation.ok) {
+    throw new Error(validation.message);
   }
 
   const patch = {
@@ -269,6 +323,9 @@ export async function duplicateChallengeAction(challengeId: string) {
       start_at: full.start_at ?? null,
       end_at: full.end_at ?? null,
       schedule_mode: full.schedule_mode ?? "fixed_instant",
+      cover_url: full.cover_url ?? null,
+      allow_late_join: full.allow_late_join ?? false,
+      late_join_until: full.late_join_until ?? null,
       visibility: "public",
       invite_slug: slugify(full.title),
       publish_status: "draft",

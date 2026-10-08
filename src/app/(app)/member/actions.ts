@@ -233,6 +233,25 @@ async function maybeUnlockHabitMilestones(
 
 export async function joinChallengeAction(challengeId: string) {
   const { supabase, userId } = await requireUserId();
+  const { data: ch } = await supabase
+    .from("challenges")
+    .select(
+      "created_by, publish_status, start_date, end_date, start_at, end_at, challenge_timezone, allow_late_join, late_join_until, title, invite_slug, community:creator_communities ( slug )",
+    )
+    .eq("id", challengeId)
+    .maybeSingle();
+  if (!ch) throw new Error("Challenge not found.");
+  const { assertParticipantMayJoinChallenge } = await import(
+    "@/lib/challenge-lifecycle/join-guard"
+  );
+  assertParticipantMayJoinChallenge(
+    {
+      ...ch,
+      allow_late_join: ch.allow_late_join ?? false,
+    },
+    userId,
+  );
+
   const { error } = await supabase.from("challenge_participants").upsert(
     {
       challenge_id: challengeId,
@@ -242,9 +261,50 @@ export async function joinChallengeAction(challengeId: string) {
     { onConflict: "challenge_id,user_id" },
   );
   if (error) throw new Error(error.message);
+  await afterChallengeJoinNotifications(supabase, userId, ch, challengeId);
   revalidatePath("/challenges");
   revalidatePath("/");
   revalidatePath(`/join`);
+}
+
+async function afterChallengeJoinNotifications(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  ch: {
+    title: string;
+    invite_slug: string;
+    start_date: string;
+    end_date: string;
+    start_at?: string | null;
+    end_at?: string | null;
+    challenge_timezone?: string | null;
+    community?: { slug: string } | { slug: string }[] | null;
+  },
+  challengeId: string,
+) {
+  const { resolveChallengeStartAt } = await import("@/lib/timezone/challenge-fields");
+  const { scheduleParticipantChallengeReminders } = await import(
+    "@/lib/challenge-lifecycle/participant-reminders"
+  );
+  const { unwrapOne } = await import("@/lib/data/relations");
+  const community = unwrapOne(ch.community);
+  const linkPath = community?.slug
+    ? `/creator/${community.slug}/challenges/${ch.invite_slug}`
+    : `/join/${ch.invite_slug}`;
+  const startAt = resolveChallengeStartAt({
+    start_date: ch.start_date,
+    start_at: ch.start_at ?? null,
+    challenge_timezone: ch.challenge_timezone ?? null,
+  });
+  if (startAt.getTime() > Date.now()) {
+    await scheduleParticipantChallengeReminders({
+      userId,
+      challengeId,
+      challengeTitle: ch.title,
+      startAt,
+      linkPath,
+    });
+  }
 }
 
 /** Join then return path to participant onboarding or today's challenge hub. */
@@ -253,6 +313,25 @@ export async function joinChallengeAndContinueAction(
   onboardingPath: string,
 ): Promise<string> {
   const { supabase, userId } = await requireUserId();
+  const { data: ch } = await supabase
+    .from("challenges")
+    .select(
+      "created_by, publish_status, start_date, end_date, start_at, end_at, challenge_timezone, allow_late_join, late_join_until, title, invite_slug, community:creator_communities ( slug )",
+    )
+    .eq("id", challengeId)
+    .maybeSingle();
+  if (!ch) throw new Error("Challenge not found.");
+  const { assertParticipantMayJoinChallenge } = await import(
+    "@/lib/challenge-lifecycle/join-guard"
+  );
+  assertParticipantMayJoinChallenge(
+    {
+      ...ch,
+      allow_late_join: ch.allow_late_join ?? false,
+    },
+    userId,
+  );
+
   const { error } = await supabase.from("challenge_participants").upsert(
     {
       challenge_id: challengeId,
@@ -262,6 +341,8 @@ export async function joinChallengeAndContinueAction(
     { onConflict: "challenge_id,user_id" },
   );
   if (error) throw new Error(error.message);
+
+  await afterChallengeJoinNotifications(supabase, userId, ch, challengeId);
 
   const { data: row } = await supabase
     .from("challenge_participants")

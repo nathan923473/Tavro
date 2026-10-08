@@ -19,6 +19,7 @@
     "stop:dev": "node scripts/stop-dev.mjs",
     "fresh": "node scripts/stop-dev.mjs && next dev -p 3000 -H 0.0.0.0 --turbopack",
     "test:timezone": "node --test scripts/timezone.test.mjs",
+    "test:challenge-lifecycle": "node --test scripts/challenge-lifecycle.test.mjs",
     "lint": "eslint",
     "icons": "node scripts/generate-icons.mjs",
     "postinstall": "node scripts/generate-icons.mjs"

@@ -20,6 +20,9 @@ export type CreatorStudioChallenge = {
   coverUrl: string | null;
   startDate: string;
   endDate: string;
+  startAt?: string | null;
+  endAt?: string | null;
+  challengeTimezone?: string | null;
   publishStatus: ChallengePublishStatus;
   category: ChallengeCategory | null;
   participantCount: number;

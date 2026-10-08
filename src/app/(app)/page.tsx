@@ -5,6 +5,7 @@ import {
   HomeWelcomeBanner,
 } from "@/components/dashboard/home-sections";
 import { TodaysHabits } from "@/components/dashboard/todays-habits";
+import { UpcomingChallengesHome } from "@/components/dashboard/upcoming-challenges-home";
 import { WeeklyConsistencyHome } from "@/components/dashboard/weekly-consistency-home";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card } from "@/components/ui/card";
@@ -58,6 +59,7 @@ export default async function HomePage() {
           firstName={firstName}
           groupName={groupData.group?.name}
         />
+        <UpcomingChallengesHome challenges={joinedChallenges} />
         <TodaysHabits goals={goals} loggedIn={Boolean(userId)} />
         <DailyCheckInCard
           checkedIn={checkIn.checkedIn}

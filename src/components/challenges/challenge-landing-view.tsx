@@ -2,6 +2,7 @@
 
 import {
   joinChallengeAndContinueAction,
+  leaveChallengeAction,
 } from "@/app/(app)/member/actions";
 import { ShareChallengeButton } from "@/components/share/share-challenge-button";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
@@ -46,6 +47,18 @@ export function ChallengeLandingView({
     challenge.endAt != null
       ? new Date(challenge.endAt).getTime() <= Date.now()
       : challenge.endDate < new Date().toISOString().slice(0, 10);
+
+  function handleWithdraw() {
+    startTransition(async () => {
+      try {
+        await leaveChallengeAction(challenge.id);
+        router.refresh();
+        setStatus("You withdrew from this challenge.");
+      } catch (e) {
+        setStatus(e instanceof Error ? e.message : "Could not withdraw.");
+      }
+    });
+  }
 
   function handleJoin() {
     if (!loggedIn) {
@@ -155,6 +168,14 @@ export function ChallengeLandingView({
           <div className="mt-5 space-y-2">
             {data.joined ? (
               <>
+                {notStarted ? (
+                  <div className="rounded-xl border-2 border-primary/30 bg-primary/5 px-3 py-3 text-center">
+                    <p className="text-sm font-semibold text-primary">You&apos;re registered</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {challenge.participants.toLocaleString()} participants registered
+                    </p>
+                  </div>
+                ) : null}
                 <Link
                   href={
                     data.onboardingCompleted
@@ -163,8 +184,17 @@ export function ChallengeLandingView({
                   }
                   className="flex min-h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
                 >
-                  {data.onboardingCompleted ? "Open challenge" : "Finish setup"}
+                  {notStarted
+                    ? "View preparation"
+                    : data.onboardingCompleted
+                      ? "Open challenge"
+                      : "Finish setup"}
                 </Link>
+                {notStarted ? (
+                  <Button type="button" variant="outline" fullWidth disabled={pending} onClick={handleWithdraw}>
+                    Withdraw before start
+                  </Button>
+                ) : null}
                 {data.communitySlug ? (
                   <Link
                     href={`/creator/${data.communitySlug}`}
@@ -189,17 +219,15 @@ export function ChallengeLandingView({
             ) : null}
           </div>
 
-          {!data.joined ? (
-            <div className="mt-4 grid gap-2 border-t border-border pt-4">
-              <CopyLinkButton url={canonicalPath} label="Copy challenge link" fullWidth />
-              <ShareChallengeButton
-                path={canonicalPath}
-                title={challenge.title}
-                text={`Join ${challenge.title} — free on Streakly`}
-                fullWidth
-              />
-            </div>
-          ) : null}
+          <div className="mt-4 grid gap-2 border-t border-border pt-4">
+            <CopyLinkButton url={canonicalPath} label="Copy challenge link" fullWidth />
+            <ShareChallengeButton
+              path={canonicalPath}
+              title={challenge.title}
+              text={`Join ${challenge.title} — free on Streakly`}
+              fullWidth
+            />
+          </div>
 
           {status ? (
             <p className="mt-2 text-sm text-red-600" role="alert">
