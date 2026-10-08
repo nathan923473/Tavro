@@ -77,12 +77,17 @@ export function CommunityHero({
           )}
         </div>
         <div className="mt-3">
-          <h1 className="text-xl font-semibold tracking-tight">
-            {community.communityName}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {community.creatorDisplayName}
-          </p>
+          {community.communityName.trim().toLowerCase() !==
+          community.creatorDisplayName.trim().toLowerCase() ? (
+            <>
+              <h1 className="text-xl font-semibold tracking-tight">
+                {community.creatorDisplayName}
+              </h1>
+              <p className="text-sm text-muted-foreground">{community.communityName}</p>
+            </>
+          ) : (
+            <h1 className="text-xl font-semibold tracking-tight">{community.communityName}</h1>
+          )}
         </div>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
           {community.bio}

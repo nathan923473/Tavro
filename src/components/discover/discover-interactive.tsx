@@ -100,6 +100,10 @@ function ChallengeRow({
   );
 }
 
+function creatorNamesDiffer(communityName: string, ownerName: string) {
+  return communityName.trim().toLowerCase() !== ownerName.trim().toLowerCase();
+}
+
 type DiscoverInteractiveProps = {
   initial: {
     active: DiscoverChallenge[];
@@ -238,7 +242,10 @@ export function DiscoverInteractive({
                         className="rounded-xl"
                       />
                       <div className="min-w-0">
-                        <p className="font-semibold">{cr.communityName}</p>
+                        <p className="font-semibold leading-snug">{cr.ownerName}</p>
+                        {creatorNamesDiffer(cr.communityName, cr.ownerName) ? (
+                          <p className="text-xs text-muted-foreground">{cr.communityName}</p>
+                        ) : null}
                         <p className="text-sm text-muted-foreground line-clamp-2">{cr.bio}</p>
                       </div>
                     </Link>
@@ -297,9 +304,12 @@ export function DiscoverInteractive({
                       className="rounded-xl"
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold">{cr.communityName}</p>
+                      <p className="font-semibold leading-snug">{cr.ownerName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {cr.memberCount} followers · {cr.ownerName}
+                        {cr.memberCount} followers
+                        {creatorNamesDiffer(cr.communityName, cr.ownerName)
+                          ? ` · ${cr.communityName}`
+                          : ""}
                       </p>
                     </div>
                   </Link>
