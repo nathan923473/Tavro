@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { resolveUserGroupId } from "@/lib/data/resolve-user-group-id";
 import { unwrapOne } from "@/lib/data/relations";
 import { formatTimeAgo, todayDateKey } from "@/lib/dates";
 import type { AccountabilityGroup, GroupActivity, GroupJoinRequest } from "@/types";
@@ -22,19 +23,13 @@ export type UserGroupState = {
 export async function fetchUserGroup(userId: string): Promise<UserGroupState> {
   const supabase = await createClient();
 
-  const { data: membership } = await supabase
-    .from("group_members")
-    .select("group_id")
-    .eq("user_id", userId)
-    .limit(1)
-    .maybeSingle();
+  const groupId = await resolveUserGroupId(supabase, userId);
 
-  if (!membership) {
+  if (!groupId) {
     const pending = await fetchPendingJoinForUser(supabase, userId);
     return { group: null, feed: [], pendingJoin: pending };
   }
 
-  const groupId = membership.group_id;
   const loaded = await loadGroupHub(supabase, groupId, userId);
   return { ...loaded, pendingJoin: null };
 }

@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUserId } from "@/lib/auth/require-user-id";
+import { resolveUserGroupId } from "@/lib/data/resolve-user-group-id";
 import { generateGroupInviteCode, normalizeGroupInviteCode } from "@/lib/groups/invite-code";
 import {
   ACCOUNTABILITY_GROUP_MAX_MEMBERS,
@@ -47,13 +48,8 @@ async function assertNotInOtherGroup(
   userId: string,
   exceptGroupId?: string,
 ) {
-  const { data: membership } = await supabase
-    .from("group_members")
-    .select("group_id")
-    .eq("user_id", userId)
-    .limit(1)
-    .maybeSingle();
-  if (membership && membership.group_id !== exceptGroupId) {
+  const currentGroupId = await resolveUserGroupId(supabase, userId);
+  if (currentGroupId && currentGroupId !== exceptGroupId) {
     throw new Error(
       "Leave your current private accountability group before joining another.",
     );
@@ -357,25 +353,20 @@ export async function deleteAccountabilityGroupAction(groupId: string, confirmNa
 export async function leaveGroupAction() {
   const { supabase, userId } = await requireUserId();
 
-  const { data: membership } = await supabase
-    .from("group_members")
-    .select("group_id")
-    .eq("user_id", userId)
-    .limit(1)
-    .maybeSingle();
-  if (!membership) return { ok: true as const };
+  const groupId = await resolveUserGroupId(supabase, userId);
+  if (!groupId) return { ok: true as const };
 
   const { data: group } = await supabase
     .from("accountability_groups")
     .select("created_by")
-    .eq("id", membership.group_id)
+    .eq("id", groupId)
     .maybeSingle();
 
   if (group?.created_by === userId) {
     const { count } = await supabase
       .from("group_members")
       .select("*", { count: "exact", head: true })
-      .eq("group_id", membership.group_id);
+      .eq("group_id", groupId);
     if ((count ?? 0) > 1) {
       throw new Error(
         "Transfer ownership to another member before leaving, or delete the group.",
@@ -384,10 +375,14 @@ export async function leaveGroupAction() {
     await supabase
       .from("accountability_groups")
       .delete()
-      .eq("id", membership.group_id)
+      .eq("id", groupId)
       .eq("created_by", userId);
   } else {
-    await supabase.from("group_members").delete().eq("user_id", userId);
+    await supabase
+      .from("group_members")
+      .delete()
+      .eq("group_id", groupId)
+      .eq("user_id", userId);
   }
 
   revalidatePath("/groups");
@@ -399,16 +394,11 @@ export async function postGroupMessageAction(body: string) {
   const text = body.trim();
   if (!text) throw new Error("Message cannot be empty.");
 
-  const { data: membership } = await supabase
-    .from("group_members")
-    .select("group_id")
-    .eq("user_id", userId)
-    .limit(1)
-    .maybeSingle();
-  if (!membership) throw new Error("Join a private accountability group first.");
+  const groupId = await resolveUserGroupId(supabase, userId);
+  if (!groupId) throw new Error("Join a private accountability group first.");
 
   const { error } = await supabase.from("group_messages").insert({
-    group_id: membership.group_id,
+    group_id: groupId,
     author_id: userId,
     body: text,
   });

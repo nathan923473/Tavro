@@ -203,19 +203,15 @@ export async function shareAchievementWithGroupAction(message: string) {
     throw new Error("Share a short encouragement message (max 280 characters).");
   }
 
-  const { data: membership } = await supabase
-    .from("group_members")
-    .select("group_id")
-    .eq("user_id", userId)
-    .limit(1)
-    .maybeSingle();
+  const { resolveUserGroupId } = await import("@/lib/data/resolve-user-group-id");
+  const groupId = await resolveUserGroupId(supabase, userId);
 
-  if (!membership) {
+  if (!groupId) {
     throw new Error("Join a private accountability group to share achievements.");
   }
 
   const { error } = await supabase.from("group_achievement_shares").insert({
-    group_id: membership.group_id,
+    group_id: groupId,
     user_id: userId,
     share_type: "weekly_habits",
     message: text,
