@@ -13,6 +13,7 @@ import { CopyLinkButton } from "@/components/share/copy-link-button";
 import {
   ACCOUNTABILITY_GROUP_PLURAL,
   ACCOUNTABILITY_GROUP_SINGULAR,
+  ACCOUNTABILITY_GROUP_SIZE_LABEL,
   ACCOUNTABILITY_GROUP_TAGLINE,
 } from "@/lib/copy/accountability-groups";
 import type { AccountabilityGroup, GroupActivity } from "@/types";
@@ -50,7 +51,7 @@ export function GroupsInteractive({
         <Card>
           <h2 className="font-semibold capitalize">{ACCOUNTABILITY_GROUP_PLURAL}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Log in to create or join a {ACCOUNTABILITY_GROUP_SINGULAR} (4–8 people).
+            Log in to create or join a {ACCOUNTABILITY_GROUP_SINGULAR} ({ACCOUNTABILITY_GROUP_SIZE_LABEL.toLowerCase()}).
           </p>
         </Card>
       </>
@@ -66,7 +67,9 @@ export function GroupsInteractive({
 
         <Card>
           <h2 className="font-semibold">Create a {ACCOUNTABILITY_GROUP_SINGULAR}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">4–8 friends · private invite code</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {ACCOUNTABILITY_GROUP_SIZE_LABEL} · private invite code
+          </p>
           <input
             value={newGroupName}
             onChange={(e) => setNewGroupName(e.target.value)}

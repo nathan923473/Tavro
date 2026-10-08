@@ -21,6 +21,7 @@ import { ArrowRight, Check, Users } from "lucide-react";
 import {
   ACCOUNTABILITY_GROUP_PLURAL,
   ACCOUNTABILITY_GROUP_SINGULAR,
+  ACCOUNTABILITY_GROUP_SIZE_LABEL,
 } from "@/lib/copy/accountability-groups";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -279,7 +280,7 @@ export function OnboardingFlow({
                     : `Start a ${ACCOUNTABILITY_GROUP_SINGULAR}`}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  4–8 members · private invite link
+                  {ACCOUNTABILITY_GROUP_SIZE_LABEL.toLowerCase()} · private invite link
                 </p>
               </div>
               {wantsGroup ? (
