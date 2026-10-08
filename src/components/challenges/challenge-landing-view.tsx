@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import type { ChallengeLandingData } from "@/lib/data/challenge-landing";
 import { publicChallengePath } from "@/lib/site-url";
 import { ChallengeCreatorLine } from "@/components/challenges/challenge-creator-line";
+import { challengeCreatorSubtitle } from "@/lib/creator-display-name";
 import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { LandingAttribution } from "@/components/analytics/landing-attribution";
@@ -141,7 +142,12 @@ function ChallengeLandingBody({
               <ChallengeCreatorLine
                 displayName={challenge.creatorName}
                 avatarUrl={data.avatarUrl ?? challenge.creatorAvatarUrl}
-                subtitle={data.communityName ?? undefined}
+                subtitle={
+                  challengeCreatorSubtitle(
+                    challenge.creatorName,
+                    data.communityName,
+                  ) ?? undefined
+                }
               />
               <h1 className="mt-3 text-xl font-semibold leading-snug">{challenge.title}</h1>
             </div>

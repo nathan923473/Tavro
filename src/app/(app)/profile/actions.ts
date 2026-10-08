@@ -9,6 +9,7 @@ import {
 } from "@/lib/storage/avatars";
 import { formatImageUploadError } from "@/lib/storage/upload-errors";
 import { isAllowedProfileAvatarUrl } from "@/lib/storage/validate-image-url";
+import { looksLikeFullPersonalName } from "@/lib/creator-display-name";
 import { revalidatePath } from "next/cache";
 
 export async function updateDisplayNameAction(displayName: string) {

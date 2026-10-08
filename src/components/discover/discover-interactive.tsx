@@ -14,7 +14,10 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { CalendarRange, Compass, Gift, Search, Sparkles, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { creatorCommunityBrandLabel } from "@/lib/creator-display-name";
+import {
+  challengeCreatorSubtitle,
+  creatorCommunityBrandLabel,
+} from "@/lib/creator-display-name";
 import { useState, useTransition, type FormEvent } from "react";
 
 function ChallengeRow({
@@ -63,7 +66,7 @@ function ChallengeRow({
               <ChallengeCreatorLine
                 displayName={c.creatorName}
                 avatarUrl={c.creatorAvatarUrl}
-                subtitle={c.communityName !== c.creatorName ? c.communityName : null}
+                subtitle={challengeCreatorSubtitle(c.creatorName, c.communityName)}
                 className="mt-1"
               />
             </div>

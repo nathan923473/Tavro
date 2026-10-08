@@ -65,3 +65,12 @@ export function creatorCommunityBrandLabel(
   }
   return community;
 }
+
+/** Subtitle under creator name on challenge cards and landing pages. */
+export function challengeCreatorSubtitle(
+  creatorDisplayName: string,
+  communityName: string | null | undefined,
+): string | null {
+  if (!communityName?.trim()) return null;
+  return creatorCommunityBrandLabel(communityName, creatorDisplayName);
+}
