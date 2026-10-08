@@ -825,97 +825,26 @@ export async function saveCommunityAction(formData: FormData) {
 }
 
 export async function createAccountabilityGroup(name: string) {
-  const { supabase, userId } = await requireUserId();
-
-  const { data: existingMembership } = await supabase
-    .from("group_members")
-    .select("group_id")
-    .eq("user_id", userId)
-    .limit(1)
-    .maybeSingle();
-  if (existingMembership) {
-    throw new Error(
-      "Leave your current private accountability group before creating another.",
-    );
-  }
-
-  const inviteCode = randomBytes(5).toString("hex");
-  const groupId = randomUUID();
-  const { error: groupError } = await supabase
-    .from("accountability_groups")
-    .insert({
-      id: groupId,
-      name: name.trim() || "My private accountability group",
-      invite_code: inviteCode,
-      created_by: userId,
-    });
-
-  if (groupError) throw new Error(groupError.message);
-
-  const { error: memberError } = await supabase.from("group_members").insert({
-    group_id: groupId,
-    user_id: userId,
+  const { createAccountabilityGroupAction } = await import("@/app/(app)/groups/actions");
+  await createAccountabilityGroupAction({
+    name,
+    goal: "Stay consistent together",
   });
-  if (memberError) throw new Error(memberError.message);
-
-  revalidatePath("/groups");
-  return { inviteCode };
 }
 
 export async function joinGroupByInviteCode(code: string) {
-  const { supabase, userId } = await requireUserId();
-
-  const { data: rows, error: lookupError } = await supabase.rpc(
-    "get_group_by_invite_code",
-    { p_code: code.trim() },
-  );
-  if (lookupError) throw new Error(lookupError.message);
-  const group = Array.isArray(rows) ? rows[0] : rows;
-  if (!group) throw new Error("Invalid private accountability group invite code.");
-
-  const { count } = await supabase
-    .from("group_members")
-    .select("*", { count: "exact", head: true })
-    .eq("group_id", group.id);
-
-  if ((count ?? 0) >= group.max_members) {
-    throw new Error("This private accountability group is full.");
-  }
-
-  await supabase.from("group_members").upsert(
-    { group_id: group.id, user_id: userId },
-    { onConflict: "group_id,user_id" },
-  );
-
-  revalidatePath("/groups");
+  const { requestJoinGroupByInviteCodeAction } = await import("@/app/(app)/groups/actions");
+  await requestJoinGroupByInviteCodeAction(code);
 }
 
 export async function leaveGroupAction() {
-  const { supabase, userId } = await requireUserId();
-  await supabase.from("group_members").delete().eq("user_id", userId);
-  revalidatePath("/groups");
+  const { leaveGroupAction: leave } = await import("@/app/(app)/groups/actions");
+  return leave();
 }
 
 export async function postGroupMessageAction(body: string) {
-  const { supabase, userId } = await requireUserId();
-  const text = body.trim();
-  if (!text) throw new Error("Message cannot be empty.");
-
-  const { data: membership } = await supabase
-    .from("group_members")
-    .select("group_id")
-    .eq("user_id", userId)
-    .limit(1)
-    .maybeSingle();
-  if (!membership) throw new Error("Join a private accountability group first.");
-
-  const { error } = await supabase.from("group_messages").insert({
-    group_id: membership.group_id,
-    author_id: userId,
-    body: text,
-  });
-  if (error) throw new Error(error.message);
-  revalidatePath("/groups");
+  const { postGroupMessageAction: post } = await import("@/app/(app)/groups/actions");
+  return post(body);
 }
 
 export async function addWeighInAction(weightLb: number) {

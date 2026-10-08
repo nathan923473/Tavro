@@ -59,15 +59,31 @@ export type GroupMember = {
   checkedInToday: boolean;
 };
 
+export type GroupJoinMode = "approval" | "auto";
+
+export type GroupJoinRequest = {
+  id: string;
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  createdAt: string;
+};
+
 export type AccountabilityGroup = {
   id: string;
   name: string;
+  goal: string;
   memberCount: number;
   maxMembers: number;
   members: GroupMember[];
   recentMessage: string;
   checkInStreak: number;
   inviteCode: string;
+  joinMode: GroupJoinMode;
+  invitesEnabled: boolean;
+  ownerId: string;
+  isOwner: boolean;
+  pendingRequests: GroupJoinRequest[];
 };
 
 export type GroupActivity = {

@@ -39,7 +39,9 @@ export default async function HomePage() {
   const [dashboard, joinedChallenges, groupData] = await Promise.all([
     userId ? fetchHomeDashboardBundle(userId) : Promise.resolve(emptyDashboard),
     userId ? fetchJoinedChallengesForHome(userId) : Promise.resolve([]),
-    userId ? fetchUserGroup(userId) : Promise.resolve({ group: null, feed: [] }),
+    userId
+      ? fetchUserGroup(userId)
+      : Promise.resolve({ group: null, feed: [], pendingJoin: null }),
   ]);
 
   const {

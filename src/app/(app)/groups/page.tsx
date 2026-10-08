@@ -13,9 +13,9 @@ export const metadata = { title: "Private accountability groups" };
 export default async function GroupsPage() {
   const { user } = await getCurrentUserProfile();
   const userId = user?.id ?? null;
-  const { group, feed } = userId
+  const { group, feed, pendingJoin } = userId
     ? await fetchUserGroup(userId)
-    : { group: null, feed: [] };
+    : { group: null, feed: [], pendingJoin: null };
 
   return (
     <div className="animate-fade-up">
@@ -24,14 +24,12 @@ export default async function GroupsPage() {
         subtitle={`Member-only ${ACCOUNTABILITY_GROUP_PLURAL} · ${ACCOUNTABILITY_GROUP_SIZE_LABEL.toLowerCase()} · not visible to creators`}
       />
       <div className="space-y-4 px-4 py-4">
-        <p className="rounded-lg bg-primary/10 px-3 py-2 text-center text-xs font-medium text-primary">
-          Member feature: {ACCOUNTABILITY_GROUP_PLURAL} — not creator challenge groups
-        </p>
         <GroupsInteractive
           group={group}
           feed={feed}
           loggedIn={Boolean(userId)}
           viewerUserId={userId}
+          pendingJoin={pendingJoin}
         />
       </div>
     </div>
