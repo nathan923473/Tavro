@@ -59,7 +59,7 @@ test("formatHumanCountdownToStart includes d h m s", () => {
     return `${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
   }
   const now = Date.UTC(2026, 9, 9, 12, 0, 0);
-  const start = new Date(now + (2 * 86_400_000 + 3 * 3_600_000 + 4 * 60_000 + 5) * 1000);
+  const start = new Date(now + 2 * 86_400_000 + 3 * 3_600_000 + 4 * 60_000 + 5 * 1000);
   assert.equal(formatHumanCountdownToStart(start, now), "2d 03h 04m 05s");
   assert.equal(formatHumanCountdownToStart(new Date(now), now), "Started");
 });
