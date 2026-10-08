@@ -14,7 +14,7 @@ import {
 } from "@/lib/timezone/format";
 import { cn } from "@/lib/cn";
 import { Clock } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type ChallengeStartCountdownProps = {
   /** Exact UTC start instant (preferred). */
@@ -49,8 +49,14 @@ export function ChallengeStartCountdown({
 }: ChallengeStartCountdownProps) {
   const startInstant = useStartInstant(startAt, startDate);
   const minuteTick = useMinuteTicker();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const { text, expired } = useMemo(() => {
+    if (!mounted) return { text: "", expired: false };
     void minuteTick;
     if (!startInstant) return { text: "", expired: false };
     if (hasStarted(startInstant)) return { text: "Started", expired: true };
@@ -63,9 +69,88 @@ export function ChallengeStartCountdown({
       ? formatCompactCountdownToStart(startInstant)
       : formatHumanCountdownToStart(startInstant);
     return { text: formatted, expired: false };
-  }, [startInstant, minuteTick, variant]);
+  }, [mounted, startInstant, minuteTick, variant]);
 
   if (!startInstant) return null;
+
+  const countdownLabel =
+    text === "Starting soon" ? "Starting soon" : text ? `${label} ${text}` : `${label} …`;
+
+  if (!mounted) {
+    if (variant === "compact") {
+      return (
+        <span
+          className={cn(
+            "inline-flex max-w-full items-center gap-1 text-xs font-medium text-muted-foreground",
+            className,
+          )}
+          role="timer"
+          aria-live="polite"
+        >
+          <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
+          <span className="truncate tabular-nums">{`${label} …`}</span>
+        </span>
+      );
+    }
+    if (variant === "badge") {
+      return (
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground",
+            className,
+          )}
+          role="timer"
+          aria-live="polite"
+        >
+          <Clock className="h-3 w-3 shrink-0" aria-hidden />
+          {`${label} …`}
+        </span>
+      );
+    }
+    if (variant === "strip") {
+      return (
+        <div
+          className={cn("border-b border-border bg-muted/40 px-4 py-2", className)}
+          role="timer"
+          aria-live="polite"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {label}
+            </span>
+            <span className="inline-flex items-center gap-1 text-sm font-medium tabular-nums">
+              <Clock className="h-3.5 w-3.5" aria-hidden />
+              {`${label} …`}
+            </span>
+          </div>
+        </div>
+      );
+    }
+    if (variant === "banner" || variant === "prominent" || variant === "hero") {
+      return (
+        <div
+          className={cn(
+            variant === "hero"
+              ? "rounded-2xl border border-border bg-muted/40 px-4 py-4 text-center"
+              : "rounded-xl border border-border bg-muted/30 px-3 py-2.5",
+            className,
+          )}
+          role="timer"
+          aria-live="polite"
+        >
+          <p className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-foreground">
+            <Clock className="h-4 w-4 text-primary" aria-hidden />
+            {`${label} …`}
+          </p>
+        </div>
+      );
+    }
+    return (
+      <p className={cn("text-sm text-muted-foreground", className)} role="timer" aria-live="polite">
+        {`${label} …`}
+      </p>
+    );
+  }
 
   if (expired && variant !== "inline") {
     return null;
@@ -85,8 +170,6 @@ export function ChallengeStartCountdown({
       : null;
 
   if (variant === "compact") {
-    const display =
-      text === "Starting soon" ? "Starting soon" : `${label} ${text}`;
     return (
       <span
         className={cn(
@@ -97,7 +180,7 @@ export function ChallengeStartCountdown({
         aria-live="polite"
       >
         <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
-        <span className="truncate tabular-nums">{display}</span>
+        <span className="truncate tabular-nums">{countdownLabel}</span>
       </span>
     );
   }
@@ -113,7 +196,7 @@ export function ChallengeStartCountdown({
         aria-live="polite"
       >
         <Clock className="h-3 w-3 shrink-0" aria-hidden />
-        {text === "Starting soon" ? text : `${label} ${text}`}
+        {countdownLabel}
       </span>
     );
   }
@@ -134,7 +217,7 @@ export function ChallengeStartCountdown({
           </span>
           <span className="inline-flex items-center gap-1 text-sm font-medium tabular-nums">
             <Clock className="h-3.5 w-3.5" aria-hidden />
-            {text === "Starting soon" ? text : `${label} ${text}`}
+            {countdownLabel}
           </span>
         </div>
       </div>
@@ -155,7 +238,7 @@ export function ChallengeStartCountdown({
           <Clock className="h-4 w-4 shrink-0 text-primary" aria-hidden />
           <div className="min-w-0">
             <p className="text-sm font-semibold tabular-nums text-foreground">
-              {text === "Starting soon" ? text : `${label} ${text}`}
+              {countdownLabel}
             </p>
             <p className="text-xs text-muted-foreground">{localLine} your time</p>
             {creatorLine ? (
@@ -179,7 +262,7 @@ export function ChallengeStartCountdown({
       >
         <p className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-foreground">
           <Clock className="h-4 w-4 text-primary" aria-hidden />
-          {text === "Starting soon" ? text : `${label} ${text}`}
+          {countdownLabel}
         </p>
         <p className="mt-2 text-sm text-muted-foreground">{localLine}</p>
         <p className="text-xs text-muted-foreground">{friendlyTimezoneTitle(participantTz)}</p>
@@ -192,7 +275,7 @@ export function ChallengeStartCountdown({
 
   return (
     <p className={cn("text-sm text-muted-foreground", className)} role="timer" aria-live="polite">
-      {expired ? "Started" : text === "Starting soon" ? text : `${label} ${text}`}
+      {expired ? "Started" : countdownLabel}
       <span className="mt-0.5 block text-xs">{localLine}</span>
     </p>
   );
