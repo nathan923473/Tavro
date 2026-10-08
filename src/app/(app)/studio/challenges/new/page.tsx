@@ -13,7 +13,7 @@ export default async function NewChallengePage() {
   const supabase = await createClient();
   const { data: profileRow } = await supabase
     .from("profiles")
-    .select("timezone")
+    .select("timezone, display_name, avatar_url")
     .eq("id", user.id)
     .maybeSingle();
   const defaultChallengeTimezone = normalizeTimezone(
@@ -27,7 +27,11 @@ export default async function NewChallengePage() {
       subtitle="Free · ~5–10 minutes once your content is ready"
     >
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
-        <ChallengeBuilderWizard defaultChallengeTimezone={defaultChallengeTimezone} />
+        <ChallengeBuilderWizard
+          defaultChallengeTimezone={defaultChallengeTimezone}
+          creatorDisplayName={profileRow?.display_name ?? "You"}
+          creatorAvatarUrl={profileRow?.avatar_url ?? null}
+        />
       </Suspense>
     </StudioLayout>
   );

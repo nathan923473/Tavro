@@ -27,6 +27,7 @@ import {
   formatCalendarDateKey,
   formatChallengeDateRange,
 } from "@/lib/timezone/format";
+import { ChallengeBuilderWithPreview } from "@/components/creator/studio/challenge-builder-with-preview";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition, type Dispatch, type SetStateAction } from "react";
@@ -124,8 +125,12 @@ const CATEGORIES: { value: ChallengeCategory; label: string }[] = [
 
 export function ChallengeBuilderWizard({
   defaultChallengeTimezone = "Australia/Melbourne",
+  creatorDisplayName = "You",
+  creatorAvatarUrl = null,
 }: {
   defaultChallengeTimezone?: string;
+  creatorDisplayName?: string;
+  creatorAvatarUrl?: string | null;
 } = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -249,8 +254,24 @@ export function ChallengeBuilderWizard({
     );
   }
 
+  const previewProps = {
+    templateLabel: template.label,
+    category,
+    title,
+    shortDescription,
+    description,
+    goalDescription,
+    startDate,
+    endDate,
+    startTimeLocal,
+    challengeTimezone,
+    schedule,
+    creatorDisplayName,
+    creatorAvatarUrl,
+  };
+
   return (
-    <div className="space-y-4">
+    <ChallengeBuilderWithPreview {...previewProps} showPreview={step >= 0 && step <= 4}>
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         Step {step + 1} of 5
       </p>
@@ -499,12 +520,11 @@ export function ChallengeBuilderWizard({
 
       {step === 4 ? (
         <Card className="space-y-3">
-          <h2 className="font-semibold">Preview</h2>
-          <p className="text-lg font-semibold">{title}</p>
-          {shortDescription ? (
-            <p className="text-sm text-muted-foreground">{shortDescription}</p>
-          ) : null}
-          <p className="text-sm">{goalDescription}</p>
+          <h2 className="font-semibold">Review & publish</h2>
+          <p className="text-sm text-muted-foreground">
+            Use the live participant preview while you edit. Below is your full day-by-day plan before
+            you publish.
+          </p>
           <p className="text-xs text-muted-foreground">
             {plannedDayCount} days · {formatChallengeDateRange(startDate, endDate, challengeTimezone)} ·
             Free challenge
@@ -565,7 +585,7 @@ export function ChallengeBuilderWizard({
           {error}
         </p>
       ) : null}
-    </div>
+    </ChallengeBuilderWithPreview>
   );
 }
 
