@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { resolveUserGroupId } from "@/lib/data/resolve-user-group-id";
+import { listUserGroupCandidateIds } from "@/lib/data/resolve-user-group-id";
 import { unwrapOne } from "@/lib/data/relations";
 import { formatTimeAgo, todayDateKey } from "@/lib/dates";
 import type { AccountabilityGroup, GroupActivity, GroupJoinRequest } from "@/types";
@@ -18,20 +18,28 @@ export type UserGroupState = {
   group: AccountabilityGroup | null;
   feed: GroupActivity[];
   pendingJoin: PendingGroupJoin | null;
+  /** Set when the account is linked to a group row but the hub could not be loaded. */
+  existingGroupBlocked?: boolean;
 };
 
 export async function fetchUserGroup(userId: string): Promise<UserGroupState> {
   const supabase = await createClient();
 
-  const groupId = await resolveUserGroupId(supabase, userId);
-
-  if (!groupId) {
-    const pending = await fetchPendingJoinForUser(supabase, userId);
-    return { group: null, feed: [], pendingJoin: pending };
+  const candidateIds = await listUserGroupCandidateIds(supabase, userId);
+  for (const groupId of candidateIds) {
+    const loaded = await loadGroupHub(supabase, groupId, userId);
+    if (loaded.group) {
+      return { ...loaded, pendingJoin: null };
+    }
   }
 
-  const loaded = await loadGroupHub(supabase, groupId, userId);
-  return { ...loaded, pendingJoin: null };
+  const pending = await fetchPendingJoinForUser(supabase, userId);
+  return {
+    group: null,
+    feed: [],
+    pendingJoin: pending,
+    existingGroupBlocked: candidateIds.length > 0,
+  };
 }
 
 async function fetchPendingJoinForUser(
@@ -91,15 +99,23 @@ async function fetchPendingJoinForUser(
   };
 }
 
-async function loadGroupHub(
+async function fetchGroupRowForViewer(
   supabase: Awaited<ReturnType<typeof createClient>>,
   groupId: string,
-  userId: string,
-): Promise<{ group: AccountabilityGroup | null; feed: GroupActivity[] }> {
+): Promise<Record<string, unknown> | null> {
+  const rpc = await supabase.rpc("get_accountability_group_for_viewer", {
+    p_group_id: groupId,
+  });
+  if (!rpc.error && rpc.data) {
+    const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
+    if (row && typeof row === "object") {
+      return row as Record<string, unknown>;
+    }
+  }
+
   const groupSelect =
     "id, name, goal, invite_code, max_members, join_mode, invites_enabled, created_by";
 
-  let groupRow: Record<string, unknown> | null = null;
   const full = await supabase
     .from("accountability_groups")
     .select(groupSelect)
@@ -112,10 +128,22 @@ async function loadGroupHub(
       .select("id, name, invite_code, max_members, created_by")
       .eq("id", groupId)
       .single();
-    groupRow = legacy.data as Record<string, unknown> | null;
-  } else {
-    groupRow = full.data as Record<string, unknown> | null;
+    return legacy.data as Record<string, unknown> | null;
   }
+
+  if (full.error || !full.data) {
+    return null;
+  }
+
+  return full.data as Record<string, unknown>;
+}
+
+async function loadGroupHub(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  groupId: string,
+  userId: string,
+): Promise<{ group: AccountabilityGroup | null; feed: GroupActivity[] }> {
+  const groupRow = await fetchGroupRowForViewer(supabase, groupId);
 
   if (!groupRow) return { group: null, feed: [] };
 

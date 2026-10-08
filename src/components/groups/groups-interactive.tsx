@@ -38,12 +38,14 @@ export function GroupsInteractive({
   loggedIn,
   viewerUserId = null,
   pendingJoin = null,
+  existingGroupBlocked = false,
 }: {
   group: AccountabilityGroup | null;
   feed: GroupActivity[];
   loggedIn: boolean;
   viewerUserId?: string | null;
   pendingJoin?: PendingGroupJoin | null;
+  existingGroupBlocked?: boolean;
 }) {
   const router = useRouter();
   const createFormRef = useRef<HTMLDivElement>(null);
@@ -84,8 +86,31 @@ export function GroupsInteractive({
 
         {pendingJoin ? <GroupPendingJoinCard pendingJoin={pendingJoin} /> : null}
 
+        {existingGroupBlocked && !pendingJoin ? (
+          <Card className="border-primary/30 bg-primary/5">
+            <h2 className="font-semibold">Your group is already set up</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              We found an existing {ACCOUNTABILITY_GROUP_SINGULAR} on your account, but the page
+              could not load it yet. Refresh below — if it still fails, your database may need
+              migration <span className="font-mono text-xs">030_group_hub_viewer_access.sql</span>.
+            </p>
+            <Button
+              type="button"
+              className="mt-3"
+              fullWidth
+              onClick={() => router.refresh()}
+            >
+              Refresh my group
+            </Button>
+          </Card>
+        ) : null}
+
         <div ref={createFormRef}>
-        <Card className={pendingJoin ? "opacity-90" : undefined}>
+        <Card
+          className={
+            pendingJoin || existingGroupBlocked ? "pointer-events-none opacity-60" : undefined
+          }
+        >
           <h2 className="font-semibold">Create a {ACCOUNTABILITY_GROUP_SINGULAR}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {pendingJoin
@@ -127,7 +152,7 @@ export function GroupsInteractive({
           <Button
             className="mt-3"
             fullWidth
-            disabled={pending || Boolean(pendingJoin)}
+            disabled={pending || Boolean(pendingJoin) || existingGroupBlocked}
             onClick={() =>
               startTransition(async () => {
                 try {

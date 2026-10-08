@@ -51,7 +51,7 @@ async function assertNotInOtherGroup(
   const currentGroupId = await resolveUserGroupId(supabase, userId);
   if (currentGroupId && currentGroupId !== exceptGroupId) {
     throw new Error(
-      "Leave your current private accountability group before joining another.",
+      "You already belong to a private accountability group. Open the P.A. groups tab — if you do not see it, refresh the page.",
     );
   }
 }

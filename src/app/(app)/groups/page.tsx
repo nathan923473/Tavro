@@ -13,9 +13,9 @@ export const metadata = { title: "Private accountability groups" };
 export default async function GroupsPage() {
   const { user } = await getCurrentUserProfile();
   const userId = user?.id ?? null;
-  const { group, feed, pendingJoin } = userId
+  const { group, feed, pendingJoin, existingGroupBlocked } = userId
     ? await fetchUserGroup(userId)
-    : { group: null, feed: [], pendingJoin: null };
+    : { group: null, feed: [], pendingJoin: null, existingGroupBlocked: false };
 
   return (
     <div className="animate-fade-up">
@@ -30,6 +30,7 @@ export default async function GroupsPage() {
           loggedIn={Boolean(userId)}
           viewerUserId={userId}
           pendingJoin={pendingJoin}
+          existingGroupBlocked={existingGroupBlocked}
         />
       </div>
     </div>
