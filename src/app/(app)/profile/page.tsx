@@ -11,7 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { AuStateOrTerritory } from "@/lib/timezone/constants";
 import { ProfilePhotoCard } from "@/components/profile/profile-photo-card";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
-import { SupabaseStatus } from "@/components/profile/supabase-status";
+import { AdminSupabaseDiagnostics } from "@/components/admin/admin-supabase-diagnostics";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchMemberGoals } from "@/lib/data/member";
@@ -70,7 +70,12 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
             initialName={profile.displayName ?? user?.email?.split("@")[0] ?? "Member"}
           />
         ) : null}
-        {profile?.role === "admin" ? <AdminToolsCard /> : null}
+        {profile?.role === "admin" ? (
+          <div className="space-y-2">
+            <AdminToolsCard />
+            <AdminSupabaseDiagnostics />
+          </div>
+        ) : null}
         <ProfilePhotoCard />
         <CreatorMediaCard />
         <AccountExperience />
@@ -138,7 +143,6 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
 
         {user ? <TimezoneSettingsCard timezone={timezone} auState={auState} /> : null}
         <NotificationPreferencesCard />
-        <SupabaseStatus />
         <InstallPrompt />
 
         <Card>

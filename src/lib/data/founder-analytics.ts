@@ -5,7 +5,6 @@ import {
 import {
   type FounderDateRange,
   parseFounderDateRange,
-  percentChange,
   safeRate,
 } from "@/lib/analytics/date-range";
 import {
