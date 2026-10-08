@@ -3,6 +3,7 @@ import {
   CommunityBannerWithReport,
 } from "@/components/creator/community-hero-report-slots";
 import { Badge } from "@/components/ui/badge";
+import { creatorCommunityBrandLabel } from "@/lib/creator-display-name";
 import type { CreatorCommunity } from "@/types/creator-community";
 import type { ReactNode } from "react";
 import { Globe, Link2, Share2, Video } from "lucide-react";
@@ -77,17 +78,27 @@ export function CommunityHero({
           )}
         </div>
         <div className="mt-3">
-          {community.communityName.trim().toLowerCase() !==
-          community.creatorDisplayName.trim().toLowerCase() ? (
-            <>
+          {(() => {
+            const brand = creatorCommunityBrandLabel(
+              community.communityName,
+              community.creatorDisplayName,
+            );
+            if (brand) {
+              return (
+                <>
+                  <h1 className="text-xl font-semibold tracking-tight">
+                    {community.creatorDisplayName}
+                  </h1>
+                  <p className="text-sm text-muted-foreground">{brand}</p>
+                </>
+              );
+            }
+            return (
               <h1 className="text-xl font-semibold tracking-tight">
                 {community.creatorDisplayName}
               </h1>
-              <p className="text-sm text-muted-foreground">{community.communityName}</p>
-            </>
-          ) : (
-            <h1 className="text-xl font-semibold tracking-tight">{community.communityName}</h1>
-          )}
+            );
+          })()}
         </div>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
           {community.bio}

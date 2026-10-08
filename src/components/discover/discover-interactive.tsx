@@ -14,6 +14,7 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { CalendarRange, Compass, Gift, Search, Sparkles, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { creatorCommunityBrandLabel } from "@/lib/creator-display-name";
 import { useState, useTransition, type FormEvent } from "react";
 
 function ChallengeRow({
@@ -98,10 +99,6 @@ function ChallengeRow({
       </Card>
     </li>
   );
-}
-
-function creatorNamesDiffer(communityName: string, ownerName: string) {
-  return communityName.trim().toLowerCase() !== ownerName.trim().toLowerCase();
 }
 
 type DiscoverInteractiveProps = {
@@ -229,28 +226,36 @@ export function DiscoverInteractive({
                 ))}
               </ul>
               <ul className="mt-4 space-y-2">
-                {results.creators.map((cr) => (
-                  <li key={cr.id}>
-                    <Link
-                      href={`/creator/${cr.slug}`}
-                      className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3"
-                    >
-                      <UserAvatar
-                        displayName={cr.ownerName}
-                        avatarUrl={cr.avatarUrl}
-                        size="md"
-                        className="rounded-xl"
-                      />
-                      <div className="min-w-0">
-                        <p className="font-semibold leading-snug">{cr.ownerName}</p>
-                        {creatorNamesDiffer(cr.communityName, cr.ownerName) ? (
-                          <p className="text-xs text-muted-foreground">{cr.communityName}</p>
-                        ) : null}
-                        <p className="text-sm text-muted-foreground line-clamp-2">{cr.bio}</p>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
+                {results.creators.map((cr) => {
+                  const brand = creatorCommunityBrandLabel(
+                    cr.communityName,
+                    cr.ownerName,
+                  );
+                  return (
+                    <li key={cr.id}>
+                      <Link
+                        href={`/creator/${cr.slug}`}
+                        className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3"
+                      >
+                        <UserAvatar
+                          displayName={cr.ownerName}
+                          avatarUrl={cr.avatarUrl}
+                          size="md"
+                          className="rounded-xl"
+                        />
+                        <div className="min-w-0">
+                          <p className="font-semibold leading-snug">{cr.ownerName}</p>
+                          {brand ? (
+                            <p className="text-xs text-muted-foreground">{brand}</p>
+                          ) : null}
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {cr.bio}
+                          </p>
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </>
           )}
@@ -307,9 +312,13 @@ export function DiscoverInteractive({
                       <p className="font-semibold leading-snug">{cr.ownerName}</p>
                       <p className="text-xs text-muted-foreground">
                         {cr.memberCount} followers
-                        {creatorNamesDiffer(cr.communityName, cr.ownerName)
-                          ? ` · ${cr.communityName}`
-                          : ""}
+                        {(() => {
+                          const brand = creatorCommunityBrandLabel(
+                            cr.communityName,
+                            cr.ownerName,
+                          );
+                          return brand ? ` · ${brand}` : "";
+                        })()}
                       </p>
                     </div>
                   </Link>

@@ -22,6 +22,7 @@
     "test:timezone": "node --test scripts/timezone.test.mjs",
     "test:challenge-lifecycle": "node --test scripts/challenge-lifecycle.test.mjs",
     "test:founder-analytics": "node --test scripts/founder-analytics.test.mjs",
+    "test:creator-display": "node --test --experimental-strip-types scripts/creator-display-name.test.mjs",
     "lint": "eslint",
     "icons": "node scripts/generate-icons.mjs",
     "postinstall": "node scripts/generate-icons.mjs"

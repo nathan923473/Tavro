@@ -16,12 +16,48 @@ export async function updateDisplayNameAction(displayName: string) {
   const trimmed = displayName.trim().slice(0, 80);
   if (!trimmed) throw new Error("Enter a display name.");
 
+  const { data: before } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", userId)
+    .maybeSingle();
+  const previousDisplayName = before?.display_name?.trim() ?? "";
+
   const { error } = await supabase
     .from("profiles")
     .update({ display_name: trimmed, updated_at: new Date().toISOString() })
     .eq("id", userId);
 
   if (error) throw new Error(error.message);
+
+  const { data: community } = await supabase
+    .from("creator_communities")
+    .select("id, slug, community_name")
+    .eq("owner_id", userId)
+    .maybeSingle();
+
+  if (community) {
+    const communityName = community.community_name?.trim() ?? "";
+    const shouldSyncCommunity =
+      communityName &&
+      previousDisplayName &&
+      communityName.toLowerCase() === previousDisplayName.toLowerCase() &&
+      communityName.toLowerCase() !== trimmed.toLowerCase();
+
+    if (shouldSyncCommunity) {
+      await supabase
+        .from("creator_communities")
+        .update({
+          community_name: trimmed,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", community.id)
+        .eq("owner_id", userId);
+      if (community.slug) {
+        revalidatePath(`/creator/${community.slug}`);
+      }
+    }
+  }
 
   revalidatePath("/profile");
   revalidatePath("/");
