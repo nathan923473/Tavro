@@ -12,6 +12,7 @@
     "check:auth": "node scripts/check-supabase-auth.mjs",
     "check:media": "node scripts/check-media.mjs",
     "verify:env": "node scripts/verify-env.mjs",
+    "change-user-email": "node scripts/change-user-email.mjs",
     "check:branding": "node scripts/check-branding.mjs",
     "apply:branding": "node scripts/apply-pag-branding.mjs",
     "seed:demo-group": "node scripts/seed-demo-group.mjs",
