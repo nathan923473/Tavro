@@ -90,6 +90,37 @@ export type GroupWeeklyCommitment = {
   isOwn: boolean;
 };
 
+export type GroupPersonalScheduleType =
+  | "daily"
+  | "every_n_days"
+  | "weekdays"
+  | "times_per_week";
+
+export type GroupMemberPersonalGoal = {
+  userId: string;
+  title: string;
+  scheduleType: GroupPersonalScheduleType;
+  scheduleInterval: number;
+  scheduleWeekdays: number[];
+  timesPerWeek: number;
+  scheduleAnchor: string;
+  scheduleLabel: string;
+};
+
+export type GroupCheckInReactionKey = "clap" | "fire" | "muscle" | "heart";
+
+export type GroupCheckInReactionCounts = Record<GroupCheckInReactionKey, number>;
+
+export const GROUP_CHECK_IN_REACTION_LABELS: Record<
+  GroupCheckInReactionKey,
+  { emoji: string; label: string }
+> = {
+  clap: { emoji: "👏", label: "Well done" },
+  fire: { emoji: "🔥", label: "Keep going" },
+  muscle: { emoji: "💪", label: "Nice work" },
+  heart: { emoji: "❤️", label: "Support" },
+};
+
 export type GroupCheckInBoardMember = {
   userId: string;
   displayName: string;
@@ -97,6 +128,22 @@ export type GroupCheckInBoardMember = {
   status: GroupDailyCheckInStatus | null;
   note: string;
   checkedIn: boolean;
+  scheduledToday: boolean;
+  personalGoalTitle: string;
+  reactions: GroupCheckInReactionCounts;
+  viewerReactionKeys: GroupCheckInReactionKey[];
+};
+
+export type GroupRecentCheckIn = {
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  status: GroupDailyCheckInStatus;
+  note: string;
+  checkInDate: string;
+  timeAgo: string;
+  reactions: GroupCheckInReactionCounts;
+  viewerReactionKeys: GroupCheckInReactionKey[];
 };
 
 export type GroupFeedItem = {
@@ -146,6 +193,10 @@ export type AccountabilityGroup = {
   viewerCheckInStatus: GroupDailyCheckInStatus | null;
   viewerPausedUntil: string | null;
   weeklyRecap: GroupWeeklyRecap | null;
+  viewerPersonalGoal: GroupMemberPersonalGoal | null;
+  memberPersonalGoals: GroupMemberPersonalGoal[];
+  recentCheckIns: GroupRecentCheckIn[];
+  viewerScheduledToday: boolean;
 };
 
 export type GroupActivity = GroupFeedItem;

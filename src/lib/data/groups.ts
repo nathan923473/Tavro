@@ -4,15 +4,32 @@ import { unwrapOne } from "@/lib/data/relations";
 import { formatTimeAgo, todayDateKey } from "@/lib/dates";
 import { currentWeekStartKey, previousWeekStartKey } from "@/lib/groups/week";
 import { ACCOUNTABILITY_GROUP_MIN_MEMBERS } from "@/lib/copy/accountability-groups";
+import {
+  isPersonalGoalScheduledToday,
+  scheduleLabel,
+} from "@/lib/groups/goal-schedule";
 import type {
   AccountabilityGroup,
   GroupActivity,
+  GroupCheckInReactionKey,
   GroupDailyCheckInStatus,
   GroupFeedItem,
   GroupFocusType,
   GroupJoinRequest,
+  GroupMemberPersonalGoal,
   GroupWeeklyRecap,
 } from "@/types";
+
+const EMPTY_REACTIONS = (): Record<GroupCheckInReactionKey, number> => ({
+  clap: 0,
+  fire: 0,
+  muscle: 0,
+  heart: 0,
+});
+
+function isReactionKey(v: string): v is GroupCheckInReactionKey {
+  return v === "clap" || v === "fire" || v === "muscle" || v === "heart";
+}
 
 export type PendingGroupJoin = {
   requestId: string;
@@ -202,9 +219,10 @@ async function loadGroupHub(
     p_group_id: groupId,
     p_date: today,
   });
+  let boardRows: AccountabilityGroup["checkInBoard"] = [];
   if (!boardRpc.error && boardRpc.data) {
     const rows = Array.isArray(boardRpc.data) ? boardRpc.data : [boardRpc.data];
-    checkInBoard = rows
+    boardRows = rows
       .filter((r): r is Record<string, unknown> => Boolean(r && typeof r === "object"))
       .map((r) => {
         const statusRaw = String(r.status ?? "");
@@ -219,13 +237,13 @@ async function loadGroupHub(
           status,
           note: String(r.note ?? ""),
           checkedIn: Boolean(r.checked_in),
+          scheduledToday: true,
+          personalGoalTitle: "",
+          reactions: EMPTY_REACTIONS(),
+          viewerReactionKeys: [] as GroupCheckInReactionKey[],
         };
       });
   }
-
-  const checkedInToday = new Set(
-    checkInBoard.filter((m) => m.checkedIn).map((m) => m.userId),
-  );
 
   const weekStartKey = weekStart;
   let weeklyCommitments: AccountabilityGroup["weeklyCommitments"] = [];
@@ -252,6 +270,175 @@ async function loadGroupHub(
         targetCount: c.target_count,
         progressCount: c.progress_count,
         isOwn: c.user_id === userId,
+      };
+    });
+  }
+
+  const weekCheckInCounts = new Map<string, number>();
+  const weekCheckInsRes = await supabase
+    .from("group_member_daily_check_ins")
+    .select("user_id, status")
+    .eq("group_id", groupId)
+    .gte("check_in_date", weekStartKey)
+    .lte("check_in_date", today);
+  if (!weekCheckInsRes.error) {
+    for (const row of weekCheckInsRes.data ?? []) {
+      if (row.status === "completed" || row.status === "partial") {
+        weekCheckInCounts.set(
+          row.user_id as string,
+          (weekCheckInCounts.get(row.user_id as string) ?? 0) + 1,
+        );
+      }
+    }
+  }
+
+  const personalGoalsByUser = new Map<string, GroupMemberPersonalGoal>();
+  const personalGoalsRes = await supabase
+    .from("group_member_personal_goals")
+    .select(
+      "user_id, title, schedule_type, schedule_interval, schedule_weekdays, times_per_week, schedule_anchor",
+    )
+    .eq("group_id", groupId);
+  if (!personalGoalsRes.error) {
+    for (const g of personalGoalsRes.data ?? []) {
+      const scheduleType = g.schedule_type as GroupMemberPersonalGoal["scheduleType"];
+      const goal: GroupMemberPersonalGoal = {
+        userId: g.user_id as string,
+        title: String(g.title),
+        scheduleType,
+        scheduleInterval: Number(g.schedule_interval ?? 1),
+        scheduleWeekdays: Array.isArray(g.schedule_weekdays)
+          ? (g.schedule_weekdays as number[])
+          : [],
+        timesPerWeek: Number(g.times_per_week ?? 3),
+        scheduleAnchor: String(g.schedule_anchor ?? today),
+        scheduleLabel: "",
+      };
+      goal.scheduleLabel = scheduleLabel(goal);
+      personalGoalsByUser.set(goal.userId, goal);
+    }
+  }
+
+  const sharedGoalFallback =
+    typeof groupRow.shared_goal === "string" && groupRow.shared_goal
+      ? groupRow.shared_goal
+      : typeof groupRow.goal === "string"
+        ? groupRow.goal
+        : "Stay consistent with our group focus";
+
+  function defaultGoalForUser(memberUserId: string): GroupMemberPersonalGoal {
+    const ownCommitment = weeklyCommitments.find((c) => c.userId === memberUserId);
+    const title = ownCommitment?.title ?? sharedGoalFallback;
+    const scheduleType: GroupMemberPersonalGoal["scheduleType"] = ownCommitment
+      ? "times_per_week"
+      : "daily";
+    const goal: GroupMemberPersonalGoal = {
+      userId: memberUserId,
+      title,
+      scheduleType,
+      scheduleInterval: 2,
+      scheduleWeekdays: [1, 3, 5],
+      timesPerWeek: ownCommitment?.targetCount ?? 3,
+      scheduleAnchor: weekStartKey,
+      scheduleLabel: "",
+    };
+    goal.scheduleLabel = scheduleLabel(goal);
+    return goal;
+  }
+
+  const reactionMap = new Map<
+    string,
+    { counts: Record<GroupCheckInReactionKey, number>; viewer: GroupCheckInReactionKey[] }
+  >();
+  const reactionsRes = await supabase
+    .from("group_check_in_reactions")
+    .select("target_user_id, check_in_date, reaction_key, reactor_user_id")
+    .eq("group_id", groupId)
+    .gte("check_in_date", weekStartKey);
+  if (!reactionsRes.error) {
+    for (const r of reactionsRes.data ?? []) {
+      const key = `${r.target_user_id}:${r.check_in_date}`;
+      let bucket = reactionMap.get(key);
+      if (!bucket) {
+        bucket = { counts: EMPTY_REACTIONS(), viewer: [] };
+        reactionMap.set(key, bucket);
+      }
+      const rk = String(r.reaction_key);
+      if (isReactionKey(rk)) {
+        bucket.counts[rk] += 1;
+        if (r.reactor_user_id === userId) bucket.viewer.push(rk);
+      }
+    }
+  }
+
+  checkInBoard = boardRows.map((m) => {
+    const goal = personalGoalsByUser.get(m.userId) ?? defaultGoalForUser(m.userId);
+    const weekDone = weekCheckInCounts.get(m.userId) ?? 0;
+    const scheduledToday = isPersonalGoalScheduledToday(goal, today, weekDone);
+    const reactKey = `${m.userId}:${today}`;
+    const react = reactionMap.get(reactKey);
+    return {
+      ...m,
+      scheduledToday,
+      personalGoalTitle: goal.title,
+      reactions: react?.counts ?? EMPTY_REACTIONS(),
+      viewerReactionKeys: react?.viewer ?? [],
+    };
+  });
+
+  const checkedInToday = new Set(
+    checkInBoard.filter((m) => m.checkedIn).map((m) => m.userId),
+  );
+
+  let viewerPersonalGoal: GroupMemberPersonalGoal | null =
+    personalGoalsByUser.get(userId) ?? null;
+  if (!viewerPersonalGoal) {
+    viewerPersonalGoal = defaultGoalForUser(userId);
+  }
+  const viewerScheduledToday = isPersonalGoalScheduledToday(
+    viewerPersonalGoal,
+    today,
+    weekCheckInCounts.get(userId) ?? 0,
+  );
+
+  const memberPersonalGoals: GroupMemberPersonalGoal[] = (members ?? []).map((m) => {
+    const uid = m.user_id;
+    return personalGoalsByUser.get(uid) ?? defaultGoalForUser(uid);
+  });
+
+  let recentCheckIns: AccountabilityGroup["recentCheckIns"] = [];
+  const recentCheckInsRes = await supabase
+    .from("group_member_daily_check_ins")
+    .select(
+      `
+      user_id, status, note, check_in_date, updated_at,
+      profile:profiles!group_member_daily_check_ins_user_id_fkey ( display_name, avatar_url )
+    `,
+    )
+    .eq("group_id", groupId)
+    .order("check_in_date", { ascending: false })
+    .order("updated_at", { ascending: false })
+    .limit(12);
+
+  if (!recentCheckInsRes.error) {
+    recentCheckIns = (recentCheckInsRes.data ?? []).map((row) => {
+      const profile = unwrapOne(row.profile);
+      const status = row.status as GroupDailyCheckInStatus;
+      const checkInDate = String(row.check_in_date);
+      const react = reactionMap.get(`${row.user_id}:${checkInDate}`);
+      return {
+        userId: row.user_id as string,
+        displayName: profile?.display_name ?? "Member",
+        avatarUrl:
+          profile && "avatar_url" in profile && typeof profile.avatar_url === "string"
+            ? profile.avatar_url
+            : null,
+        status,
+        note: String(row.note ?? ""),
+        checkInDate,
+        timeAgo: formatTimeAgo(String(row.updated_at ?? row.check_in_date)),
+        reactions: react?.counts ?? EMPTY_REACTIONS(),
+        viewerReactionKeys: react?.viewer ?? [],
       };
     });
   }
@@ -478,6 +665,10 @@ async function loadGroupHub(
     viewerCheckInStatus,
     viewerPausedUntil,
     weeklyRecap,
+    viewerPersonalGoal,
+    memberPersonalGoals,
+    recentCheckIns,
+    viewerScheduledToday,
     members: (members ?? []).map((m) => {
       const profile = unwrapOne(m.profile);
       return {

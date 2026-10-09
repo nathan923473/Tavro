@@ -7,7 +7,12 @@ import {
   ACCOUNTABILITY_GROUP_MAX_MEMBERS,
 } from "@/lib/copy/accountability-groups";
 import { currentWeekStartKey } from "@/lib/groups/week";
-import type { GroupDailyCheckInStatus, GroupFocusType } from "@/types";
+import type {
+  GroupCheckInReactionKey,
+  GroupDailyCheckInStatus,
+  GroupFocusType,
+  GroupPersonalScheduleType,
+} from "@/types";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 
@@ -652,8 +657,99 @@ export async function setGroupParticipationPauseAction(groupId: string, pausedUn
   return { ok: true as const };
 }
 
+export async function saveGroupPersonalGoalAction(input: {
+  groupId: string;
+  title: string;
+  scheduleType: GroupPersonalScheduleType;
+  scheduleInterval?: number;
+  scheduleWeekdays?: number[];
+  timesPerWeek?: number;
+}) {
+  const { supabase, userId } = await requireUserId();
+  const title = input.title.trim();
+  if (title.length < 2) throw new Error("Describe your personal goal in a few words.");
+
+  const scheduleType = input.scheduleType;
+  const scheduleInterval = Math.min(14, Math.max(1, Math.floor(input.scheduleInterval ?? 2)));
+  const timesPerWeek = Math.min(7, Math.max(1, Math.floor(input.timesPerWeek ?? 3)));
+  let scheduleWeekdays = (input.scheduleWeekdays ?? [1, 3, 5]).filter(
+    (d) => d >= 0 && d <= 6,
+  );
+  if (scheduleType === "weekdays" && scheduleWeekdays.length === 0) {
+    scheduleWeekdays = [1, 3, 5];
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const { error } = await supabase.from("group_member_personal_goals").upsert(
+    {
+      group_id: input.groupId,
+      user_id: userId,
+      title,
+      schedule_type: scheduleType,
+      schedule_interval: scheduleInterval,
+      schedule_weekdays: scheduleWeekdays,
+      times_per_week: timesPerWeek,
+      schedule_anchor: today,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "group_id,user_id" },
+  );
+  if (error) throw migrationHint(error.message, "037_group_personal_goals_and_reactions.sql");
+  revalidatePath("/groups");
+  return { ok: true as const };
+}
+
+export async function toggleGroupCheckInReactionAction(input: {
+  groupId: string;
+  targetUserId: string;
+  checkInDate: string;
+  reactionKey: GroupCheckInReactionKey;
+}) {
+  const { supabase, userId } = await requireUserId();
+  if (input.targetUserId === userId) {
+    throw new Error("Pick another member's check-in to react to.");
+  }
+
+  const existing = await supabase
+    .from("group_check_in_reactions")
+    .select("reaction_key")
+    .eq("group_id", input.groupId)
+    .eq("target_user_id", input.targetUserId)
+    .eq("check_in_date", input.checkInDate)
+    .eq("reactor_user_id", userId)
+    .eq("reaction_key", input.reactionKey)
+    .maybeSingle();
+
+  if (existing.data) {
+    const { error } = await supabase
+      .from("group_check_in_reactions")
+      .delete()
+      .eq("group_id", input.groupId)
+      .eq("target_user_id", input.targetUserId)
+      .eq("check_in_date", input.checkInDate)
+      .eq("reactor_user_id", userId)
+      .eq("reaction_key", input.reactionKey);
+    if (error) throw migrationHint(error.message, "037_group_personal_goals_and_reactions.sql");
+  } else {
+    const { error } = await supabase.from("group_check_in_reactions").insert({
+      group_id: input.groupId,
+      target_user_id: input.targetUserId,
+      check_in_date: input.checkInDate,
+      reactor_user_id: userId,
+      reaction_key: input.reactionKey,
+    });
+    if (error) throw migrationHint(error.message, "037_group_personal_goals_and_reactions.sql");
+  }
+  revalidatePath("/groups");
+  return { ok: true as const };
+}
+
 function migrationHint(message: string, migration: string): Error {
-  if (/schema cache|does not exist|group_weekly|group_member_daily|group_encouragements/i.test(message)) {
+  if (
+    /schema cache|does not exist|group_weekly|group_member_daily|group_encouragements|group_member_personal_goals|group_check_in_reactions/i.test(
+      message,
+    )
+  ) {
     return new Error(`Run migration ${migration} in Supabase, then try again.`);
   }
   return new Error(message);
