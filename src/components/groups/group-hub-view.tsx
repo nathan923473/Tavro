@@ -17,7 +17,6 @@ import {
 } from "@/app/(app)/groups/actions";
 import { GroupInvitePanel } from "@/components/groups/group-invite-panel";
 import { GroupOwnerPendingCard } from "@/components/groups/group-owner-pending-card";
-import { GroupPendingRequestsAlert } from "@/components/groups/group-pending-requests-alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -117,15 +116,10 @@ export function GroupHubView({
   return (
     <div className="space-y-4">
       {group.isOwner ? (
-        <>
-          {group.pendingRequests.length > 0 ? (
-            <GroupPendingRequestsAlert pendingRequests={group.pendingRequests} />
-          ) : null}
-          <GroupOwnerPendingCard
-            pendingRequests={group.pendingRequests}
-            joinMode={group.joinMode}
-          />
-        </>
+        <GroupOwnerPendingCard
+          pendingRequests={group.pendingRequests}
+          joinMode={group.joinMode}
+        />
       ) : null}
 
       <div className="flex gap-2 overflow-x-auto pb-1">
