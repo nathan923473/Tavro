@@ -4,6 +4,7 @@ import {
   type WeeklyConsistency,
 } from "@/lib/progress/consistency";
 import { MILESTONE_DEFINITIONS } from "@/lib/progress/milestones";
+import { buildWeekDayIndicators } from "@/lib/habits/schedule";
 import { todayDateKey } from "@/lib/dates";
 import type {
   ConsistencySnapshot,
@@ -171,6 +172,11 @@ export type HomeDashboardData = {
   };
   consistency: WeeklyConsistency;
   weekDays: { day: string; completed: number; total: number }[];
+  weekDayIndicators: {
+    day: string;
+    dateKey: string;
+    status: "none" | "partial" | "complete" | "future";
+  }[];
   linkedHabits: PersonalGoal[];
   milestones: MemberMilestone[];
 };
@@ -249,6 +255,13 @@ export async function fetchHomeDashboardBundle(
     activeCount,
     weekRows.map((r) => ({ completion_date: r.completion_date })),
   );
+  const weekDayIndicators = buildWeekDayIndicators(
+    goals,
+    weekRows.filter(
+      (r): r is { goal_id: string; completion_date: string } =>
+        Boolean(r.goal_id && r.completion_date),
+    ),
+  );
 
   const milestones: MemberMilestone[] =
     milestonesRes.error || !milestonesRes.data
@@ -270,6 +283,7 @@ export async function fetchHomeDashboardBundle(
     },
     consistency: computeWeeklyConsistency(goals, completionsByGoal),
     weekDays,
+    weekDayIndicators,
     linkedHabits: goals.filter((g) => g.linkedChallengeId && !g.paused),
     milestones,
   };
