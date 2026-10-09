@@ -5,6 +5,7 @@ import {
   saveChallengeStepProgressAction,
   toggleChallengeScheduleCompletionAction,
 } from "@/app/(app)/member/actions";
+import { ChallengeCompletionOfferCard } from "@/components/challenges/participant/challenge-completion-offer";
 import { LeaveChallengeButton } from "@/components/challenges/leave-challenge-button";
 import { ShareChallengeButton } from "@/components/share/share-challenge-button";
 import { Badge } from "@/components/ui/badge";
@@ -163,6 +164,9 @@ export function ChallengeParticipantHub({
             </Link>
           ) : null}
         </Card>
+        {localHub.completionOffer ? (
+          <ChallengeCompletionOfferCard offer={localHub.completionOffer} />
+        ) : null}
         <TabBar tab={tab} setTab={setTab} />
         {!localHub.isOwner ? (
           <LeaveChallengeButton

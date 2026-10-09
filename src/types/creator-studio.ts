@@ -78,7 +78,11 @@ export type CreatorStudioOverview = {
   newFollowersThisMonth: number;
   newFollowersThisWeek: number;
   activeChallengeCount: number;
+  totalRegistrations: number;
+  activeParticipantsTotal: number;
+  totalLinkClicks: number | null;
   currentChallenge: CreatorStudioChallenge | null;
+  upcomingChallenge: CreatorStudioChallenge | null;
   otherActiveChallenges: CreatorStudioChallenge[];
   growthByWeek: { label: string; count: number }[];
   recentActivity: { id: string; label: string; at: string }[];

@@ -29,6 +29,7 @@ function revalidateStudio(communitySlug?: string) {
   revalidatePath("/studio/analytics");
   revalidatePath("/studio/announcements");
   revalidatePath("/studio/shop");
+  revalidatePath("/studio/settings");
   revalidatePath("/creator/analytics");
   if (communitySlug) {
     revalidatePath(`/creator/${communitySlug}`);
@@ -557,4 +558,66 @@ export async function deleteCreatorLinkAction(communityId: string, linkId: strin
     .eq("community_id", communityId);
   if (error) throw new Error(error.message);
   revalidateStudio();
+}
+
+export async function saveCompletionOfferAction(formData: FormData) {
+  const { user } = await requireApprovedCreator();
+  const { createClient } = await import("@/lib/supabase/server");
+  const supabase = await createClient();
+
+  const communityId = String(formData.get("communityId") ?? "").trim();
+  const enabled = formData.get("enabled") === "on";
+  const linkIdRaw = String(formData.get("linkId") ?? "").trim();
+  const headline = String(formData.get("headline") ?? "").trim();
+  const offerMessage = String(formData.get("offerMessage") ?? "").trim();
+
+  if (!communityId) throw new Error("Missing community.");
+
+  const { data: community } = await supabase
+    .from("creator_communities")
+    .select("id, slug")
+    .eq("id", communityId)
+    .eq("owner_id", user.id)
+    .maybeSingle();
+  if (!community) throw new Error("Not your community.");
+
+  let linkId: string | null = linkIdRaw || null;
+  if (enabled) {
+    if (!linkId) {
+      throw new Error("Choose a public link for the completion offer.");
+    }
+    const { data: link } = await supabase
+      .from("creator_links")
+      .select("id, is_public")
+      .eq("id", linkId)
+      .eq("community_id", communityId)
+      .maybeSingle();
+    if (!link?.is_public) {
+      throw new Error("Completion offer link must be a public shop link.");
+    }
+  } else {
+    linkId = linkIdRaw || null;
+  }
+
+  const { error } = await supabase
+    .from("creator_communities")
+    .update({
+      completion_offer_enabled: enabled,
+      completion_offer_link_id: enabled ? linkId : linkId,
+      completion_offer_headline: headline || null,
+      completion_offer_message: offerMessage || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", communityId)
+    .eq("owner_id", user.id);
+
+  if (error) {
+    if (/completion_offer|schema cache/i.test(error.message)) {
+      throw new Error("Run migration 038_creator_completion_offer.sql in Supabase.");
+    }
+    throw new Error(error.message);
+  }
+
+  revalidateStudio(community.slug);
+  return { ok: true as const };
 }

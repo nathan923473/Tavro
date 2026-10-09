@@ -2,8 +2,8 @@ import { Card } from "@/components/ui/card";
 import {
   BarChart3,
   Link2,
-  Megaphone,
   PlusCircle,
+  UserCircle,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -23,10 +23,10 @@ export function QuickActionsGrid({
       primary: true,
     },
     {
-      href: "/studio/announcements",
-      label: "Post announcement",
-      icon: Megaphone,
-      disabled: !hasCommunity,
+      href: hasCommunity && communitySlug ? `/creator/${communitySlug}/edit` : "/studio/settings",
+      label: "Edit creator profile",
+      icon: UserCircle,
+      disabled: false,
     },
     {
       href: "/studio/analytics",

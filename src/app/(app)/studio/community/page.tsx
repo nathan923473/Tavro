@@ -52,6 +52,12 @@ export default async function StudioCommunityPage() {
       </Card>
 
       <Link
+        href="/studio/announcements"
+        className="flex min-h-11 items-center justify-center rounded-xl border border-border text-sm font-semibold"
+      >
+        Post community update
+      </Link>
+      <Link
         href={`/creator/${owner.slug}/edit`}
         className="flex min-h-11 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
       >

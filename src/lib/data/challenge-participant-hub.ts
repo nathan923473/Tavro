@@ -1,6 +1,9 @@
 import { challengeTotalDays } from "@/lib/challenge-day";
 import { parseScheduleItemActivities, type ParsedDailyActivity } from "@/lib/challenge-activities";
-import { fetchChallengeSchedule } from "@/lib/data/creator-studio";
+import {
+  fetchChallengeCompletionOfferForParticipant,
+  fetchChallengeSchedule,
+} from "@/lib/data/creator-studio";
 import { fetchChallengeGalleryDetailsMap } from "@/lib/data/challenge-media";
 import { CHALLENGE_PARTICIPANTS_EMBED, unwrapOne } from "@/lib/data/relations";
 import { createClient } from "@/lib/supabase/server";
@@ -101,6 +104,13 @@ export type ChallengeParticipantHub = {
   /** Logged-in user created this challenge (may not be in challenge_participants). */
   isOwner: boolean;
   members: ChallengeMemberRow[];
+  /** Optional creator coaching offer after challenge completion. */
+  completionOffer: {
+    headline: string;
+    message: string;
+    linkLabel: string;
+    linkHref: string;
+  } | null;
 };
 
 function scheduleItemForDay(
@@ -389,6 +399,15 @@ export async function fetchChallengeParticipantHub(
     today,
   );
 
+  let completionOffer: ChallengeParticipantHub["completionOffer"] = null;
+  if (phase === "completed" && ch.community_id) {
+    try {
+      completionOffer = await fetchChallengeCompletionOfferForParticipant(ch.community_id);
+    } catch {
+      completionOffer = null;
+    }
+  }
+
   return {
     challengeId,
     inviteSlug: ch.invite_slug,
@@ -445,6 +464,7 @@ export async function fetchChallengeParticipantHub(
     canonicalPath,
     isOwner,
     members,
+    completionOffer,
   };
 }
 

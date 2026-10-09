@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { AccountExperience } from "@/components/profile/account-experience";
+import { CreatorStudioProfileCard } from "@/components/profile/creator-studio-profile-card";
 import { AdminToolsCard } from "@/components/profile/admin-tools-card";
 import { DisplayNameCard } from "@/components/profile/display-name-card";
 import { CreatorMediaCard } from "@/components/profile/creator-media-card";
@@ -66,6 +67,9 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
         </div>
       ) : null}
       <div className="space-y-4 px-4 py-4">
+        {profile?.role === "creator" || profile?.role === "admin" ? (
+          <CreatorStudioProfileCard />
+        ) : null}
         {profile ? (
           <DisplayNameCard
             initialName={profile.displayName ?? user?.email?.split("@")[0] ?? "Member"}
