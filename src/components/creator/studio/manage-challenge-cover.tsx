@@ -8,10 +8,12 @@ export function ManageChallengeCover({
   challengeId,
   initialCoverUrl,
   title,
+  coverRequired = false,
 }: {
   challengeId: string;
   initialCoverUrl: string | null;
   title: string;
+  coverRequired?: boolean;
 }) {
   const [coverUrl, setCoverUrl] = useState(initialCoverUrl);
 
@@ -21,6 +23,7 @@ export function ManageChallengeCover({
         challengeId={challengeId}
         coverUrl={coverUrl}
         title={title}
+        required={coverRequired}
         onCoverUrlChange={setCoverUrl}
       />
     </Card>

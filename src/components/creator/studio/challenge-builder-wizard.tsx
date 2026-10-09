@@ -28,6 +28,10 @@ import {
   formatChallengeDateRange,
 } from "@/lib/timezone/format";
 import { ChallengeCoverField } from "@/components/challenges/challenge-cover-field";
+import {
+  CHALLENGE_COVER_REQUIRED_MESSAGE,
+  challengeHasCover,
+} from "@/lib/challenge-lifecycle/cover-required";
 import { ChallengeBuilderWithPreview } from "@/components/creator/studio/challenge-builder-with-preview";
 import { cn } from "@/lib/cn";
 import Link from "next/link";
@@ -224,6 +228,9 @@ export function ChallengeBuilderWizard({
           lateJoinUntilDate: allowLateJoin && lateJoinUntilDate ? lateJoinUntilDate : null,
         });
         setChallengeId(result.challengeId);
+        if (result.coverUrl) {
+          setCoverUrl(result.coverUrl);
+        }
         if (step === 3) {
           setScheduleSavedFlash(true);
         }
@@ -507,21 +514,30 @@ export function ChallengeBuilderWizard({
               coverUrl={coverUrl}
               title={title}
               disabled={pending}
+              required
               onCoverUrlChange={setCoverUrl}
             />
           ) : (
             <p className="rounded-xl border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
-              Save challenge basics first — then you can add an optional cover image here.
+              Save challenge basics first — then upload a required cover image here.
             </p>
           )}
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => setStep(1)}>
               Back
             </Button>
-            <Button type="button" fullWidth disabled={pending} onClick={() => saveDraft(3)}>
+            <Button
+              type="button"
+              fullWidth
+              disabled={pending || !challengeHasCover(coverUrl)}
+              onClick={() => saveDraft(3)}
+            >
               Continue
             </Button>
           </div>
+          {challengeId && !challengeHasCover(coverUrl) ? (
+            <p className="text-xs text-amber-800">{CHALLENGE_COVER_REQUIRED_MESSAGE}</p>
+          ) : null}
         </Card>
       ) : null}
 
@@ -592,7 +608,7 @@ export function ChallengeBuilderWizard({
             <Button
               type="button"
               fullWidth
-              disabled={pending || !challengeId}
+              disabled={pending || !challengeId || !challengeHasCover(coverUrl)}
               onClick={() => {
                 if (!challengeId) return;
                 startTransition(async () => {
@@ -610,6 +626,9 @@ export function ChallengeBuilderWizard({
               Publish challenge
             </Button>
           </div>
+          {!challengeHasCover(coverUrl) ? (
+            <p className="text-xs text-amber-800">{CHALLENGE_COVER_REQUIRED_MESSAGE}</p>
+          ) : null}
         </Card>
       ) : null}
 

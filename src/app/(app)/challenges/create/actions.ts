@@ -100,8 +100,7 @@ export async function createPublicChallenge(formData: FormData) {
       end_date: endDate,
       visibility: "public",
       invite_slug: inviteSlug,
-      publish_status: "published",
-      published_at: new Date().toISOString(),
+      publish_status: "draft",
     })
     .select("id, invite_slug")
     .single();

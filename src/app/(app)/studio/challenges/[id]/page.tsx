@@ -1,7 +1,5 @@
-import {
-  duplicateChallengeRedirectAction,
-  publishChallengeFormAction,
-} from "@/app/(app)/studio/actions";
+import { duplicateChallengeRedirectAction } from "@/app/(app)/studio/actions";
+import { PublishChallengeButton } from "@/components/creator/studio/publish-challenge-button";
 import { DeleteChallengeButton } from "@/components/creator/studio/delete-challenge-button";
 import { StudioLayout } from "@/components/creator/studio/studio-layout";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
@@ -60,6 +58,7 @@ export default async function ManageChallengePage({ params }: Props) {
         challengeId={id}
         initialCoverUrl={challenge.coverUrl}
         title={challenge.title}
+        coverRequired={isDraft}
       />
 
       {!isDraft ? (
@@ -125,11 +124,7 @@ export default async function ManageChallengePage({ params }: Props) {
       ) : null}
 
       {isDraft ? (
-        <form action={publishChallengeFormAction.bind(null, id)}>
-          <Button type="submit" fullWidth>
-            Publish challenge
-          </Button>
-        </form>
+        <PublishChallengeButton challengeId={id} coverUrl={challenge.coverUrl} />
       ) : null}
 
       <form action={duplicateChallengeRedirectAction.bind(null, id)}>

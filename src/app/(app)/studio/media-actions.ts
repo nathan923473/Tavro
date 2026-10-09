@@ -107,6 +107,19 @@ export async function uploadChallengeCoverAction(formData: FormData) {
 }
 
 export async function removeChallengeCoverAction(challengeId: string) {
+  const { supabase, userId } = await requireUserId();
+  const { data: row } = await supabase
+    .from("challenges")
+    .select("publish_status")
+    .eq("id", challengeId)
+    .eq("created_by", userId)
+    .maybeSingle();
+  const status = row?.publish_status ?? "draft";
+  if (status === "published" || status === "scheduled") {
+    throw new Error(
+      "Published challenges must have a cover image. Replace the cover instead of removing it.",
+    );
+  }
   await setChallengeCoverUrlAction(challengeId, null);
 }
 

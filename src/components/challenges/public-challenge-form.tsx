@@ -1,65 +1,111 @@
 "use client";
 
 import { createPublicChallenge } from "@/app/(app)/challenges/create/actions";
-import { ChallengePhotosEditor } from "@/components/creator/challenge-photos-editor";
+import { publishChallengeAction } from "@/app/(app)/studio/actions";
+import { ChallengeCoverField } from "@/components/challenges/challenge-cover-field";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
+import {
+  CHALLENGE_COVER_REQUIRED_MESSAGE,
+  challengeHasCover,
+} from "@/lib/challenge-lifecycle/cover-required";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 
 export function PublicChallengeForm() {
   const [error, setError] = useState<string | null>(null);
-  const [invitePath, setInvitePath] = useState<string | null>(null);
-  const [published, setPublished] = useState<{
+  const [pending, startTransition] = useTransition();
+  const [draft, setDraft] = useState<{
     challengeId: string;
-    creatorId: string;
+    invitePath: string;
     title: string;
   } | null>(null);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [publishedPath, setPublishedPath] = useState<string | null>(null);
 
   async function handleSubmit(formData: FormData) {
     setError(null);
     const result = await createPublicChallenge(formData);
     if (result.ok) {
-      setInvitePath(result.invitePath);
-      setPublished({
+      setDraft({
         challengeId: result.challengeId,
-        creatorId: result.creatorId,
+        invitePath: result.invitePath,
         title: String(formData.get("title") ?? "Challenge"),
       });
+      setCoverUrl(null);
     } else {
       setError(result.error);
     }
   }
 
-  if (invitePath && published) {
+  function publishDraft() {
+    if (!draft) return;
+    startTransition(async () => {
+      try {
+        setError(null);
+        const paths = await publishChallengeAction(draft.challengeId);
+        setPublishedPath(paths.creatorPath);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Publish failed.");
+      }
+    });
+  }
+
+  if (publishedPath && draft) {
     return (
       <div className="space-y-4">
         <Card>
           <h2 className="font-semibold">Public challenge published</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Share your invite link, then add photos below (also in Studio → Challenge
-            photos).
+            Share your invite link. You can add gallery photos anytime in Studio.
           </p>
           <div className="mt-3">
-            <CopyLinkButton url={invitePath} label="Copy challenge link" fullWidth />
+            <CopyLinkButton url={publishedPath} label="Copy challenge link" fullWidth />
           </div>
-        </Card>
-        <Card>
-          <ChallengePhotosEditor
-            challengeId={published.challengeId}
-            creatorId={published.creatorId}
-            title={published.title}
-            coverUrl={null}
-            photos={[]}
-          />
         </Card>
         <Link
           href="/studio/challenges"
           className="block text-center text-sm font-medium text-primary"
         >
-          All challenge photos →
+          All challenges in Studio →
         </Link>
+      </div>
+    );
+  }
+
+  if (draft) {
+    return (
+      <div className="space-y-4">
+        <Card className="space-y-3">
+          <h2 className="font-semibold">Cover image required</h2>
+          <p className="text-sm text-muted-foreground">
+            Your challenge is saved as a draft. Upload a cover, then publish.
+          </p>
+          <ChallengeCoverField
+            challengeId={draft.challengeId}
+            coverUrl={coverUrl}
+            title={draft.title}
+            required
+            onCoverUrlChange={setCoverUrl}
+          />
+          <Button
+            type="button"
+            fullWidth
+            disabled={pending || !challengeHasCover(coverUrl)}
+            onClick={publishDraft}
+          >
+            Publish free public challenge
+          </Button>
+          {!challengeHasCover(coverUrl) ? (
+            <p className="text-sm text-amber-800">{CHALLENGE_COVER_REQUIRED_MESSAGE}</p>
+          ) : null}
+          {error ? (
+            <p className="text-sm text-red-600" role="alert">
+              {error}
+            </p>
+          ) : null}
+        </Card>
       </div>
     );
   }
@@ -67,9 +113,8 @@ export function PublicChallengeForm() {
   return (
     <Card>
       <p className="mb-3 text-sm text-muted-foreground">
-        After you publish, use{" "}
-        <strong className="text-foreground">Add cover & gallery photos</strong> on
-        the next screen (or Studio → Challenge photos).
+        You will upload a <strong className="text-foreground">required cover image</strong> on
+        the next step before the challenge goes live.
       </p>
       <form action={handleSubmit} className="space-y-3">
         <Field label="Challenge name" name="title" required />
@@ -84,7 +129,7 @@ export function PublicChallengeForm() {
           </p>
         ) : null}
         <Button type="submit" fullWidth>
-          Publish free public challenge
+          Continue to cover image
         </Button>
       </form>
     </Card>

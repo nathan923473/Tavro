@@ -196,8 +196,18 @@ export async function saveChallengeDraftAction(input: {
     }
   }
 
+  const { data: coverRow } = await client
+    .from("challenges")
+    .select("cover_url")
+    .eq("id", challengeId)
+    .single();
+
   revalidateStudio(community.slug);
-  return { challengeId, communitySlug: community.slug };
+  return {
+    challengeId,
+    communitySlug: community.slug,
+    coverUrl: (coverRow?.cover_url as string | null) ?? null,
+  };
 }
 
 export async function publishChallengeAction(challengeId: string) {
@@ -216,10 +226,17 @@ export async function publishChallengeAction(challengeId: string) {
   const { data: full } = await supabase
     .from("challenges")
     .select(
-      "id, title, publish_status, start_date, end_date, start_at, end_at, challenge_timezone, schedule_mode",
+      "id, title, publish_status, start_date, end_date, start_at, end_at, challenge_timezone, schedule_mode, cover_url",
     )
     .eq("id", challengeId)
     .single();
+
+  const { challengeHasCover, CHALLENGE_COVER_REQUIRED_MESSAGE } = await import(
+    "@/lib/challenge-lifecycle/cover-required"
+  );
+  if (!challengeHasCover(full?.cover_url)) {
+    throw new Error(CHALLENGE_COVER_REQUIRED_MESSAGE);
+  }
 
   if (full?.schedule_mode !== "start_anytime" && !full?.start_at) {
     throw new Error(

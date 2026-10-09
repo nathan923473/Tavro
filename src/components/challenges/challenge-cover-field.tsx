@@ -15,6 +15,7 @@ type ChallengeCoverFieldProps = {
   coverUrl: string | null;
   title?: string;
   disabled?: boolean;
+  required?: boolean;
   onCoverUrlChange?: (url: string | null) => void;
 };
 
@@ -23,6 +24,7 @@ export function ChallengeCoverField({
   coverUrl,
   title,
   disabled = false,
+  required = false,
   onCoverUrlChange,
 }: ChallengeCoverFieldProps) {
   const router = useRouter();
@@ -70,9 +72,13 @@ export function ChallengeCoverField({
   return (
     <div className="space-y-2">
       <div>
-        <p className="text-sm font-medium">Challenge cover image</p>
+        <p className="text-sm font-medium">
+          Challenge cover image
+          {required ? <span className="text-red-600"> *</span> : null}
+        </p>
         <p className="text-xs text-muted-foreground">
-          Optional · JPG, PNG or WebP · up to 5 MB · 16:9 looks best on cards
+          {required ? "Required before you publish · " : "Optional · "}
+          JPG, PNG or WebP · up to 5 MB · 16:9 looks best on cards
         </p>
       </div>
 
@@ -101,7 +107,7 @@ export function ChallengeCoverField({
           <ImagePlus className="h-4 w-4" aria-hidden />
           {displayUrl ? "Replace cover" : "Upload cover"}
         </Button>
-        {coverUrl ? (
+        {coverUrl && !required ? (
           <Button
             type="button"
             variant="outline"
