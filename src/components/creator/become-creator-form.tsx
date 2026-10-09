@@ -12,12 +12,17 @@ export function BecomeCreatorForm() {
       </p>
       <form action={submitCreatorApplication} className="mt-4 space-y-3">
         <div>
-          <label className="mb-1 block text-sm font-medium">Creator / brand name</label>
+          <label className="mb-1 block text-sm font-medium">Creator name</label>
           <input
             name="display_name"
             required
+            placeholder="e.g. Coach Sarah or Fit With Emma"
             className="w-full rounded-xl border border-border px-3 py-2.5 text-sm"
           />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Enter the name you want participants to see on your creator profile and
+            challenges.
+          </p>
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium">
