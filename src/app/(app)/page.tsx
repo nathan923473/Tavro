@@ -1,6 +1,7 @@
 import { HomeAccountabilityGroups } from "@/components/dashboard/home-accountability-groups";
 import { HomeChallengesSection } from "@/components/dashboard/home-challenges-section";
 import { HomeDailyCheckIn } from "@/components/dashboard/home-daily-check-in";
+import { HomeCreatorStudioShortcut } from "@/components/dashboard/home-creator-studio-shortcut";
 import { HomeDailySummary } from "@/components/dashboard/home-daily-summary";
 import { TodaysHabits } from "@/components/dashboard/todays-habits";
 import { WeeklyConsistencyHome } from "@/components/dashboard/weekly-consistency-home";
@@ -112,6 +113,10 @@ export default async function HomePage() {
           primaryAction={primaryAction}
           loggedIn={Boolean(userId)}
         />
+
+        {profile?.role === "creator" || profile?.role === "admin" ? (
+          <HomeCreatorStudioShortcut />
+        ) : null}
 
         <TodaysHabits goals={goals} loggedIn={Boolean(userId)} />
 

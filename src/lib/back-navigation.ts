@@ -65,6 +65,7 @@ export function shortLabelForPath(pathname: string): string {
     "/challenges": "Challenges",
     "/progress": "Progress",
     "/studio": "Creator Studio",
+    "/studio/settings": "Creator profile & settings",
     "/creator/dashboard": "Creator dashboard",
     "/creator/analytics": "Analytics",
     "/following": "Following",

@@ -3,6 +3,8 @@ import { StudioLayout } from "@/components/creator/studio/studio-layout";
 import { QuickActionsGrid } from "@/components/creator/studio/quick-actions-grid";
 import { CurrentChallengeCard } from "@/components/creator/studio/current-challenge-card";
 import { CommunityGrowthChart } from "@/components/creator/studio/community-growth-chart";
+import { StudioPerformanceSummary } from "@/components/creator/studio/studio-performance-summary";
+import { StudioUpcomingChallengeCard } from "@/components/creator/studio/studio-upcoming-challenge-card";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { requireApprovedCreator } from "@/lib/auth/profile";
@@ -21,10 +23,12 @@ export default async function CreatorStudioPage() {
     ? await fetchCommunityBySlug(ownerRow.slug, user.id)
     : { community: null };
 
+  const displayName = profile.displayName ?? "creator";
+
   return (
     <StudioLayout
       title="Creator Studio"
-      subtitle={`Hi ${profile.displayName ?? "creator"} · free challenges only`}
+      subtitle={`Welcome back, ${displayName} · free for approved creators`}
     >
       {!profile.creatorOnboardingCompleted ? (
         <Card className="border-dashed border-primary/40">
@@ -34,47 +38,29 @@ export default async function CreatorStudioPage() {
           </Link>
         </Card>
       ) : null}
+
       <Card className="border-primary/20 bg-secondary/30">
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone="success">Approved creator</Badge>
           {profile.isAdmin ? <Badge tone="muted">Admin</Badge> : null}
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
-          Aggregate community stats only — no private member health data.
+          {overview.currentChallenge
+            ? `Live now: ${overview.currentChallenge.title} · ${overview.currentChallenge.participantCount} participants`
+            : overview.upcomingChallenge
+              ? `Next up: ${overview.upcomingChallenge.title} · ${overview.upcomingChallenge.participantCount} registered`
+              : "No active challenge — create or schedule your next one."}
         </p>
       </Card>
 
-      <section aria-labelledby="your-community-heading">
-        <h2 id="your-community-heading" className="mb-2 text-base font-semibold">
-          Your community
-        </h2>
-        <Card className="space-y-1">
-          {overview.communityName ? (
-            <>
-              <p className="text-3xl font-semibold tabular-nums">
-                {overview.totalFollowers.toLocaleString()} members
-              </p>
-              <p className="text-sm text-primary">
-                +{overview.newFollowersThisMonth} this month
-              </p>
-              <p className="text-xs text-muted-foreground">
-                +{overview.newFollowersThisWeek} this week ·{" "}
-                {overview.activeChallengeCount} active challenge
-                {overview.activeChallengeCount === 1 ? "" : "s"}
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="text-sm text-muted-foreground">
-                Set up your permanent community page first.
-              </p>
-              <Link href="/studio/community/setup" className="text-sm font-semibold text-primary">
-                Create community →
-              </Link>
-            </>
-          )}
-        </Card>
-      </section>
+      <QuickActionsGrid hasCommunity={Boolean(community)} communitySlug={overview.communitySlug} />
+
+      <StudioPerformanceSummary
+        followers={overview.totalFollowers}
+        registrations={overview.totalRegistrations}
+        activeParticipants={overview.activeParticipantsTotal}
+        linkClicks={overview.totalLinkClicks}
+      />
 
       <section aria-labelledby="current-challenge-heading">
         <h2 id="current-challenge-heading" className="mb-2 text-base font-semibold">
@@ -108,12 +94,49 @@ export default async function CreatorStudioPage() {
         )}
       </section>
 
-      <QuickActionsGrid hasCommunity={Boolean(community)} communitySlug={overview.communitySlug} />
+      {overview.upcomingChallenge ? (
+        <section aria-labelledby="upcoming-challenge-heading">
+          <h2 id="upcoming-challenge-heading" className="mb-2 text-base font-semibold">
+            Upcoming challenge
+          </h2>
+          <StudioUpcomingChallengeCard challenge={overview.upcomingChallenge} />
+        </section>
+      ) : null}
+
+      <section aria-labelledby="your-community-heading">
+        <h2 id="your-community-heading" className="mb-2 text-base font-semibold">
+          Your community
+        </h2>
+        <Card className="space-y-1">
+          {overview.communityName ? (
+            <>
+              <p className="text-3xl font-semibold tabular-nums">
+                {overview.totalFollowers.toLocaleString()} followers
+              </p>
+              <p className="text-sm text-primary">
+                +{overview.newFollowersThisMonth} this month
+              </p>
+              <p className="text-xs text-muted-foreground">
+                +{overview.newFollowersThisWeek} this week
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Set up your permanent community page first.
+              </p>
+              <Link href="/studio/community/setup" className="text-sm font-semibold text-primary">
+                Create community →
+              </Link>
+            </>
+          )}
+        </Card>
+      </section>
 
       {overview.growthByWeek.some((w) => w.count > 0) ? (
         <section aria-labelledby="growth-heading">
           <h2 id="growth-heading" className="mb-2 text-base font-semibold">
-            Community growth
+            Follower growth
           </h2>
           <CommunityGrowthChart data={overview.growthByWeek} />
         </section>
@@ -122,7 +145,7 @@ export default async function CreatorStudioPage() {
       {overview.recentActivity.length > 0 ? (
         <section aria-labelledby="recent-activity-heading">
           <h2 id="recent-activity-heading" className="mb-2 text-base font-semibold">
-            Recent activity
+            Recent community activity
           </h2>
           <ul className="space-y-2">
             {overview.recentActivity.map((item) => (
@@ -156,7 +179,7 @@ export default async function CreatorStudioPage() {
           href={`/creator/${community.slug}`}
           className="block text-center text-sm font-medium text-primary"
         >
-          View public community page →
+          View public creator profile →
         </Link>
       ) : null}
     </StudioLayout>

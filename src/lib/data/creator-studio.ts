@@ -173,7 +173,11 @@ export async function fetchCreatorStudioOverview(
     newFollowersThisMonth: 0,
     newFollowersThisWeek: 0,
     activeChallengeCount: 0,
+    totalRegistrations: 0,
+    activeParticipantsTotal: 0,
+    totalLinkClicks: null,
     currentChallenge: null,
+    upcomingChallenge: null,
     otherActiveChallenges: [],
     growthByWeek: [],
     recentActivity: [],
@@ -214,6 +218,20 @@ export async function fetchCreatorStudioOverview(
   const challenges = await fetchCreatorStudioChallenges(userId);
   const active = challenges.filter((c) => c.bucket === "active");
   const [current, ...rest] = active;
+  const upcomingSorted = challenges
+    .filter((c) => c.bucket === "upcoming")
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+  const upcomingChallenge = upcomingSorted[0] ?? null;
+  const totalRegistrations = challenges.reduce((s, c) => s + c.participantCount, 0);
+  const activeParticipantsTotal = active.reduce((s, c) => s + c.participantCount, 0);
+
+  let totalLinkClicks: number | null = null;
+  try {
+    const linkAnalytics = await fetchCreatorLinkAnalytics(userId);
+    if (linkAnalytics) totalLinkClicks = linkAnalytics.totalClicks;
+  } catch {
+    totalLinkClicks = null;
+  }
 
   const growthByWeek: CreatorStudioOverview["growthByWeek"] = [];
   for (let i = 7; i >= 0; i--) {
@@ -272,10 +290,149 @@ export async function fetchCreatorStudioOverview(
     newFollowersThisMonth: monthFollows ?? 0,
     newFollowersThisWeek: weekFollows ?? 0,
     activeChallengeCount: active.length,
+    totalRegistrations,
+    activeParticipantsTotal,
+    totalLinkClicks,
     currentChallenge: current ?? null,
+    upcomingChallenge,
     otherActiveChallenges: rest,
     growthByWeek,
     recentActivity: recentActivity.slice(0, 6),
+  };
+}
+
+export type CommunityCompletionOfferSettings = {
+  enabled: boolean;
+  linkId: string | null;
+  headline: string;
+  message: string;
+};
+
+export async function fetchCommunityCompletionOfferSettings(
+  communityId: string,
+): Promise<CommunityCompletionOfferSettings> {
+  const defaults: CommunityCompletionOfferSettings = {
+    enabled: false,
+    linkId: null,
+    headline: "Want more personalised support?",
+    message: "Explore my coaching or program for your next goal.",
+  };
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("creator_communities")
+    .select(
+      "completion_offer_enabled, completion_offer_link_id, completion_offer_headline, completion_offer_message",
+    )
+    .eq("id", communityId)
+    .maybeSingle();
+
+  if (error || !data) {
+    if (error && !/completion_offer|schema cache/i.test(error.message)) {
+      console.error("fetchCommunityCompletionOfferSettings:", error.message);
+    }
+    return defaults;
+  }
+
+  return {
+    enabled: Boolean(data.completion_offer_enabled),
+    linkId: (data.completion_offer_link_id as string | null) ?? null,
+    headline:
+      (data.completion_offer_headline as string | null)?.trim() || defaults.headline,
+    message:
+      (data.completion_offer_message as string | null)?.trim() || defaults.message,
+  };
+}
+
+export async function fetchChallengeCompletionOfferForParticipant(
+  communityId: string,
+): Promise<{
+  headline: string;
+  message: string;
+  linkLabel: string;
+  linkHref: string;
+} | null> {
+  const supabase = await createClient();
+  const { data: community, error } = await supabase
+    .from("creator_communities")
+    .select(
+      "completion_offer_enabled, completion_offer_link_id, completion_offer_headline, completion_offer_message",
+    )
+    .eq("id", communityId)
+    .maybeSingle();
+
+  if (error || !community?.completion_offer_enabled || !community.completion_offer_link_id) {
+    return null;
+  }
+
+  const { data: link } = await supabase
+    .from("creator_links")
+    .select("id, label, is_public")
+    .eq("id", community.completion_offer_link_id as string)
+    .eq("community_id", communityId)
+    .maybeSingle();
+
+  if (!link?.is_public) return null;
+
+  const settings = await fetchCommunityCompletionOfferSettings(communityId);
+
+  return {
+    headline: settings.headline,
+    message: settings.message,
+    linkLabel: link.label?.trim() || "Explore offer",
+    linkHref: `/out/link/${link.id}`,
+  };
+}
+
+export async function fetchChallengeReferralJoinAnalytics(ownerId: string): Promise<{
+  referralJoins: number;
+  referralJoinsLast30Days: number;
+}> {
+  const supabase = await createClient();
+  const { data: community } = await supabase
+    .from("creator_communities")
+    .select("id")
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+
+  if (!community) {
+    return { referralJoins: 0, referralJoinsLast30Days: 0 };
+  }
+
+  const { data: challenges } = await supabase
+    .from("challenges")
+    .select("id")
+    .eq("community_id", community.id)
+    .eq("visibility", "public");
+
+  const ids = (challenges ?? []).map((c) => c.id);
+  if (!ids.length) {
+    return { referralJoins: 0, referralJoinsLast30Days: 0 };
+  }
+
+  const monthStart = new Date();
+  monthStart.setDate(monthStart.getDate() - 30);
+
+  const [allTime, last30] = await Promise.all([
+    supabase
+      .from("challenge_participants")
+      .select("*", { count: "exact", head: true })
+      .in("challenge_id", ids)
+      .not("referrer_user_id", "is", null),
+    supabase
+      .from("challenge_participants")
+      .select("*", { count: "exact", head: true })
+      .in("challenge_id", ids)
+      .not("referrer_user_id", "is", null)
+      .gte("joined_at", monthStart.toISOString()),
+  ]);
+
+  if (allTime.error && /referrer_user_id|schema cache/i.test(allTime.error.message)) {
+    return { referralJoins: 0, referralJoinsLast30Days: 0 };
+  }
+
+  return {
+    referralJoins: allTime.count ?? 0,
+    referralJoinsLast30Days: last30.count ?? 0,
   };
 }
 

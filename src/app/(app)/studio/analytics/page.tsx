@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { requireApprovedCreator } from "@/lib/auth/profile";
 import {
   fetchChallengeJoinAnalytics,
+  fetchChallengeReferralJoinAnalytics,
   fetchCreatorLinkAnalytics,
   fetchCreatorStudioChallenges,
   fetchCreatorStudioOverview,
@@ -13,13 +14,14 @@ export const metadata = { title: "Creator analytics" };
 
 export default async function StudioAnalyticsPage() {
   const { user } = await requireApprovedCreator();
-  const [stats, overview, challenges, linkAnalytics, joinAnalytics] =
+  const [stats, overview, challenges, linkAnalytics, joinAnalytics, referralJoins] =
     await Promise.all([
       fetchCreatorDashboardStats(user.id),
       fetchCreatorStudioOverview(user.id),
       fetchCreatorStudioChallenges(user.id),
       fetchCreatorLinkAnalytics(user.id),
       fetchChallengeJoinAnalytics(user.id),
+      fetchChallengeReferralJoinAnalytics(user.id),
     ]);
 
   const published = challenges.filter((c) => c.publishStatus !== "draft");
@@ -71,7 +73,23 @@ export default async function StudioAnalyticsPage() {
           <Metric label="Total joins (your public challenges)" value={joinAnalytics.totalJoins} />
           <Metric label="Joins last 7 days" value={joinAnalytics.joinsLast7Days} />
           <Metric label="Joins last 30 days" value={joinAnalytics.joinsLast30Days} />
+          <Metric
+            label="Joins from participant referrals (trackable)"
+            value={referralJoins.referralJoins}
+          />
+          <Metric
+            label="Referral joins last 30 days"
+            value={referralJoins.referralJoinsLast30Days}
+          />
         </ul>
+        {referralJoins.referralJoins === 0 ? (
+          <Card padding="sm" className="mt-2">
+            <p className="text-sm text-muted-foreground">
+              Referral counts appear when participants join via share links with a
+              trackable referral code.
+            </p>
+          </Card>
+        ) : null}
       </section>
 
       <section aria-labelledby="community-growth-analytics">

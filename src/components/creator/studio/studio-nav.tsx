@@ -5,7 +5,7 @@ import {
   BarChart3,
   LayoutGrid,
   Link2,
-  Megaphone,
+  Settings,
   Trophy,
   Users,
 } from "lucide-react";
@@ -18,7 +18,7 @@ const tabs = [
   { href: "/studio/community", label: "Community", icon: Users },
   { href: "/studio/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/studio/shop", label: "Shop & Links", icon: Link2 },
-  { href: "/studio/announcements", label: "Announce", icon: Megaphone },
+  { href: "/studio/settings", label: "Profile", icon: Settings },
 ] as const;
 
 export function StudioNav() {
