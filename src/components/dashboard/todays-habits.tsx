@@ -4,6 +4,7 @@ import { toggleGoalAction } from "@/app/(app)/member/actions";
 import { HabitQuickAdd } from "@/components/progress/habit-quick-add";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
+import { habitsScheduledToday } from "@/lib/habits/schedule";
 import { habitsCompletedToday } from "@/lib/progress/consistency";
 import type { PersonalGoal } from "@/types";
 import { Check, Circle } from "lucide-react";
@@ -32,6 +33,7 @@ export function TodaysHabits({
   }
 
   const active = goals.filter((g) => !g.paused);
+  const scheduled = habitsScheduledToday(goals);
   const { done, total } = habitsCompletedToday(goals);
 
   if (active.length === 0) {
@@ -78,45 +80,63 @@ export function TodaysHabits({
       <p className="mb-2 px-1">
         <Link
           href="/progress#habits-manage-heading"
-          className="text-sm font-medium text-primary"
+          className="text-sm font-medium text-[#3156E8]"
         >
-          Add or edit goals
+          Manage habits
         </Link>
       </p>
-      <ul className="space-y-2">
-        {active.map((goal) => (
-          <li key={goal.id}>
-            <Card padding="sm">
-              <button
-                type="button"
-                disabled={pending}
-                className="flex w-full items-center gap-3 text-left"
-                onClick={() =>
-                  startTransition(async () => {
-                    await toggleGoalAction(goal.id);
-                    router.refresh();
-                  })
+      {scheduled.length === 0 ? (
+        <Card padding="sm">
+          <p className="text-sm text-muted-foreground">
+            No habits scheduled today — rest day or weekly targets already met.
+          </p>
+        </Card>
+      ) : (
+        <ul className="space-y-2">
+          {scheduled.map((goal) => (
+            <li key={goal.id}>
+              <Card
+                padding="sm"
+                className={
+                  goal.completedToday ? "border-[#B8F4DA] bg-[#B8F4DA]/20" : undefined
                 }
               >
-                {goal.completedToday ? (
-                  <Check className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-                ) : (
-                  <Circle className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
-                )}
-                <span
-                  className={
-                    goal.completedToday
-                      ? "flex-1 text-sm font-medium line-through opacity-70"
-                      : "flex-1 text-sm font-medium"
+                <button
+                  type="button"
+                  disabled={pending}
+                  className="flex w-full items-center gap-3 text-left"
+                  onClick={() =>
+                    startTransition(async () => {
+                      await toggleGoalAction(goal.id);
+                      router.refresh();
+                    })
                   }
                 >
-                  {goal.title}
-                </span>
-              </button>
-            </Card>
-          </li>
-        ))}
-      </ul>
+                  {goal.completedToday ? (
+                    <Check className="h-5 w-5 shrink-0 text-[#1B2440]" aria-hidden />
+                  ) : (
+                    <Circle className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
+                  )}
+                  <span
+                    className={
+                      goal.completedToday
+                        ? "flex-1 text-sm font-medium text-[#1B2440]"
+                        : "flex-1 text-sm font-medium"
+                    }
+                  >
+                    {goal.title}
+                  </span>
+                </button>
+              </Card>
+            </li>
+          ))}
+        </ul>
+      )}
+      {total > 0 && done === total ? (
+        <p className="mt-2 px-1 text-sm font-medium text-[#1B2440]">
+          All your habits completed today! 🎉
+        </p>
+      ) : null}
     </section>
   );
 }

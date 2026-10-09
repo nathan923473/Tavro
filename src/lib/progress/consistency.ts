@@ -1,3 +1,4 @@
+import { habitsScheduledToday } from "@/lib/habits/schedule";
 import type { PersonalGoal } from "@/types";
 
 export type WeeklyConsistency = {
@@ -49,7 +50,7 @@ export function habitsCompletedToday(goals: PersonalGoal[]): {
   done: number;
   total: number;
 } {
-  const active = goals.filter((g) => !g.paused);
-  const done = active.filter((g) => g.completedToday).length;
-  return { done, total: active.length };
+  const scheduled = habitsScheduledToday(goals);
+  const done = scheduled.filter((g) => g.completedToday).length;
+  return { done, total: scheduled.length };
 }
