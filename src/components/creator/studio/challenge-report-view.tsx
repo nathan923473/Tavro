@@ -201,6 +201,12 @@ export function ChallengeReportView({ report }: { report: ChallengeReportPayload
                 <span>Total check-ins</span>
                 <ChangeBadge value={report.comparison.totalCheckInsChangePercent} />
               </li>
+              {report.comparison.coachingClicksChangePercent != null ? (
+                <li className="flex justify-between gap-2">
+                  <span>Community link clicks</span>
+                  <ChangeBadge value={report.comparison.coachingClicksChangePercent} />
+                </li>
+              ) : null}
             </ul>
           </Card>
         ) : (

@@ -12,6 +12,7 @@ export type ChallengeReportComparison = {
   completionRateChangePoints: number | null;
   avgDailyActiveChangePercent: number | null;
   totalCheckInsChangePercent: number | null;
+  coachingClicksChangePercent: number | null;
 };
 
 export type ChallengeReportPayload = {

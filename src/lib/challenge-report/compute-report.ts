@@ -351,6 +351,19 @@ export async function computeChallengeReport(
         return pctChange(cAvg, pAvg);
       })(),
       totalCheckInsChangePercent: pctChange(cur.totalCheckIns, prev.totalCheckIns),
+      coachingClicksChangePercent: (() => {
+        const curC = base.coaching.totalCommunityLinkClicksDuringChallenge;
+        const prevC = previousReport.coaching.totalCommunityLinkClicksDuringChallenge;
+        if (
+          base.coaching.status !== "community_aggregate" ||
+          previousReport.coaching.status !== "community_aggregate" ||
+          curC == null ||
+          prevC == null
+        ) {
+          return null;
+        }
+        return pctChange(curC, prevC);
+      })(),
     };
   }
 
