@@ -1,4 +1,5 @@
 import { duplicateChallengeRedirectAction } from "@/app/(app)/studio/actions";
+import { saveChallengeAsPersonalTemplateAction } from "@/app/(app)/studio/template-actions";
 import { PublishChallengeButton } from "@/components/creator/studio/publish-challenge-button";
 import { DeleteChallengeButton } from "@/components/creator/studio/delete-challenge-button";
 import { StudioLayout } from "@/components/creator/studio/studio-layout";
@@ -17,10 +18,14 @@ import { ManageChallengeCover } from "@/components/creator/studio/manage-challen
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-type Props = { params: Promise<{ id: string }> };
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ notice?: string; error?: string }>;
+};
 
-export default async function ManageChallengePage({ params }: Props) {
+export default async function ManageChallengePage({ params, searchParams }: Props) {
   const { id } = await params;
+  const query = await searchParams;
   const { user } = await requireApprovedCreator();
   const challenges = await fetchCreatorStudioChallenges(user.id);
   const challenge = challenges.find((c) => c.id === id);
@@ -38,6 +43,16 @@ export default async function ManageChallengePage({ params }: Props) {
 
   return (
     <StudioLayout title={challenge.title} subtitle="Manage · free challenge">
+      {query.notice === "template_saved" ? (
+        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-950" role="status">
+          Saved as a personal template. This challenge was not changed.
+        </p>
+      ) : null}
+      {query.error ? (
+        <p className="text-sm text-destructive" role="alert">
+          {query.error}
+        </p>
+      ) : null}
       <Card className="space-y-2 text-sm">
         <p>
           <span className="font-medium">Status:</span> {challenge.bucket} (
@@ -130,6 +145,11 @@ export default async function ManageChallengePage({ params }: Props) {
       <form action={duplicateChallengeRedirectAction.bind(null, id)}>
         <Button type="submit" variant="secondary" fullWidth>
           Duplicate as new draft
+        </Button>
+      </form>
+      <form action={saveChallengeAsPersonalTemplateAction.bind(null, id)}>
+        <Button type="submit" variant="outline" fullWidth>
+          Save as my template
         </Button>
       </form>
 

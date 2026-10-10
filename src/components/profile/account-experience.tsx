@@ -127,7 +127,7 @@ export async function AccountExperience() {
           </p>
         ) : (
           <Link
-            href="/become-creator"
+            href="/creators"
             className="flex min-h-11 items-center justify-center rounded-xl border border-border text-sm font-semibold"
           >
             Become a creator

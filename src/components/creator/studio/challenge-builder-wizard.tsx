@@ -4,13 +4,10 @@ import {
   publishChallengeAction,
   saveChallengeDraftAction,
 } from "@/app/(app)/studio/actions";
+import { savePersonalTemplateFromDraftAction } from "@/app/(app)/studio/template-actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  CHALLENGE_TEMPLATES,
-  templateByKey,
-  type ChallengeTemplateKey,
-} from "@/lib/creator/challenge-templates";
+import type { ChallengeTemplate } from "@/lib/creator/challenge-templates";
 import type { ChallengeCategory } from "@/types/creator-studio";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { ShareChallengeButton } from "@/components/share/share-challenge-button";
@@ -33,10 +30,9 @@ import {
   challengeHasCover,
 } from "@/lib/challenge-lifecycle/cover-required";
 import { ChallengeBuilderWithPreview } from "@/components/creator/studio/challenge-builder-with-preview";
-import { cn } from "@/lib/cn";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition, type Dispatch, type SetStateAction } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useRef, useState, useTransition, type Dispatch, type SetStateAction } from "react";
 
 const INTERVAL_PRESETS = [2, 3, 4, 5, 6, 7, 10, 14] as const;
 
@@ -133,18 +129,17 @@ export function ChallengeBuilderWizard({
   defaultChallengeTimezone = "Australia/Melbourne",
   creatorDisplayName = "You",
   creatorAvatarUrl = null,
+  template,
 }: {
   defaultChallengeTimezone?: string;
   creatorDisplayName?: string;
   creatorAvatarUrl?: string | null;
+  template: ChallengeTemplate;
 }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const initialTemplate = (searchParams.get("template") ??
-    "scratch") as ChallengeTemplateKey;
-  const template = useMemo(() => templateByKey(initialTemplate), [initialTemplate]);
+  const endDateEdited = useRef(false);
 
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(1);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [challengeId, setChallengeId] = useState<string | undefined>();
@@ -156,7 +151,7 @@ export function ChallengeBuilderWizard({
 
   const [title, setTitle] = useState(template.title);
   const [shortDescription, setShortDescription] = useState(template.shortDescription);
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(template.description);
   const [goalDescription, setGoalDescription] = useState(template.goalDescription);
   const [category, setCategory] = useState<ChallengeCategory>(template.category);
   const [startDate, setStartDate] = useState("");
@@ -165,7 +160,10 @@ export function ChallengeBuilderWizard({
   const [challengeTimezone, setChallengeTimezone] = useState(defaultChallengeTimezone);
   const [allowLateJoin, setAllowLateJoin] = useState(false);
   const [lateJoinUntilDate, setLateJoinUntilDate] = useState("");
-  const [lengthShortcut, setLengthShortcut] = useState("30");
+  const [lengthShortcut, setLengthShortcut] = useState(
+    template.durationDays > 0 ? String(template.durationDays) : "30",
+  );
+  const [templateSaved, setTemplateSaved] = useState(false);
   const [schedule, setSchedule] = useState<ScheduleDraftItem[]>(
     template.schedule.map((s) => ({
       dayLabel: s.dayLabel,
@@ -187,6 +185,19 @@ export function ChallengeBuilderWizard({
   function updateSchedule(next: ScheduleDraftItem[] | ((prev: ScheduleDraftItem[]) => ScheduleDraftItem[])) {
     setSchedule(next);
     setScheduleSavedFlash(false);
+    setTemplateSaved(false);
+  }
+
+  function handleStartDate(value: string) {
+    setStartDate(value);
+    if (!value || template.durationDays < 1 || endDateEdited.current) return;
+    setEndDate(challengeEndDateForDayCount(value, template.durationDays));
+    setLengthShortcut(String(template.durationDays));
+  }
+
+  function handleEndDate(value: string) {
+    endDateEdited.current = true;
+    setEndDate(value);
   }
 
   const plannedDayCount = useMemo(() => {
@@ -194,26 +205,13 @@ export function ChallengeBuilderWizard({
     return challengeTotalDays(startDate, endDate);
   }, [startDate, endDate]);
 
-  useEffect(() => {
-    if (step !== 3 || plannedDayCount < 1) return;
-    setSchedule((prev) => buildScheduleForDayCount(plannedDayCount, prev));
-    setBulkTo(plannedDayCount);
-  }, [step, plannedDayCount]);
-
-  useEffect(() => {
-    if (plannedDayCount > 0) {
-      setBulkTo((prev) => Math.min(Math.max(prev, 1), plannedDayCount));
-      setBulkFrom((prev) => Math.min(Math.max(prev, 1), plannedDayCount));
-    }
-  }, [plannedDayCount]);
-
   function saveDraft(nextStep?: number) {
     startTransition(async () => {
       try {
         setError(null);
         const result = await saveChallengeDraftAction({
           challengeId,
-          templateKey: initialTemplate,
+          templateKey: template.key,
           title,
           shortDescription,
           description,
@@ -233,6 +231,11 @@ export function ChallengeBuilderWizard({
         }
         if (step === 3) {
           setScheduleSavedFlash(true);
+        }
+        if (nextStep === 3 && plannedDayCount > 0) {
+          setSchedule((prev) => buildScheduleForDayCount(plannedDayCount, prev));
+          setBulkTo(plannedDayCount);
+          setBulkFrom((prev) => Math.min(Math.max(prev, 1), plannedDayCount));
         }
         if (typeof nextStep === "number") setStep(nextStep);
       } catch (e) {
@@ -285,43 +288,10 @@ export function ChallengeBuilderWizard({
     <ChallengeBuilderWithPreview {...previewProps} showPreview={step >= 0 && step <= 4}>
       <div className="flex items-center justify-between gap-2 rounded-xl bg-muted/50 px-3 py-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Step {step + 1} of 5
+          Step {step} of 4
         </p>
         <p className="truncate text-xs text-muted-foreground">{template.label}</p>
       </div>
-
-      {step === 0 ? (
-        <Card className="space-y-4">
-          <div>
-            <h2 className="font-semibold">What type of challenge?</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Pick a template — you can change everything in the next steps.
-            </p>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {CHALLENGE_TEMPLATES.map((t) => {
-              const selected = t.key === initialTemplate;
-              return (
-                <Link
-                  key={t.key}
-                  href={`/studio/challenges/new?template=${t.key}`}
-                  className={cn(
-                    "rounded-xl border px-3 py-3 text-sm font-medium transition-colors",
-                    selected
-                      ? "border-primary bg-primary/10 text-foreground ring-1 ring-primary/30"
-                      : "border-border hover:bg-muted/40",
-                  )}
-                >
-                  {t.label}
-                </Link>
-              );
-            })}
-          </div>
-          <Button type="button" fullWidth onClick={() => setStep(1)}>
-            Continue with {template.label}
-          </Button>
-        </Card>
-      ) : null}
 
       {step === 1 ? (
         <Card className="space-y-3">
@@ -333,13 +303,16 @@ export function ChallengeBuilderWizard({
             onChange={setShortDescription}
           />
           <label className="block text-sm">
-            <span className="font-medium">Full description</span>
+            <span className="font-medium">Participant instructions</span>
             <textarea
               className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+            <span className="mt-1 block text-xs text-muted-foreground">
+              Shown on the challenge page. Daily check-ins stay available either way.
+            </span>
           </label>
           <label className="block text-sm">
             <span className="font-medium">Category</span>
@@ -360,14 +333,14 @@ export function ChallengeBuilderWizard({
               label="Start date"
               type="date"
               value={startDate}
-              onChange={setStartDate}
+              onChange={handleStartDate}
               required
             />
             <Field
               label="End date"
               type="date"
               value={endDate}
-              onChange={setEndDate}
+              onChange={handleEndDate}
               required
             />
           </div>
@@ -428,6 +401,13 @@ export function ChallengeBuilderWizard({
             ) : null}
           </fieldset>
 
+          {template.durationDays > 0 ? (
+            <p className="text-xs text-muted-foreground">
+              This template is {template.durationDays} days. Pick a start date and the end date fills
+              in. Change either date if you want a different length.
+            </p>
+          ) : null}
+
           {startDate && endDate ? (
             datesInvalid ? (
               <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
@@ -470,6 +450,7 @@ export function ChallengeBuilderWizard({
                 onClick={() => {
                   const n = Number.parseInt(lengthShortcut, 10);
                   if (!startDate || !Number.isFinite(n) || n < 1) return;
+                  endDateEdited.current = true;
                   setEndDate(challengeEndDateForDayCount(startDate, n));
                 }}
               >
@@ -479,9 +460,12 @@ export function ChallengeBuilderWizard({
           ) : null}
 
           <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={() => setStep(0)}>
+            <Link
+              href={template.key === "scratch" ? "/studio/challenges/new" : "/studio/challenges/templates"}
+              className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-surface px-5 text-sm font-semibold"
+            >
               Back
-            </Button>
+            </Link>
             <Button
               type="button"
               fullWidth
@@ -591,6 +575,11 @@ export function ChallengeBuilderWizard({
                     : "";
                 return (
                   <li key={i} className="leading-snug">
+                    {s.weekTheme && (i === 0 || schedule[i - 1]?.weekTheme !== s.weekTheme) ? (
+                      <span className="mb-1 mt-2 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {s.weekTheme}
+                      </span>
+                    ) : null}
                     <span className="font-medium">
                       {s.dayLabel}
                       {weekday}:
@@ -601,6 +590,45 @@ export function ChallengeBuilderWizard({
               })}
             </ul>
           </section>
+          <p className="text-sm text-muted-foreground">
+            Coaching and product links stay in{" "}
+            <Link href="/studio/shop" className="font-medium text-primary">
+              Shop & links
+            </Link>
+            . You can show one when someone finishes the challenge.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            fullWidth
+            disabled={pending || !title.trim() || schedule.length === 0}
+            onClick={() => {
+              startTransition(async () => {
+                try {
+                  setError(null);
+                  await savePersonalTemplateFromDraftAction({
+                    title,
+                    shortDescription,
+                    description,
+                    goalDescription,
+                    category,
+                    participantSummary: shortDescription || template.participantSummary,
+                    schedule,
+                  });
+                  setTemplateSaved(true);
+                } catch (e) {
+                  setError(e instanceof Error ? e.message : "Could not save template.");
+                }
+              });
+            }}
+          >
+            Save as my template
+          </Button>
+          {templateSaved ? (
+            <p className="text-sm text-primary" role="status">
+              Saved to your templates. This draft was not changed.
+            </p>
+          ) : null}
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => setStep(3)}>
               Back
@@ -801,8 +829,9 @@ function ScheduleStep({
         {plannedDayCount > 0 ? (
           <p className="mt-1 text-sm text-muted-foreground">
             {plannedDayCount} days · {formatChallengeDateRange(startDate, endDate, challengeTimezone)}.
-            Participants check off each habit on
-            the Today tab.
+            Participants check off each habit on the Today tab and can leave a daily
+            check-in. Remove or rewrite any suggested activity. Milestone labels group the plan
+            by week.
           </p>
         ) : (
           <p className="mt-1 text-sm text-amber-800">
@@ -1137,6 +1166,19 @@ function ScheduleStep({
                   }}
                 />
                 Rest / recovery day
+              </label>
+              <label className="mt-2 block text-xs">
+                <span className="font-medium text-muted-foreground">Milestone label</span>
+                <input
+                  className="mt-1 w-full rounded-lg border border-border px-2 py-1"
+                  value={item.weekTheme}
+                  placeholder="Week 1 · Show up"
+                  onChange={(e) => {
+                    const next = [...schedule];
+                    next[i] = { ...next[i], weekTheme: e.target.value };
+                    setSchedule(next);
+                  }}
+                />
               </label>
             </li>
           ))}

@@ -1,7 +1,7 @@
 "use server";
 
 import { requireApprovedCreator } from "@/lib/auth/profile";
-import { templateByKey, type ChallengeTemplateKey } from "@/lib/creator/challenge-templates";
+import { templateByKey } from "@/lib/creator/challenge-templates";
 import { creatorChallengePath } from "@/lib/data/creator-studio";
 import type { ChallengeCategory, ChallengePublishStatus } from "@/types/creator-studio";
 import { revalidatePath } from "next/cache";
@@ -65,7 +65,7 @@ async function assertOwnsChallenge(
 
 export async function saveChallengeDraftAction(input: {
   challengeId?: string;
-  templateKey?: ChallengeTemplateKey;
+  templateKey?: string;
   title: string;
   shortDescription: string;
   description: string;

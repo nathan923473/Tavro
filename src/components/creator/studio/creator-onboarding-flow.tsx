@@ -72,22 +72,18 @@ export function CreatorOnboardingFlow({
           Launch a free challenge your audience can join in one tap from your link.
         </p>
         <div className="grid gap-2">
-          {[
-            { href: "/studio/challenges/new?template=walking", label: "Walking" },
-            { href: "/studio/challenges/new?template=general_fitness", label: "Beginner fitness" },
-            { href: "/studio/challenges/new?template=strength", label: "Strength" },
-            { href: "/studio/challenges/new?template=healthy_habits", label: "Healthy habits" },
-            { href: "/studio/challenges/new?template=running", label: "Running" },
-            { href: "/studio/challenges/new?template=scratch", label: "Start from scratch" },
-          ].map((t) => (
-            <Link
-              key={t.href}
-              href={t.href}
-              className="flex min-h-10 items-center justify-center rounded-xl bg-muted text-sm font-medium"
-            >
-              {t.label}
-            </Link>
-          ))}
+          <Link
+            href="/studio/challenges/templates"
+            className="flex min-h-10 items-center justify-center rounded-xl bg-muted text-sm font-medium"
+          >
+            Choose a template
+          </Link>
+          <Link
+            href="/studio/challenges/new?template=scratch"
+            className="flex min-h-10 items-center justify-center rounded-xl bg-muted text-sm font-medium"
+          >
+            Start from scratch
+          </Link>
         </div>
         <Button type="button" variant="outline" fullWidth onClick={() => setStep(3)}>
           I already published a challenge

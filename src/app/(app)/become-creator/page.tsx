@@ -3,7 +3,7 @@ import { CreatorVerificationPanel } from "@/components/creator/creator-verificat
 import { PageHeader } from "@/components/layout/page-header";
 import { Card } from "@/components/ui/card";
 import { getOpenApplicationForUser } from "@/lib/creator/applications";
-import { getOfficialDmInstructions } from "@/lib/creator/verification";
+import { getOfficialDmTarget } from "@/lib/creator/verification";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -27,6 +27,9 @@ export default async function BecomeCreatorPage({
   }
 
   const openApplication = await getOpenApplicationForUser(user.id);
+  const ownershipRequested =
+    openApplication?.status === "pending_verification" &&
+    openApplication.verification_state !== "verified";
 
   return (
     <div className="animate-fade-up">
@@ -38,8 +41,11 @@ export default async function BecomeCreatorPage({
         {params.error === "not_approved" ? (
           <Card className="border-amber-200 bg-amber-50/80">
             <p className="text-sm">
-              Creator Studio requires approval. Apply below or keep enjoying member
-              features.
+              Creator Studio requires approval.{" "}
+              <Link href="/creators" className="font-medium text-primary">
+                Learn about becoming a creator
+              </Link>{" "}
+              or apply below.
             </p>
           </Card>
         ) : null}
@@ -49,14 +55,30 @@ export default async function BecomeCreatorPage({
             <Card>
               <h2 className="font-semibold">Application submitted</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                <strong>{openApplication.display_name}</strong> — verify your
-                social account, then wait for admin review.
+                <strong>{openApplication.display_name}</strong> — your
+                application is with our team for manual review. Ownership
+                verification is only needed if an admin asks for it.
               </p>
             </Card>
-            <CreatorVerificationPanel
-              application={openApplication}
-              dmTarget={getOfficialDmInstructions()}
-            />
+            {ownershipRequested ? (
+              <CreatorVerificationPanel
+                application={openApplication}
+                dmTarget={getOfficialDmTarget()}
+              />
+            ) : openApplication.verification_state === "verified" ? (
+              <Card>
+                <p className="text-sm text-muted-foreground">
+                  Ownership verified. Waiting for final creator approval.
+                </p>
+              </Card>
+            ) : (
+              <Card className="border-dashed">
+                <p className="text-sm text-muted-foreground">
+                  No further action needed right now. We&apos;ll unlock Creator
+                  Studio on this same account if you&apos;re approved.
+                </p>
+              </Card>
+            )}
           </>
         ) : profile?.creatorStatus === "rejected" ? (
           <Card>
@@ -65,7 +87,18 @@ export default async function BecomeCreatorPage({
             </p>
           </Card>
         ) : (
-          <BecomeCreatorForm />
+          <>
+            <Card className="border-dashed">
+              <p className="text-sm text-muted-foreground">
+                New here? Read why creators join Tavro on the{" "}
+                <Link href="/creators" className="font-medium text-primary">
+                  creators page
+                </Link>
+                .
+              </p>
+            </Card>
+            <BecomeCreatorForm />
+          </>
         )}
 
         <Card className="border-dashed">
