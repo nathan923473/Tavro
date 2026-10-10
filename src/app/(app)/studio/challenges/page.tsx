@@ -48,13 +48,21 @@ export default async function StudioChallengesPage() {
         upcoming · unlimited drafts. Published schedules cannot overlap. Tip: open registrations
         ~{RECOMMENDED_REGISTRATION_OPEN_DAYS_BEFORE_START} days early when you can.
       </p>
-      <Link
-        href="/studio/challenges/new"
-        className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
-      >
-        <PlusCircle className="h-4 w-4" aria-hidden />
-        Create challenge
-      </Link>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Link
+          href="/studio/challenges/new"
+          className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+        >
+          <PlusCircle className="h-4 w-4" aria-hidden />
+          Create challenge
+        </Link>
+        <Link
+          href="/studio/challenges/demo/report"
+          className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-primary/40 bg-primary/5 px-3 text-sm font-semibold text-primary"
+        >
+          Preview sample report
+        </Link>
+      </div>
 
       {BUCKETS.map(({ key, label }) => {
         const list = challenges.filter((c) => c.bucket === key);
