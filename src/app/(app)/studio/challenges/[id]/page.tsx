@@ -108,15 +108,23 @@ export default async function ManageChallengePage({ params }: Props) {
       ) : null}
 
       {isCompleted ? (
-        <Card className="border-primary/20 bg-secondary/30">
-          <h2 className="font-semibold">Challenge complete</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Thank your community with a completion announcement and invite them to follow
-            you for the next free challenge.
-          </p>
+        <Card className="border-primary/20 bg-secondary/30 space-y-3">
+          <div>
+            <h2 className="font-semibold">Challenge complete</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Thank your community with a completion announcement and invite them to follow
+              you for the next free challenge.
+            </p>
+          </div>
+          <Link
+            href={`/studio/challenges/${id}/report`}
+            className="flex min-h-11 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+          >
+            View report
+          </Link>
           <Link
             href="/studio/announcements"
-            className="mt-3 inline-block text-sm font-semibold text-primary"
+            className="block text-center text-sm font-semibold text-primary"
           >
             Post thank-you announcement →
           </Link>

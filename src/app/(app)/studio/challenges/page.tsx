@@ -91,6 +91,14 @@ export default async function StudioChallengesPage() {
                           Open challenge
                         </Link>
                       ) : null}
+                      {c.bucket === "completed" ? (
+                        <Link
+                          href={`/studio/challenges/${c.id}/report`}
+                          className="inline-flex min-h-9 items-center justify-center rounded-lg border border-primary/40 bg-primary/5 px-3 text-xs font-semibold text-primary"
+                        >
+                          View report
+                        </Link>
+                      ) : null}
                       <Link
                         href={`/studio/challenges/${c.id}`}
                         className="inline-flex min-h-9 items-center justify-center rounded-lg border border-border px-3 text-xs font-semibold text-primary"
