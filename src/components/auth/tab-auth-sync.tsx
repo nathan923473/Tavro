@@ -4,6 +4,7 @@ import {
   TAB_ID_HEADER,
   defaultSupabaseAuthStorageKey,
   supabaseAuthStorageKeyForTab,
+  tabScopedAuthEnabled,
 } from "@/lib/auth/tab-session";
 import { getOrCreateTabId, syncTabHintCookie } from "@/lib/auth/tab-id.client";
 import { createClient } from "@/lib/supabase/client";
@@ -27,6 +28,27 @@ function patchFetchWithTabId(tabId: string) {
 async function migrateLegacySessionIfNeeded(tabId: string) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!url) return;
+
+  if (!tabScopedAuthEnabled()) {
+    const { createBrowserClient } = await import("@supabase/ssr");
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!anonKey) return;
+
+    const defaultClient = createBrowserClient(url, anonKey, { isSingleton: false });
+    const { data: defaultData } = await defaultClient.auth.getSession();
+    if (defaultData.session) return;
+
+    const tabKey = supabaseAuthStorageKeyForTab(url, tabId);
+    const tabClient = createBrowserClient(url, anonKey, {
+      cookieOptions: { name: tabKey },
+      isSingleton: false,
+    });
+    const { data: tabData } = await tabClient.auth.getSession();
+    if (tabData.session) {
+      await defaultClient.auth.setSession(tabData.session);
+    }
+    return;
+  }
 
   const tabClient = createClient();
   const { data: tabData } = await tabClient.auth.getSession();

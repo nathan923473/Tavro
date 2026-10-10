@@ -6,6 +6,7 @@ import {
   toggleChallengeScheduleCompletionAction,
 } from "@/app/(app)/member/actions";
 import { ChallengeCompletionOfferCard } from "@/components/challenges/participant/challenge-completion-offer";
+import { ChallengeFeedbackForm } from "@/components/challenges/participant/challenge-feedback-form";
 import { LeaveChallengeButton } from "@/components/challenges/leave-challenge-button";
 import { ShareChallengeButton } from "@/components/share/share-challenge-button";
 import { Badge } from "@/components/ui/badge";
@@ -44,9 +45,16 @@ const MOODS = [
 export function ChallengeParticipantHub({
   hub,
   viewerUserId = null,
+  feedbackInitial = null,
 }: {
   hub: ChallengeParticipantHub;
   viewerUserId?: string | null;
+  feedbackInitial?: {
+    rating: number;
+    what_helped: string | null;
+    what_improve: string | null;
+    share_written_feedback: boolean;
+  } | null;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -166,6 +174,12 @@ export function ChallengeParticipantHub({
         </Card>
         {localHub.completionOffer ? (
           <ChallengeCompletionOfferCard offer={localHub.completionOffer} />
+        ) : null}
+        {!localHub.isOwner ? (
+          <ChallengeFeedbackForm
+            challengeId={localHub.challengeId}
+            initial={feedbackInitial}
+          />
         ) : null}
         <TabBar tab={tab} setTab={setTab} />
         {!localHub.isOwner ? (
