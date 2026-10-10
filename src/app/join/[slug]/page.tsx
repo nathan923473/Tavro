@@ -7,6 +7,7 @@ import {
   landingCanonicalPath,
 } from "@/lib/data/challenge-landing";
 import { creatorChallengePath } from "@/lib/data/creator-studio";
+import { challengeLandingMetadata } from "@/lib/seo/challenge-open-graph";
 import { notFound } from "next/navigation";
 
 type JoinChallengePageProps = {
@@ -16,9 +17,14 @@ type JoinChallengePageProps = {
 export async function generateMetadata({ params }: JoinChallengePageProps) {
   const { slug } = await params;
   const data = await fetchChallengeLandingByInviteSlug(slug, null);
-  return {
-    title: data?.challenge.title ?? "Challenge invite",
-  };
+  if (!data) return { title: "Challenge invite" };
+  const canonicalPath = landingCanonicalPath(data);
+  return challengeLandingMetadata({
+    title: data.challenge.title,
+    description: data.shortDescription ?? data.challenge.description,
+    canonicalPath,
+    coverUrl: data.challenge.coverUrl,
+  });
 }
 
 export default async function JoinChallengePage({ params }: JoinChallengePageProps) {

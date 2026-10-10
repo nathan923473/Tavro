@@ -9,12 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { CreatorApplicationRow } from "@/lib/creator/applications";
+import { applicationSourceLabel } from "@/lib/creator/growth";
 import { useState } from "react";
 
 export function CreatorApplicationReviewList({
   applications,
+  referrerNames,
 }: {
   applications: CreatorApplicationRow[];
+  referrerNames: Record<string, string>;
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -84,6 +87,21 @@ export function CreatorApplicationReviewList({
             <div>
               <dt className="font-medium">Verification code</dt>
               <dd className="font-mono">{app.verification_code ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="font-medium">Application source</dt>
+              <dd className="text-muted-foreground">
+                {applicationSourceLabel(app.application_source)}
+                {app.referred_by_user_id ? (
+                  <>
+                    {" "}
+                    · Referred by{" "}
+                    <span className="font-medium text-foreground">
+                      {referrerNames[app.referred_by_user_id] ?? app.referred_by_user_id}
+                    </span>
+                  </>
+                ) : null}
+              </dd>
             </div>
             <div>
               <dt className="font-medium">Pitch</dt>

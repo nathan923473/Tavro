@@ -15,6 +15,7 @@ import { ChallengeDateRange } from "@/components/challenges/challenge-date-range
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { LandingAttribution } from "@/components/analytics/landing-attribution";
 import { ChallengeCoverImage } from "@/components/challenges/challenge-cover-image";
+import { ChallengeCoachCta } from "@/components/challenges/challenge-coach-cta";
 import { CalendarRange, Gift, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -285,6 +286,8 @@ function ChallengeLandingBody({
           More from {challenge.creatorName} →
         </Link>
       ) : null}
+
+      <ChallengeCoachCta />
     </div>
   );
 }

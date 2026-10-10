@@ -7,6 +7,8 @@ import {
 } from "@/app/(app)/member/actions";
 import { ChallengeCompletionOfferCard } from "@/components/challenges/participant/challenge-completion-offer";
 import { LeaveChallengeButton } from "@/components/challenges/leave-challenge-button";
+import { ChallengeProgressStoryShare } from "@/components/challenges/participant/challenge-progress-story-share";
+import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { ShareChallengeButton } from "@/components/share/share-challenge-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -278,8 +280,11 @@ function HubHeader({
           <MoreHorizontal className="h-5 w-5" />
         </button>
         {shareOpen ? (
-          <div className="absolute right-0 top-11 z-10 w-48 rounded-xl border border-border bg-surface p-2 shadow-lg">
-            <ShareChallengeButton path={hub.canonicalPath} title={hub.title} fullWidth />
+          <div className="absolute right-0 top-11 z-10 w-56 rounded-xl border border-border bg-surface p-2 shadow-lg">
+            <div className="grid gap-2">
+              <CopyLinkButton url={hub.canonicalPath} label="Copy challenge link" fullWidth />
+              <ShareChallengeButton path={hub.canonicalPath} title={hub.title} fullWidth />
+            </div>
           </div>
         ) : null}
       </div>
@@ -655,6 +660,19 @@ function TabPanels({
             ))}
           </ul>
         </div>
+        {hub.completedDaysCount > 0 || hub.progressPercent > 0 ? (
+          <ChallengeProgressStoryShare
+            data={{
+              challengeTitle: hub.title,
+              creatorName: hub.creatorName,
+              completedDays: hub.completedDaysCount,
+              totalDays: hub.totalDays,
+              progressPercent: hub.progressPercent,
+              bestStreak: hub.bestStreak,
+              canonicalPath: hub.canonicalPath,
+            }}
+          />
+        ) : null}
       </Card>
     );
   }

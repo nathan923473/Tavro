@@ -14,6 +14,8 @@ export type CreatorApplicationRow = {
   verification_verified_at: string | null;
   dm_verification_requested_at: string | null;
   admin_notes: string | null;
+  referred_by_user_id: string | null;
+  application_source: string | null;
   created_at: string;
 };
 

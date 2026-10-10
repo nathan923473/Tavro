@@ -1,5 +1,6 @@
 "use server";
 
+import { readCreatorApplicationAttribution } from "@/lib/creator/growth-actions";
 import { bioContainsVerificationCode } from "@/lib/creator/verification";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
@@ -23,11 +24,24 @@ export async function submitCreatorApplication(formData: FormData): Promise<void
     throw new Error("You must be logged in.");
   }
 
-  const { data: appId, error } = await supabase.rpc("submit_creator_application", {
+  const attribution = await readCreatorApplicationAttribution();
+  const rpcArgs = {
     p_display_name: displayName,
     p_pitch: pitch,
     p_social_link: socialLink,
-  });
+    p_referred_by_user_id: attribution?.referredByUserId ?? null,
+    p_application_source: attribution?.source ?? "unknown",
+  };
+
+  let { data: appId, error } = await supabase.rpc("submit_creator_application", rpcArgs);
+
+  if (error && /p_referred_by|p_application_source|schema cache/i.test(error.message)) {
+    ({ data: appId, error } = await supabase.rpc("submit_creator_application", {
+      p_display_name: displayName,
+      p_pitch: pitch,
+      p_social_link: socialLink,
+    }));
+  }
 
   if (error) {
     throw new Error(error.message);
