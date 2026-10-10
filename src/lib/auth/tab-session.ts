@@ -36,10 +36,16 @@ export function supabaseAuthStorageKeyForTab(
   return `sb-${supabaseProjectRefFromUrl(supabaseUrl)}-auth-token-tab-${safe}`;
 }
 
+/** Tab-scoped cookies break mobile/PWA logins when the tab hint cookie is missing — off by default. */
+export function tabScopedAuthEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_TAB_SCOPED_AUTH === "true";
+}
+
 export function supabaseAuthCookieOptions(
   supabaseUrl: string,
   tabId: string | null | undefined,
 ) {
+  if (!tabScopedAuthEnabled()) return undefined;
   const safe = sanitizeTabId(tabId ?? null);
   if (!safe) return undefined;
   return { name: supabaseAuthStorageKeyForTab(supabaseUrl, safe) };

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PasswordInput } from "@/components/ui/password-input";
 import { APP_NAME } from "@/lib/branding";
-import { loginMember, signUpMember } from "@/app/(auth)/actions";
+import { signUpMember } from "@/app/(auth)/actions";
 import { getOrCreateTabId, syncTabHintCookie } from "@/lib/auth/tab-id.client";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -87,12 +87,13 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
         );
         return;
       } else {
-        const result = await loginMember({
+        // Client sign-in sets cookies reliably on mobile Safari / PWA (server actions can miss cookies).
+        const { error: signInError } = await supabase.auth.signInWithPassword({
           email: normalizedEmail,
           password: normalizedPassword,
-          tabId,
         });
-        if (!result.ok) throw new Error(result.message);
+        if (signInError) throw signInError;
+        await syncProfileAfterAuth();
         router.push(next);
         router.refresh();
       }
