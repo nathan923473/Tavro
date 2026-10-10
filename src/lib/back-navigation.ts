@@ -11,6 +11,7 @@ const EXACT_BACK: Record<string, string> = {
   "/studio": "/profile",
   "/studio/challenges/new": "/studio",
   "/studio/challenges/templates": "/studio/challenges/new",
+  "/studio/challenges/demo/report": "/studio/challenges",
   "/creator/dashboard": "/profile",
   "/creator/analytics": "/studio",
   "/following": "/challenges",

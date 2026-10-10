@@ -129,12 +129,20 @@ export default async function ManageChallengePage({ params, searchParams }: Prop
             Thank your community with a completion announcement and invite them to follow
             you for the next free challenge.
           </p>
-          <Link
-            href="/studio/announcements"
-            className="mt-3 inline-block text-sm font-semibold text-primary"
-          >
-            Post thank-you announcement →
-          </Link>
+          <div className="mt-3 flex flex-col gap-2">
+            <Link
+              href={`/studio/challenges/${id}/report`}
+              className="inline-flex min-h-10 items-center justify-center rounded-xl bg-primary px-3 text-sm font-semibold text-primary-foreground"
+            >
+              View report
+            </Link>
+            <Link
+              href="/studio/announcements"
+              className="text-sm font-semibold text-primary"
+            >
+              Post thank-you announcement →
+            </Link>
+          </div>
         </Card>
       ) : null}
 

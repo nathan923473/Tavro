@@ -24,6 +24,7 @@
     "test:founder-analytics": "node --test scripts/founder-analytics.test.mjs",
     "test:creator-display": "node --test --experimental-strip-types scripts/creator-display-name.test.mjs",
     "test:account-deletion": "node --test --experimental-strip-types scripts/account-deletion.test.mjs",
+    "test:challenge-report": "node --experimental-strip-types --import ./scripts/register-ts-extension.mjs --test scripts/challenge-report.test.mjs",
     "lint": "eslint",
     "icons": "node scripts/generate-icons.mjs",
     "postinstall": "node scripts/generate-icons.mjs"
