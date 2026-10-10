@@ -1,38 +1,32 @@
-import type { ChallengeReportPayload } from "@/types/challenge-report";
+import type { ChallengeReportPayloadV2 } from "@/types/challenge-report";
 
-/** Illustrative post-challenge report for Studio preview (not tied to real challenge data). */
-export function buildDemoChallengeReport(creatorName: string): ChallengeReportPayload {
+/** Illustrative v2 report for Studio preview (not tied to real challenge data). */
+export function buildDemoChallengeReport(creatorName: string): ChallengeReportPayloadV2 {
   const startDate = "2026-03-01";
   const endDate = "2026-03-21";
   const durationDays = 21;
-
   const dailyPattern = [
     18, 22, 24, 23, 21, 19, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 8, 7, 6, 6, 5,
   ];
-
   const daily = dailyPattern.map((activeParticipants, i) => {
-    const day = i + 1;
     const d = new Date(`${startDate}T12:00:00Z`);
     d.setUTCDate(d.getUTCDate() + i);
-    const dateKey = d.toISOString().slice(0, 10);
-    const checkIns = Math.round(activeParticipants * 1.35);
     return {
-      dateKey,
+      dateKey: d.toISOString().slice(0, 10),
       label: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
       activeParticipants,
-      checkIns,
+      checkIns: Math.round(activeParticipants * 1.35),
     };
   });
-
-  const totalCheckIns = daily.reduce((s, d) => s + d.checkIns, 0);
   const totalJoined = 47;
-  const startedParticipating = 38;
-  const completedParticipants = 19;
+  const started = 38;
+  const reached80 = 19;
 
   return {
-    version: 1,
+    version: 2,
     challengeId: "00000000-0000-4000-8000-000000000demo",
     generatedAt: new Date().toISOString(),
+    snapshotNote: "Demo data only — illustrative snapshot for layout preview.",
     overview: {
       challengeTitle: "21-Day Strength & Steps Reset (sample)",
       creatorName: creatorName.trim() || "You",
@@ -40,52 +34,105 @@ export function buildDemoChallengeReport(creatorName: string): ChallengeReportPa
       endDate,
       durationDays,
       challengeTimezone: "Australia/Sydney",
-      totalJoined,
-      startedParticipating,
-      completedParticipants,
-      completionRatePercent: Math.round((completedParticipants / totalJoined) * 100),
-      completionDefinition:
-        "Completed = activity progress ≥ 80% (Tavro participant progress, not enrollment alone).",
-      totalCheckIns,
-      totalScheduleActivityCompletions: 312,
+      totalJoined: { value: String(totalJoined), hint: "Members who joined this challenge." },
+      startedParticipating: {
+        value: String(started),
+        hint: "Distinct participants with qualifying check-in or activity.",
+      },
     },
-    engagement: {
+    progress: {
+      completionThresholdPercent: 80,
+      reached80Count: reached80,
+      completedParticipants: {
+        value: String(reached80),
+        hint: "Participants with progress ≥ 80%.",
+      },
+      completionRatePercent: Math.round((reached80 / totalJoined) * 100),
+      completionRateHint: "% of joined who reached ≥ 80% progress.",
+      averageProgressPercent: 62,
+      medianProgressPercent: 71,
+      distribution: [
+        { label: "0–25%", count: 6 },
+        { label: "26–50%", count: 9 },
+        { label: "51–79%", count: 13 },
+        { label: "80–100%", count: 19 },
+      ],
+    },
+    activity: {
+      totalCheckIns: { value: "512", hint: "Daily check-in rows." },
+      scheduleCompletions: { value: "312", hint: "Scheduled activity check-offs." },
+      plannedActivityDays: 18,
+      restDaysInSchedule: 3,
+      averageCheckInsPerActiveParticipant: 13.5,
+    },
+    dailyEngagement: {
       daily,
-      averageCheckInsPerParticipant: Math.round((totalCheckIns / startedParticipating) * 10) / 10,
+      chartLabel: "Daily active participants",
+      trendSummary:
+        "Daily activity was highest during the first week and declined toward the end of the challenge.",
       peakDayLabel: daily[2]?.label ?? null,
-      peakDayActive: daily[2]?.activeParticipants ?? 0,
+      peakDayActive: 24,
     },
     community: {
       challengeAnnouncements: 6,
       communityAnnouncementsDuringChallenge: 4,
-      note: "Aggregate announcement counts only — no private group chats or personal reflections.",
+      chatMessagesDuringChallenge: 28,
+      note: "Public challenge chat only.",
     },
     coaching: {
-      status: "community_aggregate",
-      totalCommunityLinkClicksDuringChallenge: 14,
-      uniqueCommunityLinkClickDays: 9,
-      message:
-        "Community-wide link clicks during this challenge window (not verified sales or per-offer attribution).",
+      programLinkClicks: 14,
+      completionOfferClicks: 6,
+      uniqueClickers: null,
+      trackingNote: "Sample click counts during the challenge window.",
+      disclaimer: "Clicks are interest signals, not verified sales.",
+    },
+    acquisition: {
+      classifiedParticipants: totalJoined,
+      unclassifiedCount: 4,
+      sources: [
+        { key: "challenge_page", label: "Challenge page", count: 22 },
+        { key: "creator_page", label: "Creator page", count: 8 },
+        { key: "in_app_discovery", label: "In-app discovery", count: 7 },
+        { key: "participant_referral", label: "Participant referral", count: 6 },
+        { key: "unknown", label: "Unknown / not recorded", count: 4 },
+      ],
+      note: "Each participant counted once.",
+    },
+    growth: {
+      referralAttributedJoins: 6,
+      newPlatformAccountsAtJoin: 11,
+      note: "May overlap with acquisition — do not add to source totals.",
+    },
+    feedback: {
+      responseCount: 12,
+      averageRating: 4.2,
+      ratingDisplaySafe: true,
+      consentedWrittenSamples: ["Daily reminders helped · More midpoint check-ins"],
+      emptyMessage: "",
     },
     insights: [
-      "Daily participation was stronger in the first half of the challenge than in the second half.",
-      "Participants were most consistent during the opening week.",
-      "Peak daily participation was 24 active participants on Mar 3.",
-      "9 participants joined but never logged a check-in or activity completion.",
+      "19 of 47 participants reached at least 80% progress.",
+      "Participation was highest during the first four days.",
+      "Daily activity was highest during the first week and declined toward the end of the challenge.",
     ],
     recommendations: [
-      "Try a midpoint milestone or creator update around the halfway mark to re-engage participants.",
-      "Improve first-day onboarding: welcome message, clear Day 1 actions, and a reminder to complete the first check-in.",
-      "Experiment with more community updates during the challenge to spark discussion between check-ins.",
+      "Activity dipped later in the run — test a midpoint milestone around the halfway mark.",
+      "Your completion offer received clicks — try a clearer coaching CTA on the final day.",
     ],
     comparison: {
       previousChallengeId: "00000000-0000-4000-8000-000000000prev",
-      previousChallengeTitle: "14-Day Morning Movement (sample previous)",
+      previousChallengeTitle: "14-Day Morning Movement (sample)",
+      previousStartDate: "2026-01-05",
+      previousEndDate: "2026-01-18",
+      previousDurationDays: 14,
       participantsChangePercent: 24,
       completionRateChangePoints: 5,
+      avgProgressChangePoints: 8,
       avgDailyActiveChangePercent: 12,
       totalCheckInsChangePercent: 18,
       coachingClicksChangePercent: 40,
+      comparisonNote:
+        "Previous challenge was 14 days; this one was 21 days — compare daily active participants rather than totals alone.",
     },
   };
 }

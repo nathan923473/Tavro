@@ -5,7 +5,7 @@ import {
 import { buildCreatorChallengeWindow } from "@/lib/challenge-lifecycle/creator-windows";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import type { ChallengeReportPayload } from "@/types/challenge-report";
+import type { AnyChallengeReportPayload } from "@/types/challenge-report";
 
 async function assertCreatorOwnsChallenge(userId: string, challengeId: string) {
   const supabase = await createClient();
@@ -48,7 +48,7 @@ export async function getOrGenerateChallengeReport(
   challengeId: string,
   options?: { isAdmin?: boolean },
 ): Promise<
-  | { status: "ready"; report: ChallengeReportPayload }
+  | { status: "ready"; report: AnyChallengeReportPayload }
   | { status: "not_completed" }
   | { status: "forbidden" }
   | { status: "error"; message: string }
@@ -89,7 +89,7 @@ export async function getOrGenerateChallengeReport(
     .maybeSingle();
 
   if (existing?.report && !readErr) {
-    return { status: "ready", report: existing.report as ChallengeReportPayload };
+    return { status: "ready", report: existing.report as AnyChallengeReportPayload };
   }
 
   const admin = createAdminClient();
@@ -133,7 +133,7 @@ export async function getOrGenerateChallengeReport(
       .maybeSingle();
 
     if (after?.report) {
-      return { status: "ready", report: after.report as ChallengeReportPayload };
+      return { status: "ready", report: after.report as AnyChallengeReportPayload };
     }
 
     return { status: "ready", report };

@@ -1,6 +1,7 @@
 import { ChallengeParticipantHub } from "@/components/challenges/participant/challenge-participant-hub";
 import { BackButton } from "@/components/layout/back-button";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
+import { fetchMyChallengeFeedback } from "@/lib/challenge-report/challenge-feedback-actions";
 import { fetchChallengeParticipantHub } from "@/lib/data/challenge-participant-hub";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -27,6 +28,11 @@ export default async function JoinedChallengePage({ params }: Props) {
   const hub = await fetchChallengeParticipantHub(id, user.id);
   if (!hub) redirect("/challenges");
 
+  const feedbackInitial =
+    hub.phase === "completed" && !hub.isOwner
+      ? await fetchMyChallengeFeedback(id, user.id)
+      : null;
+
   return (
     <div className="animate-fade-up pb-6">
       <div className="sticky top-0 z-40 border-b border-border/50 bg-background/90 px-3 py-3 backdrop-blur-md">
@@ -34,7 +40,11 @@ export default async function JoinedChallengePage({ params }: Props) {
       </div>
       <div className="px-4 py-4">
         <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
-          <ChallengeParticipantHub hub={hub} viewerUserId={user.id} />
+          <ChallengeParticipantHub
+            hub={hub}
+            viewerUserId={user.id}
+            feedbackInitial={feedbackInitial}
+          />
         </Suspense>
       </div>
     </div>
