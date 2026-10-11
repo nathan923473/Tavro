@@ -72,6 +72,14 @@ In **SQL Editor**, run in order:
 
 Log in always uses your email + password on the **Log in** page.
 
+### Forgot password (self-serve)
+
+1. On **Log in**, tap **Forgot password?** (or open `/forgot-password`).
+2. Enter your email — Supabase sends a reset link (same redirect rules as sign-up).
+3. Open the link on the **same device/browser** you use for Tavro; you land on **Reset password** to set a new one.
+
+Redirect URLs in step 3 must include your app origin (e.g. `https://tavro-tan.vercel.app/**`) so the link can return through `/auth/callback`.
+
 ## 5. Verify
 
 ```bash
@@ -84,7 +92,7 @@ npm run check:auth
 |--------|-----|
 | Database error saving new user | Run migration **003** |
 | Email rate limit exceeded | Add **service role** key, or disable confirm email + wait |
-| Invalid login credentials | Sign up first, or reset password in **Authentication → Users** |
+| Invalid login credentials | Sign up first, use **Forgot password?** on log in, or reset in **Authentication → Users** |
 | User already registered | Use **Log in** |
 | Groups create/join fails (RLS) | Run migrations **006** then **`007_one_shot_fix_groups.sql`** (see step 7 above) |
 | **Log in doesn’t work** / invalid credentials | Same email must exist under **Authentication → Users** for **this** project. Try **Sign up** first, or reset password in Supabase. Check `.env.local` URL/key match that project. Run `npm run check:auth`. Turn off **Confirm email**. After changing `.env.local`, restart `npm run dev`. |
