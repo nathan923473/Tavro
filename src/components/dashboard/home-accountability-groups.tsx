@@ -4,6 +4,7 @@ import { GroupCheckInReactions } from "@/components/groups/group-check-in-reacti
 import { Card } from "@/components/ui/card";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { computeTodayAccountabilityStats } from "@/lib/groups/check-in-board-stats";
+import { groupFocusLabel } from "@/lib/groups/focus-labels";
 import type { AccountabilityGroup } from "@/types";
 import Link from "next/link";
 
@@ -62,6 +63,12 @@ export function HomeAccountabilityGroups({
       <Card className="space-y-3">
         <div>
           <p className="font-semibold text-[#1B2440]">{group.name}</p>
+          <p className="text-xs font-medium text-[#3156E8]">
+            {groupFocusLabel(group.focusType, group.focusCustomLabel)}
+          </p>
+          {group.sharedGoal ? (
+            <p className="text-sm text-muted-foreground">{group.sharedGoal}</p>
+          ) : null}
           <p className="text-sm text-muted-foreground">
             {stats.scheduledCount > 0
               ? `${stats.checkedInCount} of ${stats.scheduledCount} checked in today`

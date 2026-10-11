@@ -3,7 +3,8 @@ import { HomeChallengesSection } from "@/components/dashboard/home-challenges-se
 import { HomeDailyCheckIn } from "@/components/dashboard/home-daily-check-in";
 import { HomeCreatorStudioShortcut } from "@/components/dashboard/home-creator-studio-shortcut";
 import { HomeDailySummary } from "@/components/dashboard/home-daily-summary";
-import { TodaysHabits } from "@/components/dashboard/todays-habits";
+import { TodaysGoals } from "@/components/dashboard/todays-goals";
+import { fetchMemberGoalPreferences } from "@/lib/data/member-preferences";
 import { WeeklyConsistencyHome } from "@/components/dashboard/weekly-consistency-home";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
@@ -75,12 +76,13 @@ export default async function HomePage() {
     if (tzRow?.timezone) timezone = tzRow.timezone as string;
   }
 
-  const [dashboard, joinedChallenges, groupData] = await Promise.all([
+  const [dashboard, joinedChallenges, groupData, memberPrefs] = await Promise.all([
     userId ? fetchHomeDashboardBundle(userId) : Promise.resolve(emptyDashboard),
     userId ? fetchJoinedChallengesForHome(userId) : Promise.resolve([]),
     userId
       ? fetchUserGroup(userId)
       : Promise.resolve({ group: null, feed: [], pendingJoin: null }),
+    userId ? fetchMemberGoalPreferences(userId) : Promise.resolve({ workTowards: null, growthFriction: null }),
   ]);
 
   const activeChallenge = joinedChallenges.find((c) => c.joined && challengeIsActive(c));
@@ -103,7 +105,7 @@ export default async function HomePage() {
 
   return (
     <div className="animate-fade-up">
-      <PageHeader title="Home" subtitle="Your daily accountability hub" />
+      <PageHeader title="Home" subtitle="Today&apos;s habits, challenges and support" />
       <div className="space-y-5 px-4 py-4">
         <HomeDailySummary
           firstName={firstName}
@@ -118,13 +120,30 @@ export default async function HomePage() {
           <HomeCreatorStudioShortcut />
         ) : null}
 
-        <TodaysHabits goals={goals} loggedIn={Boolean(userId)} />
+        <TodaysGoals
+          goals={goals}
+          group={groupData.group}
+          activeChallengeHub={activeChallengeHub}
+          viewerUserId={userId}
+          loggedIn={Boolean(userId)}
+        />
 
-        {hasActiveChallenge ? (
+        {memberPrefs.growthFriction === "support" ||
+        memberPrefs.growthFriction === "consistency" ? (
+          <>
+            <HomeAccountabilityGroups group={groupData.group} viewerUserId={userId} />
+            <HomeChallengesSection
+              challenges={joinedChallenges}
+              activeHub={activeChallengeHub}
+              workTowards={memberPrefs.workTowards}
+            />
+          </>
+        ) : hasActiveChallenge ? (
           <>
             <HomeChallengesSection
               challenges={joinedChallenges}
               activeHub={activeChallengeHub}
+              workTowards={memberPrefs.workTowards}
             />
             <HomeAccountabilityGroups group={groupData.group} viewerUserId={userId} />
           </>
@@ -133,7 +152,8 @@ export default async function HomePage() {
             <HomeAccountabilityGroups group={groupData.group} viewerUserId={userId} />
             <HomeChallengesSection
               challenges={joinedChallenges}
-              activeHub={null}
+              activeHub={activeChallengeHub}
+              workTowards={memberPrefs.workTowards}
             />
           </>
         )}

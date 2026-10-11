@@ -19,6 +19,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import { HABIT_PRESETS } from "@/lib/habits/presets";
+import {
+  GROWTH_FRICTION_OPTIONS,
+  WORK_TOWARDS_OPTIONS,
+  type GrowthFriction,
+  type WorkTowards,
+} from "@/lib/member/preferences";
 import { ArrowRight, Check, Users } from "lucide-react";
 import {
   ACCOUNTABILITY_GROUP_PLURAL,
@@ -26,14 +32,7 @@ import {
   ACCOUNTABILITY_GROUP_SIZE_LABEL,
 } from "@/lib/copy/accountability-groups";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
-
-const goalOptions = [
-  "Move more consistently",
-  "Improve energy & sleep",
-  "Build mindful eating habits",
-  "Stay accountable with friends",
-];
+import { useMemo, useState, useTransition } from "react";
 
 const onboardingHabits = HABIT_PRESETS.map((p) => p.label);
 
@@ -50,20 +49,32 @@ export function OnboardingFlow({
   const searchParams = useSearchParams();
   const invitedToGroup = searchParams.get("group") === "1";
   const inviteCode = searchParams.get("code") ?? undefined;
-  const [step, setStep] = useState(0);
-  const [selectedGoal, setSelectedGoal] = useState(goalOptions[0]);
+  const nextPath = searchParams.get("next")?.trim() || null;
+  const compact = Boolean(nextPath);
+
+  const stepIds = useMemo(() => {
+    if (compact) return ["work", "friction"] as const;
+    return ["work", "friction", "habits", "timezone", "avatar", "group"] as const;
+  }, [compact]);
+
+  const [stepIndex, setStepIndex] = useState(0);
+  const [workTowards, setWorkTowards] = useState<WorkTowards>("healthier_habits");
+  const [growthFriction, setGrowthFriction] = useState<GrowthFriction | "">("");
   const [selectedHabits, setSelectedHabits] = useState<string[]>([
     "Walk for 20 minutes",
     "Drink water with each meal",
   ]);
   const [wantsGroup, setWantsGroup] = useState(invitedToGroup);
   const [auState, setAuState] = useState<AuStateOrTerritory | "">("");
-  const [timezone, setTimezone] = useState(() => detectBrowserTimezone() ?? "Australia/Melbourne");
+  const [timezone, setTimezone] = useState(
+    () => detectBrowserTimezone() ?? "Australia/Melbourne",
+  );
   const [timezoneSource, setTimezoneSource] = useState<string>("device");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const totalSteps = 5;
+  const step = stepIds[stepIndex];
+  const totalSteps = stepIds.length;
 
   function applyStateFallback(state: AuStateOrTerritory | "") {
     setAuState(state);
@@ -82,7 +93,7 @@ export function OnboardingFlow({
     }
   }
 
-  function finish() {
+  function finish(options?: { skipHabitSeed?: boolean; skipTimezone?: boolean }) {
     startTransition(async () => {
       try {
         const resolved = resolveInitialTimezone({
@@ -91,15 +102,18 @@ export function OnboardingFlow({
           stored: timezone,
         });
         await completeOnboarding({
-          focusGoal: selectedGoal,
-          habits: selectedHabits.slice(0, 5),
+          workTowards,
+          growthFriction: growthFriction || null,
+          habits: options?.skipHabitSeed ? [] : selectedHabits,
           createGroup: wantsGroup && !inviteCode,
           inviteCode,
           timezone: resolved.timezone,
           auStateOrTerritory: auState || null,
           timezoneSource: timezoneSource || resolved.source,
+          skipHabitSeed: options?.skipHabitSeed,
+          skipTimezone: options?.skipTimezone ?? compact,
         });
-        router.push("/");
+        router.push(nextPath ?? "/");
         router.refresh();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Could not save onboarding.");
@@ -115,35 +129,41 @@ export function OnboardingFlow({
             key={i}
             className={cn(
               "h-1 flex-1 rounded-full transition-colors",
-              i <= step ? "bg-primary" : "bg-muted",
+              i <= stepIndex ? "bg-primary" : "bg-muted",
             )}
           />
         ))}
       </div>
 
-      {step === 0 ? (
+      {compact ? (
+        <p className="mb-4 text-sm text-muted-foreground">
+          Quick setup — then we&apos;ll take you back to your challenge.
+        </p>
+      ) : null}
+
+      {step === "work" ? (
         <div className="animate-fade-up flex flex-1 flex-col">
-          <BrandWordmark size="md" className="mb-3" />
+          {!compact ? <BrandWordmark size="md" className="mb-3" /> : null}
           <h1 className="text-2xl font-bold tracking-tight">
-            Welcome to {APP_NAME}
+            {compact ? "What are you working towards?" : `Welcome to ${APP_NAME}`}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Pick one focus — saved to your account.
+            What would you like to work towards?
           </p>
           <ul className="mt-6 space-y-2">
-            {goalOptions.map((goal) => (
-              <li key={goal}>
+            {WORK_TOWARDS_OPTIONS.map((o) => (
+              <li key={o.value}>
                 <button
                   type="button"
-                  onClick={() => setSelectedGoal(goal)}
+                  onClick={() => setWorkTowards(o.value)}
                   className={cn(
                     "w-full rounded-xl border px-4 py-3 text-left text-sm transition-colors",
-                    selectedGoal === goal
+                    workTowards === o.value
                       ? "border-primary bg-secondary/60 font-medium"
                       : "border-border bg-surface",
                   )}
                 >
-                  {goal}
+                  {o.label}
                 </button>
               </li>
             ))}
@@ -151,11 +171,41 @@ export function OnboardingFlow({
         </div>
       ) : null}
 
-      {step === 1 ? (
+      {step === "friction" ? (
+        <div className="animate-fade-up flex flex-1 flex-col">
+          <h1 className="text-2xl font-semibold">What do you find most difficult?</h1>
+          <p className="mt-2 text-muted-foreground">Optional — helps us highlight what supports you.</p>
+          <ul className="mt-6 space-y-2">
+            {GROWTH_FRICTION_OPTIONS.map((o) => (
+              <li key={o.value}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setGrowthFriction((prev) => (prev === o.value ? "" : o.value))
+                  }
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left text-sm transition-colors",
+                    growthFriction === o.value
+                      ? "border-primary bg-secondary/60 font-medium"
+                      : "border-border bg-surface",
+                  )}
+                >
+                  {o.label}
+                  {growthFriction === o.value ? (
+                    <Check className="h-4 w-4 text-primary" aria-hidden />
+                  ) : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {step === "habits" ? (
         <div className="animate-fade-up flex flex-1 flex-col">
           <h1 className="text-2xl font-semibold">Choose a few habits</h1>
           <p className="mt-2 text-muted-foreground">
-            Pick 3–5 healthy habits — you can edit these anytime on Progress.
+            Pick up to 5 — or skip and add them later on Progress.
           </p>
           <ul className="mt-6 space-y-2">
             {onboardingHabits.map((habit) => {
@@ -193,7 +243,7 @@ export function OnboardingFlow({
         </div>
       ) : null}
 
-      {step === 2 ? (
+      {step === "timezone" ? (
         <div className="animate-fade-up flex flex-1 flex-col">
           <h1 className="text-2xl font-semibold">Where are you based?</h1>
           <p className="mt-2 text-muted-foreground">
@@ -221,7 +271,6 @@ export function OnboardingFlow({
             <div>
               <p className="text-sm font-semibold">Your timezone</p>
               <p className="text-sm text-muted-foreground">{friendlyTimezoneTitle(timezone)}</p>
-              <p className="text-xs text-muted-foreground">{timezone}</p>
             </div>
             <TimezoneSelect
               value={timezone}
@@ -230,19 +279,14 @@ export function OnboardingFlow({
                 setTimezoneSource("manual");
               }}
             />
-            <p className="text-xs text-muted-foreground">
-              We&apos;ll use this for local times and reminders. You can change it anytime in Profile.
-            </p>
           </Card>
         </div>
       ) : null}
 
-      {step === 3 ? (
+      {step === "avatar" ? (
         <div className="animate-fade-up flex flex-1 flex-col">
           <h1 className="text-2xl font-semibold">Add a profile picture</h1>
-          <p className="mt-2 text-muted-foreground">
-            Optional — friends see this in your private accountability group.
-          </p>
+          <p className="mt-2 text-muted-foreground">Optional — friends see this in your group.</p>
           <Card className="mt-6">
             <ProfileAvatarEditor
               userId={userId}
@@ -254,20 +298,20 @@ export function OnboardingFlow({
             type="button"
             variant="ghost"
             className="mt-3"
-            onClick={() => setStep((s) => s + 1)}
+            onClick={() => setStepIndex((s) => s + 1)}
           >
             Skip for now
           </Button>
         </div>
       ) : null}
 
-      {step === 4 ? (
+      {step === "group" ? (
         <div className="animate-fade-up flex flex-1 flex-col">
           <h1 className="text-2xl font-semibold capitalize">
             {ACCOUNTABILITY_GROUP_PLURAL} (optional)
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Join a {ACCOUNTABILITY_GROUP_SINGULAR} or stay solo — both work.
+            Small groups help you stay consistent — invite-only by default.
           </p>
           <Card className="mt-6">
             <button
@@ -302,18 +346,45 @@ export function OnboardingFlow({
       ) : null}
 
       <div className="mt-8 space-y-2 pb-[env(safe-area-inset-bottom)]">
-        {step < totalSteps - 1 ? (
-          <Button fullWidth onClick={() => setStep((s) => s + 1)}>
-            Continue
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Button>
+        {stepIndex < totalSteps - 1 ? (
+          <>
+            <Button fullWidth onClick={() => setStepIndex((s) => s + 1)}>
+              Continue
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Button>
+            {step === "friction" ? (
+              <Button
+                variant="ghost"
+                fullWidth
+                onClick={() => {
+                  setGrowthFriction("");
+                  if (stepIndex >= totalSteps - 1) {
+                    finish({ skipHabitSeed: true });
+                  } else {
+                    setStepIndex((s) => s + 1);
+                  }
+                }}
+              >
+                Skip
+              </Button>
+            ) : null}
+            {step === "habits" ? (
+              <Button
+                variant="ghost"
+                fullWidth
+                onClick={() => setStepIndex((s) => s + 1)}
+              >
+                Skip habits for now
+              </Button>
+            ) : null}
+          </>
         ) : (
-          <Button fullWidth disabled={pending} onClick={finish}>
-            {pending ? "Saving…" : "Go to my dashboard"}
+          <Button fullWidth disabled={pending} onClick={() => finish(compact ? { skipHabitSeed: true } : undefined)}>
+            {pending ? "Saving…" : compact ? "Continue to challenge" : "Go to my dashboard"}
           </Button>
         )}
-        {step > 0 ? (
-          <Button variant="ghost" fullWidth onClick={() => setStep((s) => s - 1)}>
+        {stepIndex > 0 ? (
+          <Button variant="ghost" fullWidth onClick={() => setStepIndex((s) => s - 1)}>
             Back
           </Button>
         ) : null}

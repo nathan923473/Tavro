@@ -125,18 +125,83 @@ export async function saveParticipantTimezoneAction(input: {
   return { ok: true as const };
 }
 
+export async function updateMemberGoalPreferencesAction(input: {
+  workTowards: string;
+  growthFriction?: string | null;
+}) {
+  const { supabase, userId } = await requireUserId();
+  const { isWorkTowards, isGrowthFriction } = await import("@/lib/member/preferences");
+  if (!isWorkTowards(input.workTowards)) {
+    throw new Error("Choose what you would like to work towards.");
+  }
+  let friction: string | null = null;
+  if (input.growthFriction != null && input.growthFriction !== "") {
+    if (!isGrowthFriction(input.growthFriction)) {
+      throw new Error("Invalid difficulty option.");
+    }
+    friction = input.growthFriction;
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      work_towards: input.workTowards,
+      growth_friction: friction,
+    })
+    .eq("id", userId);
+
+  if (error && /work_towards|growth_friction|schema cache/i.test(error.message)) {
+    throw new Error("Run migration 045_member_goal_preferences.sql in Supabase.");
+  }
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/");
+  revalidatePath("/profile");
+  revalidatePath("/challenges");
+  return { ok: true as const };
+}
+
 export async function completeOnboarding(input: {
-  focusGoal: string;
-  habits: string[];
+  workTowards: string;
+  growthFriction?: string | null;
+  habits?: string[];
   createGroup: boolean;
   inviteCode?: string;
   timezone?: string;
   auStateOrTerritory?: AuStateOrTerritory | null;
   timezoneSource?: string;
+  skipHabitSeed?: boolean;
+  skipTimezone?: boolean;
 }) {
   const { supabase, userId } = await requireUserId();
+  const { isWorkTowards, isGrowthFriction } = await import("@/lib/member/preferences");
 
-  if (input.timezone && isValidIanaTimezone(input.timezone)) {
+  if (!isWorkTowards(input.workTowards)) {
+    throw new Error("Choose what you would like to work towards.");
+  }
+
+  let friction: string | null = null;
+  if (input.growthFriction != null && input.growthFriction !== "") {
+    if (!isGrowthFriction(input.growthFriction)) {
+      throw new Error("Invalid difficulty option.");
+    }
+    friction = input.growthFriction;
+  }
+
+  const { error: prefError } = await supabase
+    .from("profiles")
+    .update({
+      work_towards: input.workTowards,
+      growth_friction: friction,
+    })
+    .eq("id", userId);
+
+  if (prefError && /work_towards|growth_friction|schema cache/i.test(prefError.message)) {
+    throw new Error("Run migration 045_member_goal_preferences.sql in Supabase.");
+  }
+  if (prefError) throw new Error(prefError.message);
+
+  if (!input.skipTimezone && input.timezone && isValidIanaTimezone(input.timezone)) {
     await saveParticipantTimezoneAction({
       timezone: input.timezone,
       auStateOrTerritory: input.auStateOrTerritory,
@@ -145,28 +210,27 @@ export async function completeOnboarding(input: {
     });
   }
 
-  const habitTitles = input.habits.length
-    ? input.habits.slice(0, 5)
-    : ["Daily movement"];
+  const habitTitles = (input.habits ?? []).filter((h) => h.trim()).slice(0, 5);
 
-  const goals = habitTitles.map((title, i) => ({
-    title,
-    category: i === 0 ? "movement" : "routine",
-    sort_order: i,
-    user_id: userId,
-  }));
+  if (!input.skipHabitSeed && habitTitles.length > 0) {
+    const { count } = await supabase
+      .from("member_goals")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("active", true);
 
-  if (input.focusGoal.trim()) {
-    goals.push({
-      title: input.focusGoal.trim(),
-      category: "mindfulness",
-      sort_order: goals.length,
-      user_id: userId,
-    });
+    if ((count ?? 0) === 0) {
+      const goals = habitTitles.map((title, i) => ({
+        title,
+        category: i === 0 ? "movement" : "routine",
+        sort_order: i,
+        user_id: userId,
+        active: true,
+      }));
+      const { error: insertError } = await supabase.from("member_goals").insert(goals);
+      if (insertError) throw new Error(insertError.message);
+    }
   }
-
-  await supabase.from("member_goals").delete().eq("user_id", userId);
-  await supabase.from("member_goals").insert(goals);
 
   if (input.inviteCode?.trim()) {
     await joinGroupByInviteCode(input.inviteCode.trim());
@@ -175,6 +239,7 @@ export async function completeOnboarding(input: {
   }
 
   revalidatePath("/");
+  revalidatePath("/profile");
   return { ok: true as const };
 }
 

@@ -32,8 +32,8 @@ export function HabitManager({
       </h2>
       <Card className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          Add new goals anytime. Choose 3–5 to start; edit frequency or pause
-          below — no medical targets.
+          Small, sustainable habits beat perfect streaks. Choose 3–5 to start; pause
+          anytime and pick up after a missed day — no calorie counting or medical targets.
         </p>
         <HabitQuickAdd />
       </Card>

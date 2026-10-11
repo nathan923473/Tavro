@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card";
 import type { ChallengeParticipantHub } from "@/lib/data/challenge-participant-hub";
 import { challengePhaseFromInstants } from "@/lib/timezone/challenge-calendar";
 import { resolveChallengeEndAt, resolveChallengeStartAt } from "@/lib/timezone/challenge-fields";
+import type { WorkTowards } from "@/lib/member/preferences";
+import { workTowardsLabel } from "@/lib/member/preferences";
 import type { Challenge } from "@/types";
 import Link from "next/link";
 
@@ -30,9 +32,11 @@ function phaseOf(c: Challenge): "upcoming" | "active" | "completed" {
 export function HomeChallengesSection({
   challenges,
   activeHub,
+  workTowards = null,
 }: {
   challenges: Challenge[];
   activeHub: ChallengeParticipantHub | null;
+  workTowards?: WorkTowards | null;
 }) {
   const joined = challenges.filter((c) => c.joined);
   const active = joined.filter((c) => phaseOf(c) === "active");
@@ -46,7 +50,9 @@ export function HomeChallengesSection({
         </h2>
         <Card className="mt-2">
           <p className="text-sm text-muted-foreground">
-            Join a free creator challenge for structured daily activities.
+            {workTowards
+              ? `Free creator challenges that fit your focus — ${workTowardsLabel(workTowards).toLowerCase()}.`
+              : "Join a free creator challenge for structured daily activities."}
           </p>
           <Link
             href="/challenges"

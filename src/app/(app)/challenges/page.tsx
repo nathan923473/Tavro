@@ -5,6 +5,8 @@ import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { DiscoverInteractive } from "@/components/discover/discover-interactive";
 import { fetchChallengesForUser } from "@/lib/data/challenges";
 import { fetchDiscoverSections } from "@/lib/data/discover";
+import { fetchMemberGoalPreferences } from "@/lib/data/member-preferences";
+import { sortChallengesByMemberPreferences } from "@/lib/member/sort-challenges";
 import { fetchChallengeMessages } from "@/lib/data/messages";
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
@@ -21,10 +23,20 @@ export default async function ChallengesPage() {
     user?.email?.split("@")[0] ??
     "Member";
 
-  const [{ mine }, discoverSections] = await Promise.all([
+  const [{ mine }, discoverSections, memberPrefs] = await Promise.all([
     fetchChallengesForUser(userId),
     fetchDiscoverSections(),
+    userId
+      ? fetchMemberGoalPreferences(userId)
+      : Promise.resolve({ workTowards: null, growthFriction: null }),
   ]);
+
+  const personalizedDiscover = {
+    ...discoverSections,
+    active: sortChallengesByMemberPreferences(discoverSections.active, memberPrefs),
+    upcoming: sortChallengesByMemberPreferences(discoverSections.upcoming, memberPrefs),
+    featured: sortChallengesByMemberPreferences(discoverSections.featured, memberPrefs),
+  };
 
   const challengeMessages: Record<string, Awaited<ReturnType<typeof fetchChallengeMessages>>> = {};
   for (const c of mine) {
@@ -39,7 +51,7 @@ export default async function ChallengesPage() {
       />
       <div className="space-y-6 px-4 py-4">
         <DiscoverInteractive
-          initial={discoverSections}
+          initial={personalizedDiscover}
           variant="embedded"
           viewerUserId={userId}
           joinedChallengeIds={mine.map((c) => c.id)}

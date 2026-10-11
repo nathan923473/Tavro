@@ -182,7 +182,7 @@ export function GroupsInteractive({
             <input
               value={newGroupSharedGoal}
               onChange={(e) => setNewGroupSharedGoal(e.target.value)}
-              placeholder="Stay consistent with daily movement"
+              placeholder="e.g. Walk regularly, exercise 3× weekly, sustainable routines"
               className="mt-1 w-full rounded-xl border border-border px-3 py-2.5 text-sm"
             />
           </label>

@@ -17,6 +17,8 @@ import { DeleteAccountSection } from "@/components/profile/delete-account-sectio
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchMemberGoals } from "@/lib/data/member";
+import { fetchMemberGoalPreferences } from "@/lib/data/member-preferences";
+import { MemberGoalPreferencesCard } from "@/components/profile/member-goal-preferences-card";
 import { userReferralPath } from "@/lib/site-url";
 import Link from "next/link";
 import { BarChart3, Shield, Users } from "lucide-react";
@@ -32,6 +34,9 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   const { user, profile } = await getCurrentUserProfile();
   const referralCode = profile?.referralCode ?? "sign-in-for-code";
   const goals = user ? await fetchMemberGoals(user.id) : [];
+  const memberPrefs = user
+    ? await fetchMemberGoalPreferences(user.id)
+    : { workTowards: null, growthFriction: null };
 
   let timezone: string | null = null;
   let auState: AuStateOrTerritory | null = null;
@@ -120,8 +125,15 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
         </Card>
 
         {profile ? (
+          <MemberGoalPreferencesCard
+            workTowards={memberPrefs.workTowards}
+            growthFriction={memberPrefs.growthFriction}
+          />
+        ) : null}
+
+        {profile ? (
           <Card>
-            <p className="text-sm font-medium">Your active goals</p>
+            <p className="text-sm font-medium">Your active habits</p>
             {goals.length > 0 ? (
               <div className="mt-2 flex flex-wrap gap-2">
                 {goals.map((g) => (
