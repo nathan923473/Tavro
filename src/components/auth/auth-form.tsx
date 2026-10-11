@@ -115,7 +115,7 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
         raw.toLowerCase().includes("invalid_credentials")
       ) {
         setMessage(
-          "Wrong email or password for this Supabase project — or this account was never created. Try Sign up with the same email and a new password (dev mode updates the password), or in Supabase → Authentication → Users reset the password for your email.",
+          "Wrong email or password — or this account was not created yet. Try Forgot password? below, Sign up with the same email, or reset the password in Supabase → Authentication → Users.",
         );
       } else {
         setMessage(raw);
