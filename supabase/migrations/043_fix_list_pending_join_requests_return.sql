@@ -1,5 +1,16 @@
 -- Fix 42P13 if 042 failed at list_group_pending_join_requests (return type change).
+-- Also adds request_source if 042 never got past the earlier ALTERs.
 -- Safe to run even if 042 completed successfully.
+
+alter table public.group_join_requests
+  add column if not exists request_source text not null default 'invite';
+
+alter table public.group_join_requests
+  drop constraint if exists group_join_requests_request_source_check;
+
+alter table public.group_join_requests
+  add constraint group_join_requests_request_source_check
+  check (request_source in ('invite', 'discovery'));
 
 drop function if exists public.list_group_pending_join_requests(uuid);
 
