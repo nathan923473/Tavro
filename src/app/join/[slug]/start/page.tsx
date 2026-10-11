@@ -2,6 +2,7 @@ import { ChallengeParticipantOnboarding } from "@/components/challenges/challeng
 import { StandalonePageHeader } from "@/components/layout/standalone-page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchChallengeLandingByInviteSlug } from "@/lib/data/challenge-landing";
+import { challengeTotalDays } from "@/lib/challenge-day";
 import { redirect } from "next/navigation";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -32,6 +33,11 @@ export default async function ChallengeParticipantStartPage({ params }: Props) {
         challengeTitle={data.challenge.title}
         creatorName={data.communityName ?? data.challenge.creatorName}
         startDate={data.challenge.startDate}
+        endDate={data.challenge.endDate}
+        challengeTimezone={data.challenge.challengeTimezone}
+        totalDays={challengeTotalDays(data.challenge.startDate, data.challenge.endDate)}
+        goalDescription={data.goalDescription}
+        shortDescription={data.shortDescription}
         notStarted={notStarted}
       />
     </div>

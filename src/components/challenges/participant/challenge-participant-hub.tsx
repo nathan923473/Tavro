@@ -5,7 +5,8 @@ import {
   saveChallengeStepProgressAction,
   toggleChallengeScheduleCompletionAction,
 } from "@/app/(app)/member/actions";
-import { ChallengeCompletionOfferCard } from "@/components/challenges/participant/challenge-completion-offer";
+import { ChallengeAtAGlance } from "@/components/challenges/participant/challenge-at-a-glance";
+import { ChallengeCompletionSummary } from "@/components/challenges/participant/challenge-completion-summary";
 import { ChallengeFeedbackForm } from "@/components/challenges/participant/challenge-feedback-form";
 import { LeaveChallengeButton } from "@/components/challenges/leave-challenge-button";
 import { ChallengeProgressStoryShare } from "@/components/challenges/participant/challenge-progress-story-share";
@@ -48,6 +49,8 @@ export function ChallengeParticipantHub({
   hub,
   viewerUserId = null,
   feedbackInitial = null,
+  hasAccountabilityGroup = false,
+  habitConsistencyPercent = null,
 }: {
   hub: ChallengeParticipantHub;
   feedbackInitial?: {
@@ -57,6 +60,8 @@ export function ChallengeParticipantHub({
     share_written_feedback: boolean;
   } | null;
   viewerUserId?: string | null;
+  hasAccountabilityGroup?: boolean;
+  habitConsistencyPercent?: number | null;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -86,8 +91,13 @@ export function ChallengeParticipantHub({
       <div className="space-y-4">
         <HubHeader hub={localHub} shareOpen={shareOpen} setShareOpen={setShareOpen} />
         <Card className="space-y-3 text-center">
-          <p className="text-lg font-semibold">You&apos;re in! 🎉</p>
+          <p className="text-lg font-semibold">You&apos;re in!</p>
           <p className="text-xl font-semibold">{localHub.title}</p>
+          {localHub.goalDescription || localHub.shortDescription ? (
+            <p className="text-left text-sm text-muted-foreground">
+              {localHub.goalDescription ?? localHub.shortDescription}
+            </p>
+          ) : null}
           <ChallengeStartCountdown
             startAt={localHub.startAt}
             startDate={localHub.startDate}
@@ -144,39 +154,12 @@ export function ChallengeParticipantHub({
     return (
       <div className="space-y-4">
         <HubHeader hub={localHub} shareOpen={shareOpen} setShareOpen={setShareOpen} />
-        <Card className="space-y-3 text-center">
-          <p className="text-3xl" aria-hidden>
-            🎉
-          </p>
-          <p className="text-lg font-semibold">Challenge complete!</p>
-          <p className="font-medium">{localHub.title}</p>
-          <p className="text-sm text-muted-foreground">
-            You completed {localHub.completedDaysCount} / {localHub.totalDays} days ·{" "}
-            {localHub.progressPercent}% activity progress
-          </p>
-          <p className="text-sm">🔥 Best streak: {localHub.bestStreak} days</p>
-          <ul className="space-y-1 text-sm">
-            {localHub.milestones
-              .filter((m) => m.earned)
-              .map((m) => (
-                <li key={m.key}>{m.label}</li>
-              ))}
-          </ul>
-          <Button type="button" variant="outline" fullWidth onClick={() => setTab("progress")}>
-            View full progress
-          </Button>
-          {localHub.communitySlug ? (
-            <Link
-              href={`/creator/${localHub.communitySlug}`}
-              className="block text-sm font-semibold text-primary"
-            >
-              View {localHub.creatorName}&apos;s community
-            </Link>
-          ) : null}
-        </Card>
-        {localHub.completionOffer ? (
-          <ChallengeCompletionOfferCard offer={localHub.completionOffer} />
-        ) : null}
+        <ChallengeCompletionSummary
+          hub={localHub}
+          hasGroup={hasAccountabilityGroup}
+          habitConsistencyPercent={habitConsistencyPercent}
+          onViewProgress={() => setTab("progress")}
+        />
         {!localHub.isOwner ? (
           <ChallengeFeedbackForm
             challengeId={localHub.challengeId}
@@ -210,6 +193,8 @@ export function ChallengeParticipantHub({
   return (
     <div className="space-y-4">
       <HubHeader hub={localHub} shareOpen={shareOpen} setShareOpen={setShareOpen} />
+
+      <ChallengeAtAGlance hub={localHub} onOpenAbout={() => setTab("about")} />
 
       <Card padding="sm">
         <p className="text-sm text-muted-foreground">by {localHub.creatorName}</p>

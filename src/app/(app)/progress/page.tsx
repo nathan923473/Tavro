@@ -1,4 +1,6 @@
 import { HabitManager } from "@/components/progress/habit-manager";
+import { ProgressHighlightsCard } from "@/components/progress/progress-highlights-card";
+import { MILESTONE_DEFINITIONS } from "@/lib/progress/milestones";
 import { LogWeighInCard } from "@/components/progress/log-weigh-in-card";
 import { WeightProgressChart } from "@/components/progress/weight-progress-chart";
 import { WeightTrackingSettings } from "@/components/progress/weight-tracking-settings";
@@ -73,7 +75,16 @@ export default async function ProgressPage() {
         </Card>
 
         {userId ? (
-          <HabitManager habits={habits} joinedChallenges={joined} />
+          <>
+            <ProgressHighlightsCard
+              consistencyPercent={consistency.percent}
+              consistencyMessage={consistency.message}
+              habitsActive={habits.filter((h) => !h.paused).length}
+              joinedChallenges={joined}
+              completedChallengeCount={completedChallenges.length}
+            />
+            <HabitManager habits={habits} joinedChallenges={joined} />
+          </>
         ) : null}
 
         <section aria-labelledby="this-week-heading">
@@ -163,6 +174,10 @@ export default async function ProgressPage() {
                   <Card padding="sm">
                     <p className="font-medium">{m.label}</p>
                     <p className="text-xs text-muted-foreground">
+                      {MILESTONE_DEFINITIONS[m.key]?.description ??
+                        "Keep building consistent habits."}
+                    </p>
+                    <p className="mt-1 text-[10px] text-muted-foreground">
                       Unlocked {new Date(m.unlockedAt).toLocaleDateString()}
                     </p>
                   </Card>

@@ -399,6 +399,13 @@ export async function fetchChallengeParticipantHub(
     today,
   );
 
+  if (phase === "completed" && (membership?.progress_percent ?? 0) >= 50) {
+    await supabase.from("member_milestones").upsert(
+      { user_id: userId, milestone_key: "first_challenge" },
+      { onConflict: "user_id,milestone_key", ignoreDuplicates: true },
+    );
+  }
+
   let completionOffer: ChallengeParticipantHub["completionOffer"] = null;
   if (phase === "completed" && ch.community_id) {
     try {
