@@ -4,7 +4,12 @@ import { GroupInviteSettings } from "@/components/groups/group-invite-settings";
 import { Button } from "@/components/ui/button";
 import { formatGroupInviteCodeDisplay } from "@/lib/groups/invite-code-display";
 import { groupInvitePath } from "@/lib/site-url";
-import type { GroupJoinMode, GroupJoinRequest } from "@/types";
+import type {
+  GroupCheckInFrequency,
+  GroupJoinMode,
+  GroupJoinRequest,
+  GroupVisibility,
+} from "@/types";
 import { ChevronRight, Share2 } from "lucide-react";
 import { useState } from "react";
 
@@ -20,6 +25,11 @@ export function GroupInvitePanel({
   maxMembers,
   joinMode,
   pendingRequests,
+  visibility = "private",
+  discoveryPaused = false,
+  checkInFrequency = "flexible",
+  discoverySummary = "",
+  discoveryOwnerEligible = false,
 }: {
   inviteCode: string;
   invitesEnabled: boolean;
@@ -29,6 +39,11 @@ export function GroupInvitePanel({
   maxMembers: number;
   joinMode: GroupJoinMode;
   pendingRequests: GroupJoinRequest[];
+  visibility?: GroupVisibility;
+  discoveryPaused?: boolean;
+  checkInFrequency?: GroupCheckInFrequency;
+  discoverySummary?: string;
+  discoveryOwnerEligible?: boolean;
 }) {
   const [copiedCode, setCopiedCode] = useState(false);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
@@ -86,6 +101,11 @@ export function GroupInvitePanel({
         groupId={groupId}
         joinMode={joinMode}
         invitesEnabled={invitesEnabled}
+        visibility={visibility}
+        discoveryPaused={discoveryPaused}
+        checkInFrequency={checkInFrequency}
+        discoverySummary={discoverySummary}
+        discoveryOwnerEligible={discoveryOwnerEligible}
         pendingRequests={pendingRequests}
         onClose={() => setShowSettings(false)}
       />

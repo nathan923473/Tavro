@@ -20,10 +20,12 @@ export function GroupHubView({
   group,
   feed,
   viewerUserId = null,
+  discoveryOwnerEligible = false,
 }: {
   group: AccountabilityGroup;
   feed: GroupActivity[];
   viewerUserId?: string | null;
+  discoveryOwnerEligible?: boolean;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<HubTab>("today");
@@ -75,6 +77,7 @@ export function GroupHubView({
           pending={pending}
           run={run}
           onOpenProgress={() => setTab("progress")}
+          discoveryOwnerEligible={discoveryOwnerEligible}
         />
       ) : null}
 

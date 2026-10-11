@@ -141,7 +141,7 @@ async function fetchGroupRowForViewer(
   }
 
   const groupSelect =
-    "id, name, goal, invite_code, max_members, join_mode, invites_enabled, created_by";
+    "id, name, goal, description, shared_goal, focus_type, focus_custom_label, invite_code, max_members, join_mode, invites_enabled, visibility, discovery_paused, check_in_frequency, discovery_summary, created_by";
 
   const full = await supabase
     .from("accountability_groups")
@@ -599,6 +599,10 @@ async function loadGroupHub(
         displayName: String(r.display_name ?? "Member"),
         avatarUrl: typeof r.avatar_url === "string" ? r.avatar_url : null,
         createdAt: String(r.created_at ?? ""),
+        requestSource:
+          r.request_source === "discovery"
+            ? ("discovery" as const)
+            : ("invite" as const),
       }));
     if (pendingRequests.length > 0) {
       isOwner = true;
@@ -656,6 +660,18 @@ async function loadGroupHub(
     joinMode:
       groupRow.join_mode === "auto" ? "auto" : "approval",
     invitesEnabled: groupRow.invites_enabled !== false,
+    visibility:
+      groupRow.visibility === "discoverable" ? "discoverable" : "private",
+    discoveryPaused: groupRow.discovery_paused === true,
+    checkInFrequency:
+      groupRow.check_in_frequency === "daily" ||
+      groupRow.check_in_frequency === "weekdays" ||
+      groupRow.check_in_frequency === "weekly" ||
+      groupRow.check_in_frequency === "flexible"
+        ? groupRow.check_in_frequency
+        : "flexible",
+    discoverySummary:
+      typeof groupRow.discovery_summary === "string" ? groupRow.discovery_summary : "",
     ownerId,
     isOwner,
     pendingRequests,

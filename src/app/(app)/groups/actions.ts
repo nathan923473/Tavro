@@ -13,6 +13,12 @@ import type {
   GroupFocusType,
   GroupPersonalScheduleType,
 } from "@/types";
+import { enqueueNotification } from "@/lib/data/notifications";
+import {
+  discoveryJoinErrorMessage,
+  type GroupCheckInFrequency,
+  type GroupVisibility,
+} from "@/lib/groups/discovery";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 
@@ -27,6 +33,9 @@ export type CreateGroupInput = {
   sharedGoal?: string;
   joinMode?: GroupJoinMode;
   maxMembers?: number;
+  visibility?: GroupVisibility;
+  checkInFrequency?: GroupCheckInFrequency;
+  discoverySummary?: string;
 };
 
 function parseOkRpc(data: unknown, messages: Record<string, string>): void {
@@ -92,7 +101,28 @@ export async function createAccountabilityGroupAction(input: CreateGroupInput) {
     ACCOUNTABILITY_GROUP_MAX_MEMBERS,
     Math.max(2, input.maxMembers ?? ACCOUNTABILITY_GROUP_MAX_MEMBERS),
   );
-  const joinMode = input.joinMode ?? "approval";
+  const visibility = input.visibility ?? "private";
+  const checkInFrequency = input.checkInFrequency ?? "flexible";
+  const discoverySummary = (
+    input.discoverySummary ??
+    input.description ??
+    ""
+  ).trim();
+  let joinMode = input.joinMode ?? "approval";
+  if (visibility === "discoverable") {
+    joinMode = "approval";
+  }
+
+  if (visibility === "discoverable") {
+    const { data: eligible } = await supabase.rpc("is_group_discovery_eligible", {
+      p_user_id: userId,
+    });
+    if (!eligible) {
+      throw new Error(
+        "Discoverable groups require verified adult (18+) status on the owner account before discovery can be enabled.",
+      );
+    }
+  }
 
   let inviteCode = generateGroupInviteCode();
   const groupId = randomUUID();
@@ -110,6 +140,9 @@ export async function createAccountabilityGroupAction(input: CreateGroupInput) {
       max_members: maxMembers,
       join_mode: joinMode,
       invites_enabled: true,
+      visibility,
+      check_in_frequency: checkInFrequency,
+      discovery_summary: discoverySummary.slice(0, 280),
       created_by: userId,
     });
 
@@ -169,6 +202,27 @@ export async function requestJoinGroupByInviteCodeAction(code: string) {
   revalidatePath(`/invite/group/${normalized}`);
 
   if (parsed.status === "pending") {
+    if (parsed.groupId) {
+      const { data: groupRow } = await supabase
+        .from("accountability_groups")
+        .select("name, created_by")
+        .eq("id", parsed.groupId)
+        .maybeSingle();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", userId)
+        .maybeSingle();
+      if (groupRow?.created_by) {
+        await enqueueNotification({
+          userId: groupRow.created_by,
+          kind: "group_join_request",
+          title: "New group join request",
+          body: `${profile?.display_name?.trim() || "Someone"} requested to join “${groupRow.name ?? "your group"}”.`,
+          linkPath: "/groups",
+        });
+      }
+    }
     return {
       ok: true as const,
       status: "pending" as const,
@@ -187,6 +241,12 @@ export async function requestJoinGroupByInviteCodeAction(code: string) {
 
 export async function approveGroupJoinRequestAction(requestId: string) {
   const { supabase } = await requireUserId();
+  const { data: reqRow } = await supabase
+    .from("group_join_requests")
+    .select("user_id, group_id, group:accountability_groups ( name )")
+    .eq("id", requestId)
+    .maybeSingle();
+
   const { data, error } = await supabase.rpc("approve_group_join_request", {
     p_request_id: requestId,
   });
@@ -198,19 +258,41 @@ export async function approveGroupJoinRequestAction(requestId: string) {
     }
     throw new Error(error.message);
   }
-  const row = data as { ok?: boolean; error?: string };
+  const row = data as { ok?: boolean; error?: string; applicant_id?: string };
   if (!row?.ok) {
     if (row?.error === "full") throw new Error("Group is full — free a spot first.");
     if (row?.error === "forbidden") throw new Error("Only the group owner can approve requests.");
     if (row?.error === "not_pending") throw new Error("This request is no longer pending.");
     throw new Error("Could not approve request.");
   }
+
+  const applicantId = row.applicant_id ?? reqRow?.user_id;
+  const group = reqRow?.group as { name?: string } | { name?: string }[] | null;
+  const groupName = Array.isArray(group) ? group[0]?.name : group?.name;
+  if (applicantId) {
+    await enqueueNotification({
+      userId: applicantId,
+      kind: "group_join_approved",
+      title: "You're in the group",
+      body: groupName
+        ? `Your request to join “${groupName}” was approved. Open Groups to say hi.`
+        : "Your group join request was approved. Open Groups to get started.",
+      linkPath: "/groups",
+    });
+  }
+
   revalidatePath("/groups");
   return { ok: true as const };
 }
 
 export async function declineGroupJoinRequestAction(requestId: string) {
   const { supabase } = await requireUserId();
+  const { data: reqRow } = await supabase
+    .from("group_join_requests")
+    .select("user_id, group:accountability_groups ( name )")
+    .eq("id", requestId)
+    .maybeSingle();
+
   const { data, error } = await supabase.rpc("decline_group_join_request", {
     p_request_id: requestId,
   });
@@ -224,6 +306,101 @@ export async function declineGroupJoinRequestAction(requestId: string) {
   if (row?.ok === false && row.error === "forbidden") {
     throw new Error("Only the group owner can decline requests.");
   }
+
+  if (reqRow?.user_id) {
+    const group = reqRow.group as { name?: string } | { name?: string }[] | null;
+    const groupName = Array.isArray(group) ? group[0]?.name : group?.name;
+    await enqueueNotification({
+      userId: reqRow.user_id,
+      kind: "group_join_declined",
+      title: "Join request update",
+      body: groupName
+        ? `Your request to join “${groupName}” wasn’t accepted this time. You can explore other groups or create your own.`
+        : "Your group join request wasn’t accepted this time. You can explore other groups or create your own.",
+      linkPath: "/groups",
+    });
+  }
+
+  revalidatePath("/groups");
+  return { ok: true as const };
+}
+
+export async function requestDiscoveryGroupJoinAction(groupId: string) {
+  const { supabase, userId } = await requireUserId();
+  await assertNotInOtherGroup(supabase, userId);
+
+  const { data, error } = await supabase.rpc("request_discovery_group_join", {
+    p_group_id: groupId,
+  });
+
+  if (error) {
+    if (/request_discovery_group_join|schema cache/i.test(error.message)) {
+      throw new Error("Run migration 042_group_discovery.sql in Supabase, then try again.");
+    }
+    throw new Error(error.message);
+  }
+
+  const row = data as {
+    ok?: boolean;
+    error?: string;
+    owner_id?: string;
+    group_id?: string;
+  };
+
+  if (!row?.ok) {
+    throw new Error(discoveryJoinErrorMessage(row?.error ?? "unknown"));
+  }
+
+  const { data: groupRow } = await supabase
+    .from("accountability_groups")
+    .select("name")
+    .eq("id", groupId)
+    .maybeSingle();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (row.owner_id) {
+    await enqueueNotification({
+      userId: row.owner_id,
+      kind: "group_discovery_join_request",
+      title: "New group join request",
+      body: `${profile?.display_name?.trim() || "Someone"} requested to join “${groupRow?.name ?? "your group"}” from group discovery.`,
+      linkPath: "/groups",
+    });
+  }
+
+  revalidatePath("/groups");
+  return {
+    ok: true as const,
+    message: "Request sent — the group owner will review it soon.",
+  };
+}
+
+export async function blockUserAction(blockedUserId: string) {
+  const { supabase, userId } = await requireUserId();
+  if (blockedUserId === userId) {
+    throw new Error("You cannot block yourself.");
+  }
+
+  const { error } = await supabase.from("user_blocks").insert({
+    blocker_id: userId,
+    blocked_id: blockedUserId,
+  });
+
+  if (error) {
+    if (/user_blocks|schema cache/i.test(error.message)) {
+      throw new Error("Run migration 042_group_discovery.sql in Supabase, then try again.");
+    }
+    if (error.code === "23505") {
+      return { ok: true as const };
+    }
+    throw new Error(error.message);
+  }
+
   revalidatePath("/groups");
   return { ok: true as const };
 }
@@ -260,6 +437,10 @@ export async function updateGroupSettingsAction(input: {
   focusType?: GroupFocusType;
   sharedGoal?: string;
   joinMode?: GroupJoinMode;
+  visibility?: GroupVisibility;
+  discoveryPaused?: boolean;
+  checkInFrequency?: GroupCheckInFrequency;
+  discoverySummary?: string;
 }) {
   const { supabase, userId } = await requireUserId();
   const { data: group } = await supabase
@@ -282,6 +463,29 @@ export async function updateGroupSettingsAction(input: {
     patch.goal = shared;
   }
   if (input.joinMode !== undefined) patch.join_mode = input.joinMode;
+
+  if (input.visibility !== undefined) {
+    if (input.visibility === "discoverable") {
+      const { data: eligible } = await supabase.rpc("is_group_discovery_eligible", {
+        p_user_id: userId,
+      });
+      if (!eligible) {
+        throw new Error(
+          "Discoverable groups require verified adult (18+) status on your account before discovery can be enabled.",
+        );
+      }
+      patch.visibility = "discoverable";
+      patch.join_mode = "approval";
+    } else {
+      patch.visibility = "private";
+    }
+  }
+
+  if (input.discoveryPaused !== undefined) patch.discovery_paused = input.discoveryPaused;
+  if (input.checkInFrequency !== undefined) patch.check_in_frequency = input.checkInFrequency;
+  if (input.discoverySummary !== undefined) {
+    patch.discovery_summary = input.discoverySummary.trim().slice(0, 280);
+  }
 
   if (Object.keys(patch).length === 0) return { ok: true as const };
 

@@ -61,13 +61,20 @@ export type GroupMember = {
 
 export type GroupJoinMode = "approval" | "auto";
 
+export type GroupJoinRequestSource = "invite" | "discovery";
+
 export type GroupJoinRequest = {
   id: string;
   userId: string;
   displayName: string;
   avatarUrl: string | null;
   createdAt: string;
+  requestSource?: GroupJoinRequestSource;
 };
+
+export type GroupVisibility = "private" | "discoverable";
+
+export type GroupCheckInFrequency = "daily" | "weekdays" | "weekly" | "flexible";
 
 export type GroupFocusType =
   | "walking"
@@ -184,6 +191,10 @@ export type AccountabilityGroup = {
   inviteCode: string;
   joinMode: GroupJoinMode;
   invitesEnabled: boolean;
+  visibility: GroupVisibility;
+  discoveryPaused: boolean;
+  checkInFrequency: GroupCheckInFrequency;
+  discoverySummary: string;
   ownerId: string;
   isOwner: boolean;
   pendingRequests: GroupJoinRequest[];
