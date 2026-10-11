@@ -26,6 +26,8 @@ const EXACT_BACK: Record<string, string> = {
   "/notifications": "/profile",
   "/login": "/",
   "/signup": "/",
+  "/forgot-password": "/login",
+  "/reset-password": "/login",
   "/onboarding": "/",
   "/offline": "/",
 };
@@ -81,6 +83,8 @@ export function shortLabelForPath(pathname: string): string {
     "/community-guidelines": "Guidelines",
     "/login": "Log in",
     "/signup": "Sign up",
+    "/forgot-password": "Forgot password",
+    "/reset-password": "Reset password",
     "/onboarding": "Get started",
   };
   if (exact[pathname]) return exact[pathname];

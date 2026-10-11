@@ -168,6 +168,13 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
             }
           />
         </Field>
+        {mode === "login" ? (
+          <p className="text-right text-sm">
+            <Link href="/forgot-password" className="font-medium text-primary">
+              Forgot password?
+            </Link>
+          </p>
+        ) : null}
         {message ? (
           <p className="text-sm text-red-600" role="alert">
             {message}

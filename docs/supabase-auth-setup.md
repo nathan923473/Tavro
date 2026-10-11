@@ -69,6 +69,8 @@ In **SQL Editor**, run in order:
 
 Log in always uses your email + password on the **Log in** page.
 
+**Forgot password?** on that form emails a reset link (`resetPasswordForEmail`). The link returns through `/auth/callback?next=/reset-password`, which signs the user in, then **Reset password** saves the new password with `updateUser`. Reset mail is sent even when **Confirm email** is off. The `/**` redirect URLs above already allow that callback. If sending fails with a rate limit, wait or raise **Authentication → Rate limits**.
+
 ## 5. Verify
 
 ```bash
