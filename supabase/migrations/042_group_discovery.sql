@@ -316,8 +316,11 @@ begin
 end;
 $$;
 
--- Include request source for owner UI (discovery vs invite)
-create or replace function public.list_group_pending_join_requests(p_group_id uuid)
+-- Include request source for owner UI (discovery vs invite).
+-- Return type changed from 036 — must drop before replace (PostgreSQL 42P13).
+drop function if exists public.list_group_pending_join_requests(uuid);
+
+create function public.list_group_pending_join_requests(p_group_id uuid)
 returns table (
   id uuid,
   user_id uuid,
@@ -351,3 +354,6 @@ as $$
     )
   order by r.created_at asc;
 $$;
+
+revoke all on function public.list_group_pending_join_requests(uuid) from public;
+grant execute on function public.list_group_pending_join_requests(uuid) to authenticated;
