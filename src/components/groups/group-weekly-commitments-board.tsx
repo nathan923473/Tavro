@@ -93,6 +93,24 @@ export function GroupWeeklyCommitmentsBoard({
                           >
                             Log one time
                           </Button>
+                          {c.progressCount > 0 ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="min-h-8 px-2 text-xs"
+                              disabled={pending}
+                              onClick={() =>
+                                run(() =>
+                                  updateGroupCommitmentProgressAction(
+                                    c.id,
+                                    c.progressCount - 1,
+                                  ),
+                                )
+                              }
+                            >
+                              Undo last log
+                            </Button>
+                          ) : null}
                           <Button
                             type="button"
                             variant="ghost"

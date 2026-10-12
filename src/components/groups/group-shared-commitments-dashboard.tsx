@@ -4,6 +4,7 @@ import {
   celebrateSharedHabitAction,
   sendGroupEncouragementAction,
 } from "@/app/(app)/groups/actions";
+import { toggleGoalAction } from "@/app/(app)/member/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -122,6 +123,17 @@ export function GroupSharedCommitmentsDashboard({
                     >
                       {statusLabel(c.todayStatus)}
                     </span>
+                    {c.isOwn && c.todayStatus === "completed" ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="min-h-8 px-2 text-xs"
+                        disabled={pending}
+                        onClick={() => run(() => toggleGoalAction(c.memberGoalId))}
+                      >
+                        Undo today
+                      </Button>
+                    ) : null}
                     {c.todayStatus === "completed" && !c.isOwn ? (
                       <Button
                         type="button"
