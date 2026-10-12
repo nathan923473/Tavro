@@ -67,10 +67,6 @@ export async function fetchGroupSharedCommitments(
       id,
       member_goal_id,
       user_id,
-      goal:member_goals (
-        id, user_id, title, category, frequency_type, frequency_target,
-        schedule_days_mask, reminder_time, paused_at, active
-      ),
       profile:profiles!member_goal_group_shares_user_id_fkey ( display_name, avatar_url )
     `,
     )
@@ -83,14 +79,27 @@ export async function fetchGroupSharedCommitments(
     return [];
   }
 
-  const rows = (sharesRes.data ?? []).filter((row) => {
-    const goal = unwrapOne(row.goal) as GoalRow & { active?: boolean } | null;
-    return goal && goal.active !== false;
-  });
+  const shareRows = sharesRes.data ?? [];
+  if (!shareRows.length) return [];
+
+  const goalIds = [...new Set(shareRows.map((r) => r.member_goal_id as string))];
+
+  const goalsRes = await supabase
+    .from("member_goals")
+    .select(
+      "id, user_id, title, category, frequency_type, frequency_target, schedule_days_mask, reminder_time, paused_at, active",
+    )
+    .in("id", goalIds);
+
+  const goalById = new Map<string, GoalRow & { active?: boolean }>();
+  for (const g of goalsRes.data ?? []) {
+    if (g.active === false) continue;
+    goalById.set(g.id as string, g as GoalRow);
+  }
+
+  const rows = shareRows.filter((row) => goalById.has(row.member_goal_id as string));
 
   if (!rows.length) return [];
-
-  const goalIds = rows.map((r) => r.member_goal_id as string);
 
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - 6);
@@ -142,7 +151,7 @@ export async function fetchGroupSharedCommitments(
   const byMember = new Map<string, GroupSharedCommitment[]>();
 
   for (const row of rows) {
-    const goalRow = unwrapOne(row.goal) as GoalRow;
+    const goalRow = goalById.get(row.member_goal_id as string)!;
     const profile = unwrapOne(row.profile);
     const goal = mapShareGoalRow(
       goalRow,

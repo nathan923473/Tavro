@@ -212,6 +212,15 @@ async function loadGroupHub(
     members = fallback.data as MemberRow[] | null;
   }
 
+  const memberDisplayNameByUserId = new Map<string, string>();
+  for (const m of members ?? []) {
+    const profile = unwrapOne(m.profile);
+    memberDisplayNameByUserId.set(
+      m.user_id,
+      profile?.display_name?.trim() || "Member",
+    );
+  }
+
   const today = todayDateKey();
   const weekStart = currentWeekStartKey();
 
@@ -250,31 +259,42 @@ async function loadGroupHub(
 
   const weekStartKey = weekStart;
   let weeklyCommitments: AccountabilityGroup["weeklyCommitments"] = [];
-  const commitmentsRes = await supabase
+  const mapWeeklyCommitmentRows = (
+    rows: {
+      id: string;
+      user_id: string;
+      title: string;
+      target_count: number;
+      progress_count: number;
+    }[],
+  ) =>
+    rows.map((c) => ({
+      id: c.id,
+      userId: c.user_id,
+      displayName: memberDisplayNameByUserId.get(c.user_id) ?? "Member",
+      title: c.title,
+      targetCount: c.target_count,
+      progressCount: c.progress_count,
+      isOwn: c.user_id === userId,
+    }));
+
+  let commitmentsRes = await supabase
     .from("group_weekly_commitments")
-    .select(
-      `
-      id, user_id, title, target_count, progress_count,
-      profile:profiles!group_weekly_commitments_user_id_fkey ( display_name )
-    `,
-    )
+    .select("id, user_id, title, target_count, progress_count")
     .eq("group_id", groupId)
     .eq("week_start", weekStartKey)
     .order("sort_order", { ascending: true });
 
+  if (commitmentsRes.error && /schema cache|group_weekly_commitments/i.test(commitmentsRes.error.message)) {
+    commitmentsRes = await supabase
+      .from("group_weekly_commitments")
+      .select("id, user_id, title, target_count, progress_count")
+      .eq("group_id", groupId)
+      .eq("week_start", weekStartKey);
+  }
+
   if (!commitmentsRes.error) {
-    weeklyCommitments = (commitmentsRes.data ?? []).map((c) => {
-      const profile = unwrapOne(c.profile);
-      return {
-        id: c.id,
-        userId: c.user_id,
-        displayName: profile?.display_name ?? "Member",
-        title: c.title,
-        targetCount: c.target_count,
-        progressCount: c.progress_count,
-        isOwn: c.user_id === userId,
-      };
-    });
+    weeklyCommitments = mapWeeklyCommitmentRows(commitmentsRes.data ?? []);
   }
 
   const weekCheckInCounts = new Map<string, number>();
