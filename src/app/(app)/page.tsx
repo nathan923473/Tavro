@@ -7,6 +7,7 @@ import { TodaysGoals } from "@/components/dashboard/todays-goals";
 import { fetchMemberGoalPreferences } from "@/lib/data/member-preferences";
 import { WeeklyConsistencyHome } from "@/components/dashboard/weekly-consistency-home";
 import { PageHeader } from "@/components/layout/page-header";
+import { HomeInstallBanner } from "@/components/pwa/home-install-banner";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchChallengeParticipantHub } from "@/lib/data/challenge-participant-hub";
 import { fetchJoinedChallengesForHome } from "@/lib/data/challenges";
@@ -107,6 +108,7 @@ export default async function HomePage() {
     <div className="animate-fade-up">
       <PageHeader title="Home" subtitle="Today&apos;s habits, challenges and support" />
       <div className="space-y-5 px-4 py-4">
+        <HomeInstallBanner />
         <HomeDailySummary
           firstName={firstName}
           timezone={timezone}
