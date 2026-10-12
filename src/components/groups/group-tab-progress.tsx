@@ -27,7 +27,14 @@ export function GroupTabProgress({
   run: (action: () => Promise<unknown>) => void;
 }) {
   const [commitTitle, setCommitTitle] = useState("");
-  const [commitTarget, setCommitTarget] = useState(3);
+  /** String so users can clear the field and type a new number (avoids "13" when replacing "1"). */
+  const [commitTargetInput, setCommitTargetInput] = useState("3");
+
+  function parsedCommitTarget(): number {
+    const n = Number.parseInt(commitTargetInput.trim(), 10);
+    if (!Number.isFinite(n)) return 3;
+    return Math.min(99, Math.max(1, n));
+  }
   const [encourageTarget, setEncourageTarget] = useState("");
   const [encourageMessage, setEncourageMessage] = useState(
     "Hey! Thinking of you — hope today feels manageable. You've got this.",
@@ -162,41 +169,68 @@ export function GroupTabProgress({
             Short name only — put the number of times in the next field.
           </span>
         </label>
-        <label className="block text-sm font-medium">
-          How many times this week?
-          <input
-            type="number"
-            min={1}
-            max={99}
-            className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm font-normal"
-            value={commitTarget}
-            onChange={(e) =>
-              setCommitTarget(Math.min(99, Math.max(1, Number(e.target.value) || 1)))
-            }
-          />
+        <fieldset className="block text-sm font-medium">
+          <legend className="mb-1">How many times this week?</legend>
+          <div className="flex flex-wrap gap-2">
+            {[2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                className={`min-h-10 rounded-xl border px-4 text-sm font-semibold ${
+                  parsedCommitTarget() === n && commitTargetInput === String(n)
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-surface text-foreground"
+                }`}
+                onClick={() => setCommitTargetInput(String(n))}
+              >
+                {n}×
+              </button>
+            ))}
+          </div>
+          <label className="mt-2 block text-xs font-normal text-muted-foreground">
+            Or type a number (1–99)
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              autoComplete="off"
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm font-normal text-foreground"
+              value={commitTargetInput}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, "").slice(0, 2);
+                setCommitTargetInput(digits);
+              }}
+              onBlur={() => {
+                if (!commitTargetInput.trim()) setCommitTargetInput("3");
+              }}
+            />
+          </label>
           <span className="mt-1 block text-xs font-normal text-muted-foreground">
             Example: 4 means you&apos;ll tap &quot;Log one time&quot; up to four times (Mon–Sun).
           </span>
-        </label>
+        </fieldset>
         {commitTitle.trim() ? (
           <p className="rounded-xl bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
             Preview:{" "}
             <span className="font-medium text-foreground">{commitTitle.trim()}</span> — 0 of{" "}
-            {commitTarget} {commitTarget === 1 ? "time" : "times"} this week
+            {parsedCommitTarget()}{" "}
+            {parsedCommitTarget() === 1 ? "time" : "times"} this week
           </p>
         ) : null}
         <Button
           type="button"
           fullWidth
-          disabled={pending || !commitTitle.trim()}
+          disabled={pending || !commitTitle.trim() || !commitTargetInput.trim()}
           onClick={() =>
             run(async () => {
               await saveGroupWeeklyCommitmentAction({
                 groupId: group.id,
                 title: commitTitle,
-                targetCount: commitTarget,
+                targetCount: parsedCommitTarget(),
               });
               setCommitTitle("");
+              setCommitTargetInput("3");
             })
           }
         >
