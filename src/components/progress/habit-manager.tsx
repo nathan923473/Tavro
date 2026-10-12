@@ -4,6 +4,7 @@ import {
   deleteHabitAction,
   linkHabitToChallengeAction,
   pauseHabitAction,
+  setHabitGroupShareAction,
   updateHabitAction,
 } from "@/app/(app)/progress/actions";
 import { toggleGoalAction } from "@/app/(app)/member/actions";
@@ -22,9 +23,11 @@ import { useCallback, useState, useTransition } from "react";
 export function HabitManager({
   habits,
   joinedChallenges,
+  accountabilityGroup,
 }: {
   habits: PersonalGoal[];
   joinedChallenges: Challenge[];
+  accountabilityGroup: { id: string; name: string } | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -125,6 +128,13 @@ export function HabitManager({
                     "Could not link habit.",
                   )
                 }
+                accountabilityGroup={accountabilityGroup}
+                onShare={(groupId) =>
+                  run(
+                    () => setHabitGroupShareAction(habit.id, groupId),
+                    "Could not update sharing.",
+                  )
+                }
               />
             ))}
           </ul>
@@ -165,6 +175,13 @@ export function HabitManager({
                       "Could not link habit.",
                     )
                   }
+                  accountabilityGroup={accountabilityGroup}
+                  onShare={(groupId) =>
+                    run(
+                      () => setHabitGroupShareAction(habit.id, groupId),
+                      "Could not update sharing.",
+                    )
+                  }
                 />
               ))}
             </ul>
@@ -196,6 +213,8 @@ function HabitRow({
   onRemove,
   onUpdate,
   onLink,
+  accountabilityGroup,
+  onShare,
 }: {
   habit: PersonalGoal;
   pending: boolean;
@@ -212,7 +231,11 @@ function HabitRow({
     reminderTime?: string | null;
   }) => void;
   onLink: (challengeId: string | null) => void;
+  accountabilityGroup: { id: string; name: string } | null;
+  onShare: (groupId: string | null) => void;
 }) {
+  const sharedHere =
+    accountabilityGroup != null && habit.sharedGroupId === accountabilityGroup.id;
   return (
     <li
       className={cn(
@@ -246,6 +269,7 @@ function HabitRow({
             {habit.paused ? "Paused · " : ""}
             {habitScheduleSummary(habit)} · {habit.weeklyCompletion}/
             {scheduledDaysPerWeek(habit)} this week
+            {sharedHere ? " · Shared with group" : ""}
           </p>
         </div>
         <button
@@ -321,6 +345,26 @@ function HabitRow({
             onDaysMaskChange={(mask) => onUpdate({ scheduleDaysMask: mask })}
             onReminderTimeChange={(time) => onUpdate({ reminderTime: time || null })}
           />
+          <label className="block text-xs">
+            <span className="text-muted-foreground">Share with accountability group</span>
+            <select
+              className="mt-1 w-full rounded-xl border border-border px-2 py-2 text-sm"
+              value={sharedHere && accountabilityGroup ? accountabilityGroup.id : ""}
+              disabled={pending || !accountabilityGroup}
+              aria-label={`Share ${habit.title} with accountability group`}
+              onChange={(event) => onShare(event.target.value || null)}
+            >
+              <option value="">Private</option>
+              {accountabilityGroup ? (
+                <option value={accountabilityGroup.id}>{accountabilityGroup.name}</option>
+              ) : null}
+            </select>
+            <span className="mt-1 block text-muted-foreground">
+              {accountabilityGroup
+                ? "Private unless you pick your group. Weight and check-in notes stay private."
+                : "Join an accountability group to share this habit."}
+            </span>
+          </label>
           {joinedChallenges.length > 0 ? (
             <label className="block text-xs">
               <span className="text-muted-foreground">Link to challenge (optional)</span>

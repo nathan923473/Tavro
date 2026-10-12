@@ -6,6 +6,7 @@ import {
 import { MILESTONE_DEFINITIONS } from "@/lib/progress/milestones";
 import { buildWeekDayIndicators, normalizeDaysMask, normalizeReminderTime } from "@/lib/habits/schedule";
 import { todayDateKey } from "@/lib/dates";
+import { fetchHabitShareGroupIds } from "@/lib/groups/shared-commitments";
 import type {
   ConsistencySnapshot,
   DailyCheckInMood,
@@ -32,6 +33,7 @@ function mapGoalRow(
   g: GoalRow,
   completedToday: Set<string>,
   weeklyByGoal: Record<string, number>,
+  sharedGroupId: string | null = null,
 ): PersonalGoal {
   const frequencyType =
     g.frequency_type === "times_per_week" ? "times_per_week" : "daily";
@@ -56,6 +58,7 @@ function mapGoalRow(
     reminderTime: normalizeReminderTime(g.reminder_time),
     paused: Boolean(g.paused_at),
     linkedChallengeId: g.linked_challenge_id ?? null,
+    sharedGroupId,
   };
 }
 
@@ -368,7 +371,10 @@ export async function fetchAllMemberGoals(userId: string): Promise<PersonalGoal[
     weeklyByGoal[c.goal_id] = (weeklyByGoal[c.goal_id] ?? 0) + 1;
   }
 
-  return goals.map((g) => mapGoalRow(g, completedToday, weeklyByGoal));
+  const sharedGroups = await fetchHabitShareGroupIds(supabase, userId, ids);
+  return goals.map((g) =>
+    mapGoalRow(g, completedToday, weeklyByGoal, sharedGroups.get(g.id) ?? null),
+  );
 }
 
 export async function fetchTodayCheckIn(userId: string): Promise<{

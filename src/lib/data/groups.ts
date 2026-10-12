@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { listUserGroupCandidateIds } from "@/lib/data/resolve-user-group-id";
 import { unwrapOne } from "@/lib/data/relations";
 import { formatTimeAgo, todayDateKey } from "@/lib/dates";
+import { fetchSharedCommitmentBoard } from "@/lib/groups/shared-commitments";
 import { currentWeekStartKey, previousWeekStartKey } from "@/lib/groups/week";
 import { ACCOUNTABILITY_GROUP_MIN_MEMBERS } from "@/lib/copy/accountability-groups";
 import {
@@ -66,6 +67,40 @@ export async function fetchUserGroup(userId: string): Promise<UserGroupState> {
     feed: [],
     pendingJoin: pending,
     existingGroupBlocked: candidateIds.length > 0,
+  };
+}
+
+export async function fetchViewerAccountabilityGroup(
+  userId: string,
+): Promise<{ id: string; name: string } | null> {
+  const supabase = await createClient();
+  const [groupId] = await listUserGroupCandidateIds(supabase, userId);
+  if (!groupId) return null;
+
+  const rpc = await supabase.rpc("get_accountability_group_for_viewer", {
+    p_group_id: groupId,
+  });
+  const rpcRow = !rpc.error && rpc.data
+    ? Array.isArray(rpc.data)
+      ? rpc.data[0]
+      : rpc.data
+    : null;
+  if (rpcRow && typeof rpcRow === "object" && "name" in rpcRow) {
+    const name = (rpcRow as { name?: unknown }).name;
+    return {
+      id: groupId,
+      name: typeof name === "string" && name.trim() ? name : "Accountability group",
+    };
+  }
+
+  const { data } = await supabase
+    .from("accountability_groups")
+    .select("id, name")
+    .eq("id", groupId)
+    .maybeSingle();
+  return {
+    id: groupId,
+    name: data?.name?.trim() || "Accountability group",
   };
 }
 
@@ -633,6 +668,19 @@ async function loadGroupHub(
   const focusCustomLabel =
     typeof groupRow.focus_custom_label === "string" ? groupRow.focus_custom_label : "";
 
+  const memberNames = new Map<string, string>();
+  for (const member of members ?? []) {
+    const profile = unwrapOne(member.profile);
+    memberNames.set(member.user_id, profile?.display_name?.trim() || "Member");
+  }
+  const sharedBoard = await fetchSharedCommitmentBoard(
+    supabase,
+    groupId,
+    userId,
+    weekStart,
+    memberNames,
+  );
+
   const group: AccountabilityGroup = {
     id: String(groupRow.id),
     name: String(groupRow.name),
@@ -669,6 +717,8 @@ async function loadGroupHub(
     memberPersonalGoals,
     recentCheckIns,
     viewerScheduledToday,
+    sharedCommitments: sharedBoard.commitments,
+    sharedReflections: sharedBoard.reflections,
     members: (members ?? []).map((m) => {
       const profile = unwrapOne(m.profile);
       return {

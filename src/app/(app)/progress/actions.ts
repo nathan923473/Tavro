@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUserId } from "@/lib/auth/require-user-id";
+import { sharedCommitmentSchemaError } from "@/lib/groups/shared-commitments";
 import {
   ALL_WEEKDAYS_MASK,
   normalizeDaysMask,
@@ -14,6 +15,7 @@ function revalidateProgressPaths() {
   revalidatePath("/");
   revalidatePath("/progress");
   revalidatePath("/profile");
+  revalidatePath("/groups");
 }
 
 export async function createHabitAction(input: {
@@ -178,12 +180,63 @@ export async function pauseHabitAction(habitId: string, paused: boolean) {
 
 export async function deleteHabitAction(habitId: string) {
   const { supabase, userId } = await requireUserId();
+  await supabase
+    .from("member_goal_group_shares")
+    .delete()
+    .eq("goal_id", habitId)
+    .eq("user_id", userId);
+
   const { error } = await supabase
     .from("member_goals")
     .update({ active: false })
     .eq("id", habitId)
     .eq("user_id", userId);
   if (error) throw new Error(error.message);
+  revalidateProgressPaths();
+}
+
+export async function setHabitGroupShareAction(habitId: string, groupId: string | null) {
+  const { supabase, userId } = await requireUserId();
+  const { data: habit, error: habitError } = await supabase
+    .from("member_goals")
+    .select("id")
+    .eq("id", habitId)
+    .eq("user_id", userId)
+    .eq("active", true)
+    .maybeSingle();
+  if (habitError) throw new Error(habitError.message);
+  if (!habit) throw new Error("Habit not found.");
+
+  if (!groupId) {
+    const { error } = await supabase
+      .from("member_goal_group_shares")
+      .delete()
+      .eq("goal_id", habitId)
+      .eq("user_id", userId);
+    if (error) throw sharedCommitmentSchemaError(error.message);
+    revalidateProgressPaths();
+    return;
+  }
+
+  const membership = await supabase
+    .from("group_members")
+    .select("group_id")
+    .eq("group_id", groupId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!membership.data) {
+    throw new Error("Join that accountability group before sharing a habit.");
+  }
+
+  const { error } = await supabase.from("member_goal_group_shares").upsert(
+    {
+      goal_id: habitId,
+      group_id: groupId,
+      user_id: userId,
+    },
+    { onConflict: "goal_id" },
+  );
+  if (error) throw sharedCommitmentSchemaError(error.message);
   revalidateProgressPaths();
 }
 

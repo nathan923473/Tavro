@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { scheduledDaysPerWeek } from "@/lib/habits/schedule";
 import { fetchChallengesForUser } from "@/lib/data/challenges";
+import { fetchViewerAccountabilityGroup } from "@/lib/data/groups";
 import {
   fetchAllMemberGoals,
   fetchMilestones,
@@ -33,6 +34,7 @@ export default async function ProgressPage() {
     weighIns,
     summary,
     weightEnabled,
+    accountabilityGroup,
   ] = userId
     ? await Promise.all([
         fetchAllMemberGoals(userId),
@@ -43,6 +45,7 @@ export default async function ProgressPage() {
         fetchWeighIns(userId),
         fetchWeightSummary(userId),
         fetchWeightTrackingEnabled(userId),
+        fetchViewerAccountabilityGroup(userId),
       ])
     : [
         [],
@@ -53,6 +56,7 @@ export default async function ProgressPage() {
         [],
         null,
         true,
+        null,
       ];
 
   const joined = challenges.mine;
@@ -74,7 +78,11 @@ export default async function ProgressPage() {
         </Card>
 
         {userId ? (
-          <HabitManager habits={habits} joinedChallenges={joined} />
+          <HabitManager
+            habits={habits}
+            joinedChallenges={joined}
+            accountabilityGroup={accountabilityGroup}
+          />
         ) : null}
 
         <section aria-labelledby="this-week-heading">

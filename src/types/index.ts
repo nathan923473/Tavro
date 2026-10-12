@@ -22,6 +22,8 @@ export type PersonalGoal = {
   reminderTime: string | null;
   paused: boolean;
   linkedChallengeId: string | null;
+  /** Accountability group this habit is shared with. Null stays private. */
+  sharedGroupId: string | null;
 };
 
 export type DailyCheckInMood = "rough" | "okay" | "good" | "great";
@@ -83,6 +85,28 @@ export type GroupFocusType =
   | "custom";
 
 export type GroupDailyCheckInStatus = "completed" | "partial" | "missed" | "rest";
+
+export type GroupSharedCommitment = {
+  shareId: string;
+  goalId: string;
+  userId: string;
+  displayName: string;
+  title: string;
+  targetCount: number;
+  progressCount: number;
+  completedToday: boolean;
+  paused: boolean;
+  isOwn: boolean;
+  celebratedByViewer: boolean;
+  celebrationCount: number;
+};
+
+export type GroupSharedReflection = {
+  userId: string;
+  displayName: string;
+  body: string;
+  isOwn: boolean;
+};
 
 export type GroupWeeklyCommitment = {
   id: string;
@@ -201,6 +225,8 @@ export type AccountabilityGroup = {
   memberPersonalGoals: GroupMemberPersonalGoal[];
   recentCheckIns: GroupRecentCheckIn[];
   viewerScheduledToday: boolean;
+  sharedCommitments: GroupSharedCommitment[];
+  sharedReflections: GroupSharedReflection[];
 };
 
 export type GroupActivity = GroupFeedItem;

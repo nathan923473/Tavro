@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { todayDateKey } from "@/lib/dates";
+import { notifySharedHabitCheckIn } from "@/lib/groups/shared-commitments";
 import { challengeTodayDateKey } from "@/lib/timezone/challenge-calendar";
 import { resolveChallengeEndAt, resolveChallengeStartAt } from "@/lib/timezone/challenge-fields";
 import { normalizeTimezone, isValidIanaTimezone } from "@/lib/timezone/validate";
@@ -264,10 +265,12 @@ export async function toggleGoalAction(goalId: string) {
     }
 
     await maybeUnlockHabitMilestones(supabase, userId, habit?.template_key ?? null);
+    await notifySharedHabitCheckIn(supabase, userId, goalId);
   }
   revalidatePath("/");
   revalidatePath("/progress");
   revalidatePath("/challenges");
+  revalidatePath("/groups");
 }
 
 async function maybeUnlockHabitMilestones(

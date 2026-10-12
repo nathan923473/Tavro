@@ -6,6 +6,12 @@ import { generateGroupInviteCode, normalizeGroupInviteCode } from "@/lib/groups/
 import {
   ACCOUNTABILITY_GROUP_MAX_MEMBERS,
 } from "@/lib/copy/accountability-groups";
+import { toggleGoalAction } from "@/app/(app)/member/actions";
+import { todayDateKey } from "@/lib/dates";
+import {
+  notifySharedHabitCelebration,
+  sharedCommitmentSchemaError,
+} from "@/lib/groups/shared-commitments";
 import { currentWeekStartKey } from "@/lib/groups/week";
 import type {
   GroupCheckInReactionKey,
@@ -740,6 +746,116 @@ export async function toggleGroupCheckInReactionAction(input: {
     });
     if (error) throw migrationHint(error.message, "037_group_personal_goals_and_reactions.sql");
   }
+  revalidatePath("/groups");
+  return { ok: true as const };
+}
+
+export async function checkInSharedHabitAction(input: { groupId: string; goalId: string }) {
+  const { supabase, userId } = await requireUserId();
+  const share = await supabase
+    .from("member_goal_group_shares")
+    .select("id")
+    .eq("goal_id", input.goalId)
+    .eq("group_id", input.groupId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (share.error) throw sharedCommitmentSchemaError(share.error.message);
+  if (!share.data) throw new Error("Share this habit with the group before checking in.");
+
+  const today = todayDateKey();
+  const existing = await supabase
+    .from("goal_completions")
+    .select("goal_id")
+    .eq("goal_id", input.goalId)
+    .eq("user_id", userId)
+    .eq("completion_date", today)
+    .maybeSingle();
+  if (existing.error) throw new Error(existing.error.message);
+
+  if (!existing.data) {
+    await toggleGoalAction(input.goalId);
+  }
+
+  revalidatePath("/groups");
+  revalidatePath("/progress");
+  revalidatePath("/");
+  return { ok: true as const };
+}
+
+export async function celebrateSharedCommitmentAction(input: {
+  groupId: string;
+  shareId: string;
+}) {
+  const { supabase, userId } = await requireUserId();
+  const share = await supabase
+    .from("member_goal_group_shares")
+    .select("id, goal_id, user_id, group_id")
+    .eq("id", input.shareId)
+    .eq("group_id", input.groupId)
+    .maybeSingle();
+  if (share.error) throw sharedCommitmentSchemaError(share.error.message);
+  if (!share.data) throw new Error("That shared habit is no longer available.");
+  if (share.data.user_id === userId) throw new Error("Celebrate a group member's habit.");
+
+  const habit = await supabase
+    .from("member_goals")
+    .select("title")
+    .eq("id", share.data.goal_id)
+    .maybeSingle();
+
+  const { error } = await supabase.from("member_goal_celebrations").insert({
+    share_id: share.data.id,
+    group_id: input.groupId,
+    goal_id: share.data.goal_id,
+    from_user_id: userId,
+    to_user_id: share.data.user_id,
+    week_start: currentWeekStartKey(),
+  });
+  if (error && !/duplicate|unique/i.test(error.message)) {
+    throw sharedCommitmentSchemaError(error.message);
+  }
+  if (!error) {
+    await notifySharedHabitCelebration(supabase, {
+      fromUserId: userId,
+      toUserId: share.data.user_id,
+      habitTitle: habit.data?.title ?? "habit",
+    });
+  }
+
+  revalidatePath("/groups");
+  return { ok: true as const };
+}
+
+export async function saveSharedCommitmentReflectionAction(input: {
+  groupId: string;
+  body: string;
+}) {
+  const { supabase, userId } = await requireUserId();
+  const body = input.body.trim().slice(0, 500);
+  const weekStart = currentWeekStartKey();
+
+  if (!body) {
+    const { error } = await supabase
+      .from("member_goal_weekly_reflections")
+      .delete()
+      .eq("group_id", input.groupId)
+      .eq("user_id", userId)
+      .eq("week_start", weekStart);
+    if (error) throw sharedCommitmentSchemaError(error.message);
+  } else {
+    const { error } = await supabase.from("member_goal_weekly_reflections").upsert(
+      {
+        group_id: input.groupId,
+        user_id: userId,
+        week_start: weekStart,
+        body,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "group_id,user_id,week_start" },
+    );
+    if (error) throw sharedCommitmentSchemaError(error.message);
+  }
+
   revalidatePath("/groups");
   return { ok: true as const };
 }

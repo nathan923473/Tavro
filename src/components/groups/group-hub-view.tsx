@@ -2,17 +2,19 @@
 
 import { GroupOwnerPendingCard } from "@/components/groups/group-owner-pending-card";
 import { GroupTabChat } from "@/components/groups/group-tab-chat";
+import { GroupTabCommitments } from "@/components/groups/group-tab-commitments";
 import { GroupTabProgress } from "@/components/groups/group-tab-progress";
 import { GroupTabToday } from "@/components/groups/group-tab-today";
 import type { AccountabilityGroup, GroupActivity } from "@/types";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-type HubTab = "today" | "chat" | "progress";
+type HubTab = "today" | "chat" | "commitments" | "progress";
 
 const TAB_LABELS: { id: HubTab; label: string }[] = [
   { id: "today", label: "Today" },
   { id: "chat", label: "Chat" },
+  { id: "commitments", label: "Commitments" },
   { id: "progress", label: "Progress" },
 ];
 
@@ -80,6 +82,10 @@ export function GroupHubView({
 
       {tab === "chat" ? (
         <GroupTabChat feed={feed} viewerUserId={viewerUserId} pending={pending} run={run} />
+      ) : null}
+
+      {tab === "commitments" ? (
+        <GroupTabCommitments group={group} pending={pending} run={run} />
       ) : null}
 
       {tab === "progress" ? (
