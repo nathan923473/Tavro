@@ -101,7 +101,9 @@ export function GroupTabProgress({
         <div>
           <h3 className="font-semibold">Weekly commitments</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Optional weekly targets — progress is about showing up, not comparing totals.
+            One small goal for <strong className="font-medium text-foreground">this week only</strong>{" "}
+            (separate from daily habits on Home). Your group can see the title and progress — not
+            a competition.
           </p>
         </div>
         <ul className="space-y-2">
@@ -119,7 +121,7 @@ export function GroupTabProgress({
                   >
                     <p className={`text-sm font-medium ${done ? "opacity-80" : ""}`}>{c.title}</p>
                     <p className="text-xs text-muted-foreground">
-                      {Math.min(c.progressCount, c.targetCount)}/{c.targetCount} completed
+                      {Math.min(c.progressCount, c.targetCount)} of {c.targetCount} times this week
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Button
@@ -131,7 +133,7 @@ export function GroupTabProgress({
                           run(() => updateGroupCommitmentProgressAction(c.id, c.progressCount + 1))
                         }
                       >
-                        +1 progress
+                        Log one time
                       </Button>
                       <Button
                         type="button"
@@ -148,26 +150,41 @@ export function GroupTabProgress({
               })
           )}
         </ul>
-        <label className="block text-sm">
-          New commitment
+        <label className="block text-sm font-medium">
+          What do you want to do?
           <input
-            className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
-            placeholder="Walk 4 times this week"
+            className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm font-normal"
+            placeholder="e.g. Morning walk"
             value={commitTitle}
             onChange={(e) => setCommitTitle(e.target.value)}
           />
+          <span className="mt-1 block text-xs font-normal text-muted-foreground">
+            Short name only — put the number of times in the next field.
+          </span>
         </label>
-        <label className="block text-sm">
-          Target count
+        <label className="block text-sm font-medium">
+          How many times this week?
           <input
             type="number"
             min={1}
             max={99}
-            className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm font-normal"
             value={commitTarget}
-            onChange={(e) => setCommitTarget(Number(e.target.value))}
+            onChange={(e) =>
+              setCommitTarget(Math.min(99, Math.max(1, Number(e.target.value) || 1)))
+            }
           />
+          <span className="mt-1 block text-xs font-normal text-muted-foreground">
+            Example: 4 means you&apos;ll tap &quot;Log one time&quot; up to four times (Mon–Sun).
+          </span>
         </label>
+        {commitTitle.trim() ? (
+          <p className="rounded-xl bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+            Preview:{" "}
+            <span className="font-medium text-foreground">{commitTitle.trim()}</span> — 0 of{" "}
+            {commitTarget} {commitTarget === 1 ? "time" : "times"} this week
+          </p>
+        ) : null}
         <Button
           type="button"
           fullWidth
@@ -191,8 +208,8 @@ export function GroupTabProgress({
               .filter((c) => !c.isOwn)
               .map((c) => (
                 <li key={c.id}>
-                  <span className="font-medium text-foreground">{c.displayName}:</span> {c.title} (
-                  {Math.min(c.progressCount, c.targetCount)}/{c.targetCount})
+                  <span className="font-medium text-foreground">{c.displayName}:</span> {c.title}{" "}
+                  ({Math.min(c.progressCount, c.targetCount)} of {c.targetCount} this week)
                 </li>
               ))}
           </ul>
