@@ -5,12 +5,13 @@ import {
   checkInSharedHabitAction,
   saveSharedCommitmentReflectionAction,
 } from "@/app/(app)/groups/actions";
+import { toggleGoalAction } from "@/app/(app)/member/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { AccountabilityGroup } from "@/types";
 import { useState } from "react";
 
-export function GroupTabCommitments({
+export function GroupSharedCommitmentsDashboard({
   group,
   pending,
   run,
@@ -29,13 +30,13 @@ export function GroupTabCommitments({
         <div>
           <h3 className="font-semibold">Shared commitments</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Only habits someone chooses to share. Everything else on Progress stays private.
+            Active habits from Progress show up here for your group. Weight and private check-in
+            notes stay private.
           </p>
         </div>
         {group.sharedCommitments.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No shared habits yet. On Progress, edit a habit and choose Share with accountability
-            group.
+            No habits here yet. Add one on Progress and it shows up for your group.
           </p>
         ) : (
           <ul className="space-y-2">
@@ -75,22 +76,35 @@ export function GroupTabCommitments({
                   )}
                   <div className="mt-2 flex flex-wrap gap-2">
                     {commitment.isOwn ? (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="min-h-8 px-2 text-xs"
-                        disabled={pending || commitment.paused || commitment.completedToday}
-                        onClick={() =>
-                          run(() =>
-                            checkInSharedHabitAction({
-                              groupId: group.id,
-                              goalId: commitment.goalId,
-                            }),
-                          )
-                        }
-                      >
-                        {commitment.completedToday ? "Checked in" : "Check in"}
-                      </Button>
+                      <>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="min-h-8 px-2 text-xs"
+                          disabled={pending || commitment.paused || commitment.completedToday}
+                          onClick={() =>
+                            run(() =>
+                              checkInSharedHabitAction({
+                                groupId: group.id,
+                                goalId: commitment.goalId,
+                              }),
+                            )
+                          }
+                        >
+                          {commitment.completedToday ? "Checked in" : "Check in"}
+                        </Button>
+                        {commitment.completedToday ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="min-h-8 px-2 text-xs"
+                            disabled={pending}
+                            onClick={() => run(() => toggleGoalAction(commitment.goalId))}
+                          >
+                            Undo today
+                          </Button>
+                        ) : null}
+                      </>
                     ) : (
                       <Button
                         type="button"

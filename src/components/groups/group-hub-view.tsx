@@ -2,7 +2,7 @@
 
 import { GroupOwnerPendingCard } from "@/components/groups/group-owner-pending-card";
 import { GroupTabChat } from "@/components/groups/group-tab-chat";
-import { GroupTabCommitments } from "@/components/groups/group-tab-commitments";
+import { GroupSharedCommitmentsDashboard } from "@/components/groups/group-shared-commitments-dashboard";
 import { GroupTabProgress } from "@/components/groups/group-tab-progress";
 import { GroupTabToday } from "@/components/groups/group-tab-today";
 import type { AccountabilityGroup, GroupActivity } from "@/types";
@@ -85,7 +85,7 @@ export function GroupHubView({
       ) : null}
 
       {tab === "commitments" ? (
-        <GroupTabCommitments group={group} pending={pending} run={run} />
+        <GroupSharedCommitmentsDashboard group={group} pending={pending} run={run} />
       ) : null}
 
       {tab === "progress" ? (

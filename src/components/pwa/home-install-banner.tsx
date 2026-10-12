@@ -20,7 +20,7 @@ export function HomeInstallBanner() {
   return (
     <Card className="border-primary/20 bg-secondary/40">
       <h2 id="home-install-heading" className="font-semibold">
-        Add to home screen
+        Add app to home screen
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">{help.summary}</p>
       {showHow ? (

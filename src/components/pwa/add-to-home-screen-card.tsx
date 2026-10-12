@@ -14,7 +14,7 @@ export function AddToHomeScreenCard() {
 
   return (
     <Card className="border-primary/20 bg-secondary/40">
-      <h2 className="font-semibold">Add to home screen</h2>
+      <h2 className="font-semibold">Add app to home screen</h2>
       <p className="mt-1 text-sm text-muted-foreground">{help.summary}</p>
       <InstallSteps
         platform={platform}

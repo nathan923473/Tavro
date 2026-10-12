@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { listUserGroupCandidateIds } from "@/lib/data/resolve-user-group-id";
 import { unwrapOne } from "@/lib/data/relations";
 import { formatTimeAgo, todayDateKey } from "@/lib/dates";
+import { autoShareActiveMemberGoals } from "@/lib/groups/auto-share-member-goals";
 import { fetchSharedCommitmentBoard } from "@/lib/groups/shared-commitments";
 import { currentWeekStartKey, previousWeekStartKey } from "@/lib/groups/week";
 import { ACCOUNTABILITY_GROUP_MIN_MEMBERS } from "@/lib/copy/accountability-groups";
@@ -673,6 +674,7 @@ async function loadGroupHub(
     const profile = unwrapOne(member.profile);
     memberNames.set(member.user_id, profile?.display_name?.trim() || "Member");
   }
+  await autoShareActiveMemberGoals(supabase, userId, groupId);
   const sharedBoard = await fetchSharedCommitmentBoard(
     supabase,
     groupId,

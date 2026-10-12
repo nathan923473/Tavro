@@ -1,12 +1,11 @@
 "use client";
 
 import {
-  deleteGroupWeeklyCommitmentAction,
   saveGroupWeeklyCommitmentAction,
   sendGroupEncouragementAction,
-  updateGroupCommitmentProgressAction,
 } from "@/app/(app)/groups/actions";
 import { GroupCheckInReactions } from "@/components/groups/group-check-in-reactions";
+import { GroupWeeklyCommitmentsBoard } from "@/components/groups/group-weekly-commitments-board";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -109,53 +108,14 @@ export function GroupTabProgress({
         <div>
           <h3 className="font-semibold">Weekly commitments</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Optional weekly targets — progress is about showing up, not comparing totals.
+            Everyone’s weekly targets. Progress is about showing up, not comparing totals.
           </p>
         </div>
-        <ul className="space-y-2">
-          {group.weeklyCommitments.filter((c) => c.isOwn).length === 0 ? (
-            <li className="text-sm text-muted-foreground">No commitments yet this week.</li>
-          ) : (
-            group.weeklyCommitments
-              .filter((c) => c.isOwn)
-              .map((c) => {
-                const done = c.progressCount >= c.targetCount;
-                return (
-                  <li
-                    key={c.id}
-                    className={`rounded-xl border px-3 py-2 ${done ? "border-[#B8F4DA] bg-[#B8F4DA]/25" : "border-border"}`}
-                  >
-                    <p className={`text-sm font-medium ${done ? "opacity-80" : ""}`}>{c.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {Math.min(c.progressCount, c.targetCount)}/{c.targetCount} completed
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="min-h-8 px-2 text-xs"
-                        disabled={pending || c.progressCount >= c.targetCount}
-                        onClick={() =>
-                          run(() => updateGroupCommitmentProgressAction(c.id, c.progressCount + 1))
-                        }
-                      >
-                        Log one time
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="min-h-8 px-2 text-xs"
-                        disabled={pending}
-                        onClick={() => run(() => deleteGroupWeeklyCommitmentAction(c.id))}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  </li>
-                );
-              })
-          )}
-        </ul>
+        <GroupWeeklyCommitmentsBoard
+          commitments={group.weeklyCommitments}
+          pending={pending}
+          run={run}
+        />
         <label className="block text-sm" htmlFor={`commitment-title-${group.id}`}>
           What do you want to do?
           <input
@@ -241,18 +201,6 @@ export function GroupTabProgress({
         >
           Add commitment
         </Button>
-        {group.weeklyCommitments.some((c) => !c.isOwn) ? (
-          <ul className="space-y-1 border-t border-border pt-3 text-sm text-muted-foreground">
-            {group.weeklyCommitments
-              .filter((c) => !c.isOwn)
-              .map((c) => (
-                <li key={c.id}>
-                  <span className="font-medium text-foreground">{c.displayName}:</span> {c.title} (
-                  {Math.min(c.progressCount, c.targetCount)}/{c.targetCount})
-                </li>
-              ))}
-          </ul>
-        ) : null}
       </Card>
 
       <Card>

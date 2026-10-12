@@ -1,6 +1,8 @@
 "use server";
 
 import { requireUserId } from "@/lib/auth/require-user-id";
+import { resolveUserGroupId } from "@/lib/data/resolve-user-group-id";
+import { autoShareActiveMemberGoals } from "@/lib/groups/auto-share-member-goals";
 import { sharedCommitmentSchemaError } from "@/lib/groups/shared-commitments";
 import {
   ALL_WEEKDAYS_MASK,
@@ -111,6 +113,9 @@ export async function createHabitAction(input: {
       throw new Error(error.message);
     }
   }
+
+  const groupId = await resolveUserGroupId(supabase, userId);
+  if (groupId) await autoShareActiveMemberGoals(supabase, userId, groupId);
 
   revalidateProgressPaths();
 }
