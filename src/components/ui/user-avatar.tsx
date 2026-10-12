@@ -1,6 +1,5 @@
 "use client";
 
-import { parsePresetAvatar } from "@/lib/storage/avatars";
 import { cn } from "@/lib/cn";
 import Image from "next/image";
 import { useState } from "react";
@@ -33,25 +32,9 @@ export function UserAvatar({
       .toUpperCase() || "?";
 
   const [imageFailed, setImageFailed] = useState(false);
-  const trimmedUrl = avatarUrl?.trim() || null;
-  const preset = parsePresetAvatar(trimmedUrl);
+  const trimmedUrl =
+    avatarUrl?.trim() && !avatarUrl.startsWith("preset:") ? avatarUrl.trim() : null;
   const sizeClass = sizeMap[size];
-
-  if (preset) {
-    return (
-      <div
-        className={cn(
-          "flex shrink-0 items-center justify-center rounded-2xl font-bold text-white shadow-sm",
-          sizeClass,
-          className,
-        )}
-        style={{ background: preset.gradient }}
-        aria-hidden
-      >
-        {preset.emoji}
-      </div>
-    );
-  }
 
   if (trimmedUrl && !imageFailed) {
     return (

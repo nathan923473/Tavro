@@ -286,7 +286,9 @@ export function OnboardingFlow({
       {step === "avatar" ? (
         <div className="animate-fade-up flex flex-1 flex-col">
           <h1 className="text-2xl font-semibold">Add a profile picture</h1>
-          <p className="mt-2 text-muted-foreground">Optional — friends see this in your group.</p>
+          <p className="mt-2 text-muted-foreground">
+            Optional — upload a photo, or skip to use a simple default with your initials.
+          </p>
           <Card className="mt-6">
             <ProfileAvatarEditor
               userId={userId}

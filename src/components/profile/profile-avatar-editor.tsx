@@ -1,16 +1,9 @@
 "use client";
 
-import {
-  setProfileAvatarUrlAction,
-  uploadProfileAvatarAction,
-} from "@/app/(app)/profile/actions";
+import { uploadProfileAvatarAction } from "@/app/(app)/profile/actions";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { Button } from "@/components/ui/button";
 import { ContentGuidelinesReminder } from "@/components/moderation/content-guidelines-reminder";
-import {
-  AVATAR_PRESETS,
-  presetAvatarValue,
-} from "@/lib/storage/avatars";
 import { ImagePlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
@@ -27,18 +20,6 @@ export function ProfileAvatarEditor({
   const inputRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
-
-  function save(url: string) {
-    startTransition(async () => {
-      try {
-        await setProfileAvatarUrlAction(url);
-        setMessage("Profile photo saved.");
-        router.refresh();
-      } catch (e) {
-        setMessage(e instanceof Error ? e.message : "Save failed.");
-      }
-    });
-  }
 
   return (
     <div className="space-y-3">
@@ -85,30 +66,6 @@ export function ProfileAvatarEditor({
             JPG, PNG, WebP, or GIF · max 2 MB
           </p>
           <ContentGuidelinesReminder />
-        </div>
-      </div>
-
-      <div>
-        <p className="mb-2 text-sm font-medium">Or pick a style</p>
-        <div className="grid grid-cols-3 gap-2">
-          {AVATAR_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              disabled={pending}
-              onClick={() => save(presetAvatarValue(preset.id))}
-              className="flex flex-col items-center gap-1 rounded-xl border border-border p-2 text-xs transition hover:border-primary/40"
-              aria-label={`Use ${preset.label} avatar`}
-            >
-              <span
-                className="flex h-12 w-12 items-center justify-center rounded-xl text-lg"
-                style={{ background: preset.gradient }}
-              >
-                {preset.emoji}
-              </span>
-              {preset.label}
-            </button>
-          ))}
         </div>
       </div>
 
