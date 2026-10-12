@@ -27,7 +27,7 @@ export function GroupTabProgress({
   run: (action: () => Promise<unknown>) => void;
 }) {
   const [commitTitle, setCommitTitle] = useState("");
-  const [commitTarget, setCommitTarget] = useState(3);
+  const [commitTarget, setCommitTarget] = useState("3");
   const [encourageTarget, setEncourageTarget] = useState("");
   const [encourageMessage, setEncourageMessage] = useState(
     "Hey! Thinking of you — hope today feels manageable. You've got this.",
@@ -50,7 +50,11 @@ export function GroupTabProgress({
   }, [group.weeklyCommitments]);
 
   const scheduledThisWeek = group.checkInBoard.filter((m) => m.scheduledToday).length;
-  const previewCount = Math.min(99, Math.max(1, Math.floor(commitTarget) || 1));
+  const parsedTarget = Number.parseInt(commitTarget, 10);
+  const previewCount =
+    commitTarget.trim() === "" || !Number.isFinite(parsedTarget)
+      ? 3
+      : Math.min(99, Math.max(1, parsedTarget));
   const commitmentPreview = commitTitle.trim()
     ? `${commitTitle.trim()} · ${previewCount} ${previewCount === 1 ? "time" : "times"} this week`
     : null;
@@ -152,33 +156,68 @@ export function GroupTabProgress({
               })
           )}
         </ul>
-        <label className="block text-sm">
-          New commitment
+        <label className="block text-sm" htmlFor={`commitment-title-${group.id}`}>
+          What do you want to do?
           <input
+            id={`commitment-title-${group.id}`}
             className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
             placeholder="Walk"
             value={commitTitle}
             onChange={(e) => setCommitTitle(e.target.value)}
           />
         </label>
-        <label className="block text-sm">
-          How many times this week?
-          <input
-            type="number"
-            min={1}
-            max={99}
-            className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
-            value={commitTarget}
-            onChange={(e) => {
-              const next = Number(e.target.value);
-              if (!Number.isFinite(next)) {
-                setCommitTarget(1);
-                return;
-              }
-              setCommitTarget(Math.min(99, Math.max(1, Math.floor(next))));
-            }}
-          />
-        </label>
+        <div className="text-sm">
+          <label className="block" htmlFor={`commitment-count-${group.id}`}>
+            How many times this week?
+          </label>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            {[2, 3, 4, 5].map((count) => {
+              const selected = commitTarget === String(count);
+              return (
+                <button
+                  key={count}
+                  type="button"
+                  aria-pressed={selected}
+                  className={`min-h-11 rounded-full px-3 text-sm font-semibold ${
+                    selected
+                      ? "bg-primary text-primary-foreground"
+                      : "border border-border text-foreground"
+                  }`}
+                  onClick={() => setCommitTarget(String(count))}
+                >
+                  {count}×
+                </button>
+              );
+            })}
+            <input
+              id={`commitment-count-${group.id}`}
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              className="min-h-11 w-16 rounded-xl border border-border px-3 py-2 text-sm"
+              value={commitTarget}
+              onFocus={(event) => event.currentTarget.select()}
+              onMouseUp={(event) => event.preventDefault()}
+              onChange={(event) => {
+                const digits = event.target.value.replace(/\D/g, "");
+                if (!digits) {
+                  setCommitTarget("");
+                  return;
+                }
+                setCommitTarget(String(Math.min(99, Number.parseInt(digits, 10))));
+              }}
+              onBlur={(event) => {
+                const digits = event.currentTarget.value.replace(/\D/g, "");
+                if (!digits) {
+                  setCommitTarget("3");
+                  return;
+                }
+                const parsed = Number.parseInt(digits, 10);
+                setCommitTarget(String(Math.min(99, Math.max(1, parsed))));
+              }}
+            />
+          </div>
+        </div>
         {commitmentPreview ? (
           <p className="rounded-xl bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
             <span className="font-medium text-foreground">Preview</span>
