@@ -807,6 +807,19 @@ export async function sendGroupEncouragementAction(input: {
   if (message.length < 2) throw new Error("Write a short encouraging note.");
   if (input.toUserId === userId) throw new Error("Pick another member to encourage.");
 
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const recent = await supabase
+    .from("group_encouragements")
+    .select("id")
+    .eq("group_id", input.groupId)
+    .eq("from_user_id", userId)
+    .eq("to_user_id", input.toUserId)
+    .gte("created_at", since)
+    .limit(1);
+  if (recent.data?.length) {
+    throw new Error("You already sent a check-in to this member in the last 24 hours.");
+  }
+
   const { error } = await supabase.from("group_encouragements").insert({
     group_id: input.groupId,
     from_user_id: userId,
@@ -814,6 +827,117 @@ export async function sendGroupEncouragementAction(input: {
     message,
   });
   if (error) throw migrationHint(error.message, "032_group_accountability_hub.sql");
+
+  const { data: fromProfile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", userId)
+    .maybeSingle();
+  const { enqueueNotification } = await import("@/lib/data/notifications");
+  await enqueueNotification({
+    userId: input.toUserId,
+    kind: "group_encouragement",
+    title: "Support from your group",
+    body: `${fromProfile?.display_name ?? "Someone"}: ${message.slice(0, 120)}`,
+    linkPath: "/groups",
+  });
+
+  revalidatePath("/groups");
+  revalidatePath("/notifications");
+  return { ok: true as const };
+}
+
+export async function celebrateSharedHabitAction(input: {
+  groupId: string;
+  memberGoalId: string;
+  forUserId: string;
+}) {
+  const { supabase, userId } = await requireUserId();
+  if (input.forUserId === userId) {
+    throw new Error("Others can celebrate when you complete a habit.");
+  }
+
+  const share = await supabase
+    .from("member_goal_group_shares")
+    .select("id")
+    .eq("group_id", input.groupId)
+    .eq("member_goal_id", input.memberGoalId)
+    .maybeSingle();
+  if (!share.data) throw new Error("This habit is not shared with the group.");
+
+  const today = new Date().toISOString().slice(0, 10);
+  const completed = await supabase
+    .from("goal_completions")
+    .select("goal_id")
+    .eq("goal_id", input.memberGoalId)
+    .eq("completion_date", today)
+    .maybeSingle();
+  if (!completed.data) {
+    throw new Error("Celebrate when they mark the habit done for today.");
+  }
+
+  const { error } = await supabase.from("group_shared_habit_celebrations").insert({
+    group_id: input.groupId,
+    member_goal_id: input.memberGoalId,
+    for_user_id: input.forUserId,
+    from_user_id: userId,
+    celebration_date: today,
+  });
+
+  if (error) {
+    if (/duplicate key|unique/i.test(error.message)) {
+      return { ok: true as const };
+    }
+    if (/group_shared_habit_celebrations|schema cache/i.test(error.message)) {
+      throw migrationHint(error.message, "047_shared_member_goal_commitments.sql");
+    }
+    throw new Error(error.message);
+  }
+
+  const { enqueueNotification } = await import("@/lib/data/notifications");
+  await enqueueNotification({
+    userId: input.forUserId,
+    kind: "habit_celebration",
+    title: "Your group noticed your win",
+    body: "Someone celebrated a habit you completed today.",
+    linkPath: "/groups",
+  });
+
+  revalidatePath("/groups");
+  revalidatePath("/notifications");
+  return { ok: true as const };
+}
+
+export async function saveGroupWeeklyReflectionAction(input: {
+  groupId: string;
+  wentWell: string;
+  struggledWith: string;
+  focusNext: string;
+}) {
+  const { supabase, userId } = await requireUserId();
+  const { currentWeekStartKey } = await import("@/lib/groups/week");
+  const weekStart = currentWeekStartKey();
+
+  const { error } = await supabase.from("group_weekly_reflections").upsert(
+    {
+      group_id: input.groupId,
+      user_id: userId,
+      week_start: weekStart,
+      went_well: input.wentWell.trim().slice(0, 500),
+      struggled_with: input.struggledWith.trim().slice(0, 500),
+      focus_next: input.focusNext.trim().slice(0, 500),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "group_id,user_id,week_start" },
+  );
+
+  if (error) {
+    if (/group_weekly_reflections|schema cache/i.test(error.message)) {
+      throw migrationHint(error.message, "047_shared_member_goal_commitments.sql");
+    }
+    throw new Error(error.message);
+  }
+
   revalidatePath("/groups");
   return { ok: true as const };
 }

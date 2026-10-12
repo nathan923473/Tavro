@@ -8,6 +8,7 @@ import {
   isPersonalGoalScheduledToday,
   scheduleLabel,
 } from "@/lib/groups/goal-schedule";
+import { fetchGroupSharedCommitments } from "@/lib/data/group-shared-commitments";
 import type {
   AccountabilityGroup,
   GroupActivity,
@@ -17,6 +18,7 @@ import type {
   GroupFocusType,
   GroupJoinRequest,
   GroupMemberPersonalGoal,
+  GroupWeeklyReflection,
   GroupWeeklyRecap,
 } from "@/types";
 
@@ -637,6 +639,11 @@ async function loadGroupHub(
   const focusCustomLabel =
     typeof groupRow.focus_custom_label === "string" ? groupRow.focus_custom_label : "";
 
+  const [sharedCommitments, weeklyReflections] = await Promise.all([
+    fetchGroupSharedCommitments(supabase, groupId, userId),
+    loadWeeklyReflections(supabase, groupId, userId, weekStart),
+  ]);
+
   const group: AccountabilityGroup = {
     id: String(groupRow.id),
     name: String(groupRow.name),
@@ -685,6 +692,8 @@ async function loadGroupHub(
     memberPersonalGoals,
     recentCheckIns,
     viewerScheduledToday,
+    sharedCommitments,
+    weeklyReflections,
     members: (members ?? []).map((m) => {
       const profile = unwrapOne(m.profile);
       return {
@@ -703,6 +712,43 @@ async function loadGroupHub(
   };
 
   return { group, feed };
+}
+
+async function loadWeeklyReflections(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  groupId: string,
+  viewerUserId: string,
+  weekStart: string,
+): Promise<GroupWeeklyReflection[]> {
+  const res = await supabase
+    .from("group_weekly_reflections")
+    .select(
+      `
+      id, user_id, week_start, went_well, struggled_with, focus_next,
+      profile:profiles!group_weekly_reflections_user_id_fkey ( display_name )
+    `,
+    )
+    .eq("group_id", groupId)
+    .eq("week_start", weekStart)
+    .order("updated_at", { ascending: false });
+
+  if (res.error && /group_weekly_reflections|schema cache/i.test(res.error.message)) {
+    return [];
+  }
+
+  return (res.data ?? []).map((row) => {
+    const profile = unwrapOne(row.profile);
+    return {
+      id: row.id as string,
+      userId: row.user_id as string,
+      displayName: profile?.display_name ?? "Member",
+      weekStart: String(row.week_start),
+      wentWell: String(row.went_well ?? ""),
+      struggledWith: String(row.struggled_with ?? ""),
+      focusNext: String(row.focus_next ?? ""),
+      isOwn: row.user_id === viewerUserId,
+    };
+  });
 }
 
 function buildWeeklyRecap(input: {

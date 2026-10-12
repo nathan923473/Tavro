@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchChallengesForUser } from "@/lib/data/challenges";
+import { fetchUserAccountabilityGroups } from "@/lib/data/user-accountability-groups";
 import {
   fetchAllMemberGoals,
   fetchMilestones,
@@ -34,6 +35,7 @@ export default async function ProgressPage() {
     weighIns,
     summary,
     weightEnabled,
+    accountabilityGroups,
   ] = userId
     ? await Promise.all([
         fetchAllMemberGoals(userId),
@@ -44,6 +46,7 @@ export default async function ProgressPage() {
         fetchWeighIns(userId),
         fetchWeightSummary(userId),
         fetchWeightTrackingEnabled(userId),
+        fetchUserAccountabilityGroups(userId),
       ])
     : [
         [],
@@ -54,6 +57,7 @@ export default async function ProgressPage() {
         [],
         null,
         true,
+        [],
       ];
 
   const joined = challenges.mine;
@@ -83,7 +87,11 @@ export default async function ProgressPage() {
               joinedChallenges={joined}
               completedChallengeCount={completedChallenges.length}
             />
-            <HabitManager habits={habits} joinedChallenges={joined} />
+            <HabitManager
+              habits={habits}
+              joinedChallenges={joined}
+              accountabilityGroups={accountabilityGroups}
+            />
           </>
         ) : null}
 

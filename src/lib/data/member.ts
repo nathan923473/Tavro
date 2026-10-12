@@ -59,7 +59,32 @@ function mapGoalRow(
     reminderTimeLocal: g.reminder_time ?? null,
     paused: Boolean(g.paused_at),
     linkedChallengeId: g.linked_challenge_id ?? null,
+    sharedGroupId: null,
   };
+}
+
+async function fetchGoalShareByGroupId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  goalIds: string[],
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (!goalIds.length) return map;
+
+  const { data, error } = await supabase
+    .from("member_goal_group_shares")
+    .select("member_goal_id, group_id")
+    .eq("user_id", userId)
+    .in("member_goal_id", goalIds);
+
+  if (error && /member_goal_group_shares|schema cache/i.test(error.message)) {
+    return map;
+  }
+
+  for (const row of data ?? []) {
+    map.set(row.member_goal_id as string, row.group_id as string);
+  }
+  return map;
 }
 
 async function fetchGoalRows(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
@@ -126,7 +151,11 @@ export async function fetchMemberGoals(userId: string): Promise<PersonalGoal[]> 
     weeklyByGoal[c.goal_id] = (weeklyByGoal[c.goal_id] ?? 0) + 1;
   }
 
-  return goals.map((g) => mapGoalRow(g, completedToday, weeklyByGoal));
+  const shareMap = await fetchGoalShareByGroupId(supabase, userId, ids);
+  return goals.map((g) => ({
+    ...mapGoalRow(g, completedToday, weeklyByGoal),
+    sharedGroupId: shareMap.get(g.id) ?? null,
+  }));
 }
 
 function weekStartKeyDaysAgo(daysAgo: number): string {
@@ -306,7 +335,7 @@ export async function fetchAllMemberGoals(userId: string): Promise<PersonalGoal[
   const today = todayDateKey();
 
   const fullSelect =
-    "id, title, category, template_key, frequency_type, frequency_target, paused_at, linked_challenge_id, active";
+    "id, title, category, template_key, frequency_type, frequency_target, schedule_days_mask, reminder_time, paused_at, linked_challenge_id, active";
   let { data: rows, error } = await supabase
     .from("member_goals")
     .select(fullSelect)
@@ -351,7 +380,11 @@ export async function fetchAllMemberGoals(userId: string): Promise<PersonalGoal[
     weeklyByGoal[c.goal_id] = (weeklyByGoal[c.goal_id] ?? 0) + 1;
   }
 
-  return goals.map((g) => mapGoalRow(g, completedToday, weeklyByGoal));
+  const shareMap = await fetchGoalShareByGroupId(supabase, userId, ids);
+  return goals.map((g) => ({
+    ...mapGoalRow(g, completedToday, weeklyByGoal),
+    sharedGroupId: shareMap.get(g.id) ?? null,
+  }));
 }
 
 export async function fetchTodayCheckIn(userId: string): Promise<{

@@ -7,6 +7,8 @@ import {
   updateGroupCommitmentProgressAction,
 } from "@/app/(app)/groups/actions";
 import { GroupCheckInReactions } from "@/components/groups/group-check-in-reactions";
+import { GroupSharedCommitmentsDashboard } from "@/components/groups/group-shared-commitments-dashboard";
+import { GroupWeeklyReflectionCard } from "@/components/groups/group-weekly-reflection-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -60,6 +62,8 @@ export function GroupTabProgress({
 
   return (
     <div className="space-y-4">
+      <GroupSharedCommitmentsDashboard group={group} pending={pending} run={run} />
+      <GroupWeeklyReflectionCard group={group} pending={pending} run={run} />
       <Card className="space-y-3">
         <h3 className="font-semibold">This week</h3>
         <div className="grid grid-cols-2 gap-3 text-sm">

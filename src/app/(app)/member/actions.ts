@@ -356,6 +356,7 @@ export async function toggleGoalAction(goalId: string) {
       frequencyTarget: g.frequency_target ?? 7,
       scheduleDaysMask: 127,
       reminderTimeLocal: null,
+      sharedGroupId: null,
       paused: Boolean(g.paused_at),
       linkedChallengeId: null,
     }));
@@ -372,6 +373,7 @@ export async function toggleGoalAction(goalId: string) {
   revalidatePath("/");
   revalidatePath("/progress");
   revalidatePath("/challenges");
+  revalidatePath("/groups");
 }
 
 async function maybeUnlockHabitMilestones(

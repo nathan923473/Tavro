@@ -15,6 +15,7 @@ function revalidateProgressPaths() {
   revalidatePath("/");
   revalidatePath("/progress");
   revalidatePath("/profile");
+  revalidatePath("/groups");
 }
 
 export async function createHabitAction(input: {
@@ -153,12 +154,77 @@ export async function pauseHabitAction(habitId: string, paused: boolean) {
 
 export async function deleteHabitAction(habitId: string) {
   const { supabase, userId } = await requireUserId();
+  await supabase
+    .from("member_goal_group_shares")
+    .delete()
+    .eq("member_goal_id", habitId)
+    .eq("user_id", userId);
   const { error } = await supabase
     .from("member_goals")
     .update({ active: false })
     .eq("id", habitId)
     .eq("user_id", userId);
   if (error) throw new Error(error.message);
+  revalidateProgressPaths();
+}
+
+export async function setHabitGroupShareAction(input: {
+  habitId: string;
+  groupId: string | null;
+}) {
+  const { supabase, userId } = await requireUserId();
+
+  const { data: habit } = await supabase
+    .from("member_goals")
+    .select("id")
+    .eq("id", input.habitId)
+    .eq("user_id", userId)
+    .eq("active", true)
+    .maybeSingle();
+  if (!habit) throw new Error("Habit not found.");
+
+  if (!input.groupId) {
+    const { error } = await supabase
+      .from("member_goal_group_shares")
+      .delete()
+      .eq("member_goal_id", input.habitId)
+      .eq("user_id", userId);
+    if (error && !/member_goal_group_shares|schema cache/i.test(error.message)) {
+      throw new Error(error.message);
+    }
+    revalidateProgressPaths();
+    return;
+  }
+
+  const memberCheck = await supabase
+    .from("group_members")
+    .select("group_id")
+    .eq("group_id", input.groupId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!memberCheck.data) {
+    throw new Error("You must be a member of that group to share a habit.");
+  }
+
+  await supabase
+    .from("member_goal_group_shares")
+    .delete()
+    .eq("member_goal_id", input.habitId)
+    .eq("user_id", userId);
+
+  const { error } = await supabase.from("member_goal_group_shares").insert({
+    member_goal_id: input.habitId,
+    group_id: input.groupId,
+    user_id: userId,
+  });
+
+  if (error) {
+    if (/member_goal_group_shares|schema cache/i.test(error.message)) {
+      throw new Error("Run migration 047_shared_member_goal_commitments.sql in Supabase.");
+    }
+    throw new Error(error.message);
+  }
+
   revalidateProgressPaths();
 }
 

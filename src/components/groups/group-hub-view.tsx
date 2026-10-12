@@ -13,7 +13,7 @@ type HubTab = "today" | "chat" | "progress";
 const TAB_LABELS: { id: HubTab; label: string }[] = [
   { id: "today", label: "Today" },
   { id: "chat", label: "Chat" },
-  { id: "progress", label: "Progress" },
+  { id: "progress", label: "Commitments" },
 ];
 
 export function GroupHubView({

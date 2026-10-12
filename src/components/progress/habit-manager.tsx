@@ -4,8 +4,10 @@ import {
   deleteHabitAction,
   linkHabitToChallengeAction,
   pauseHabitAction,
+  setHabitGroupShareAction,
   updateHabitAction,
 } from "@/app/(app)/progress/actions";
+import type { UserAccountabilityGroupOption } from "@/lib/data/user-accountability-groups";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { HabitQuickAdd } from "@/components/progress/habit-quick-add";
@@ -25,9 +27,11 @@ import { useState, useTransition } from "react";
 export function HabitManager({
   habits,
   joinedChallenges,
+  accountabilityGroups = [],
 }: {
   habits: PersonalGoal[];
   joinedChallenges: Challenge[];
+  accountabilityGroups?: UserAccountabilityGroupOption[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -168,6 +172,35 @@ export function HabitManager({
                     Save days & time
                   </Button>
                 </div>
+              ) : null}
+              {accountabilityGroups.length > 0 ? (
+                <label className="block text-xs">
+                  <span className="text-muted-foreground">
+                    Share with accountability group (private by default)
+                  </span>
+                  <select
+                    className="mt-1 w-full rounded-xl border border-border px-2 py-2 text-sm"
+                    value={habit.sharedGroupId ?? ""}
+                    disabled={pending}
+                    onChange={(e) =>
+                      startTransition(async () => {
+                        const v = e.target.value;
+                        await setHabitGroupShareAction({
+                          habitId: habit.id,
+                          groupId: v ? v : null,
+                        });
+                        router.refresh();
+                      })
+                    }
+                  >
+                    <option value="">Keep private</option>
+                    {accountabilityGroups.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        Share with {g.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               ) : null}
               {joinedChallenges.length > 0 ? (
                 <label className="block text-xs">
