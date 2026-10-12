@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 type HabitQuickAddProps = {
-  /** Show only a few preset chips (Home). Full categorized list on Progress. */
+  /** A few preset chips for the Home empty state. Progress uses the add-habit sheet. */
   compact?: boolean;
   showProgressLink?: boolean;
 };
