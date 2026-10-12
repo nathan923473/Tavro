@@ -78,7 +78,8 @@ export async function createHabitAction(input: {
     ...(reminderTime ? { reminder_time: reminderTime } : {}),
   };
 
-  const { error } = await supabase.from("member_goals").insert(row);
+  let { error } = await supabase.from("member_goals").insert(row);
+
   if (error) {
     if (/template_key|frequency_|schedule_days|reminder_time|schema cache/i.test(error.message)) {
       const { error: legacyErr } = await supabase.from("member_goals").insert({
@@ -88,8 +89,20 @@ export async function createHabitAction(input: {
         sort_order: row.sort_order,
       });
       if (legacyErr) throw new Error(legacyErr.message);
+      error = null;
     } else {
       throw new Error(error.message);
+    }
+  }
+
+  if (!error) {
+    const { resolveUserGroupId } = await import("@/lib/data/resolve-user-group-id");
+    const { ensureMemberGoalsSharedWithGroup } = await import(
+      "@/lib/groups/auto-share-member-goals"
+    );
+    const groupId = await resolveUserGroupId(supabase, userId);
+    if (groupId) {
+      await ensureMemberGoalsSharedWithGroup(supabase, userId, groupId);
     }
   }
 

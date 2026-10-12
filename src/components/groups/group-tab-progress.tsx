@@ -1,13 +1,12 @@
 "use client";
 
 import {
-  deleteGroupWeeklyCommitmentAction,
   saveGroupWeeklyCommitmentAction,
   sendGroupEncouragementAction,
-  updateGroupCommitmentProgressAction,
 } from "@/app/(app)/groups/actions";
 import { GroupCheckInReactions } from "@/components/groups/group-check-in-reactions";
 import { GroupSharedCommitmentsDashboard } from "@/components/groups/group-shared-commitments-dashboard";
+import { GroupWeeklyCommitmentsBoard } from "@/components/groups/group-weekly-commitments-board";
 import { GroupWeeklyReflectionCard } from "@/components/groups/group-weekly-reflection-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -108,59 +107,15 @@ export function GroupTabProgress({
         ) : null}
       </Card>
 
+      <GroupWeeklyCommitmentsBoard group={group} pending={pending} run={run} />
+
       <Card className="space-y-3">
         <div>
-          <h3 className="font-semibold">Weekly commitments</h3>
+          <h3 className="font-semibold">Add a commitment for this week</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            One small goal for <strong className="font-medium text-foreground">this week only</strong>{" "}
-            (separate from daily habits on Home). Your group can see the title and progress — not
-            a competition.
+            Visible to everyone in this group as soon as you add it.
           </p>
         </div>
-        <ul className="space-y-2">
-          {group.weeklyCommitments.filter((c) => c.isOwn).length === 0 ? (
-            <li className="text-sm text-muted-foreground">No commitments yet this week.</li>
-          ) : (
-            group.weeklyCommitments
-              .filter((c) => c.isOwn)
-              .map((c) => {
-                const done = c.progressCount >= c.targetCount;
-                return (
-                  <li
-                    key={c.id}
-                    className={`rounded-xl border px-3 py-2 ${done ? "border-[#B8F4DA] bg-[#B8F4DA]/25" : "border-border"}`}
-                  >
-                    <p className={`text-sm font-medium ${done ? "opacity-80" : ""}`}>{c.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {Math.min(c.progressCount, c.targetCount)} of {c.targetCount} times this week
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="min-h-8 px-2 text-xs"
-                        disabled={pending || c.progressCount >= c.targetCount}
-                        onClick={() =>
-                          run(() => updateGroupCommitmentProgressAction(c.id, c.progressCount + 1))
-                        }
-                      >
-                        Log one time
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="min-h-8 px-2 text-xs"
-                        disabled={pending}
-                        onClick={() => run(() => deleteGroupWeeklyCommitmentAction(c.id))}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  </li>
-                );
-              })
-          )}
-        </ul>
         <label className="block text-sm font-medium">
           What do you want to do?
           <input
@@ -240,18 +195,6 @@ export function GroupTabProgress({
         >
           Add commitment
         </Button>
-        {group.weeklyCommitments.some((c) => !c.isOwn) ? (
-          <ul className="space-y-1 border-t border-border pt-3 text-sm text-muted-foreground">
-            {group.weeklyCommitments
-              .filter((c) => !c.isOwn)
-              .map((c) => (
-                <li key={c.id}>
-                  <span className="font-medium text-foreground">{c.displayName}:</span> {c.title}{" "}
-                  ({Math.min(c.progressCount, c.targetCount)} of {c.targetCount} this week)
-                </li>
-              ))}
-          </ul>
-        ) : null}
       </Card>
 
       <Card>

@@ -176,7 +176,8 @@ export function HabitManager({
               {accountabilityGroups.length > 0 ? (
                 <label className="block text-xs">
                   <span className="text-muted-foreground">
-                    Share with accountability group (private by default)
+                    Accountability group visibility (shown to your group; choose Keep private to
+                    hide)
                   </span>
                   <select
                     className="mt-1 w-full rounded-xl border border-border px-2 py-2 text-sm"

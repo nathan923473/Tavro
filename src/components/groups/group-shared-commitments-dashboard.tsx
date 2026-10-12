@@ -72,8 +72,8 @@ export function GroupSharedCommitmentsDashboard({
       <Card className="space-y-2">
         <h3 className="font-semibold">Shared commitments</h3>
         <p className="text-sm text-muted-foreground">
-          When members share habits from Progress, they appear here — private by default until
-          you choose to share.
+          Daily habits from Progress appear here for group members automatically. Add weekly
+          targets in the section below.
         </p>
       </Card>
     );
