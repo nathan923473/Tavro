@@ -9,11 +9,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { HabitQuickAdd } from "@/components/progress/habit-quick-add";
+import { HabitSchedulePicker } from "@/components/progress/habit-schedule-picker";
+import { habitScheduleSummary, scheduledDaysPerWeek } from "@/lib/habits/schedule";
 import type { Challenge } from "@/types";
 import type { PersonalGoal } from "@/types";
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 
 export function HabitManager({
   habits,
@@ -24,6 +26,22 @@ export function HabitManager({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+
+  function saveSchedule(
+    habitId: string,
+    patch: { scheduleDaysMask?: number; reminderTime?: string | null },
+  ) {
+    startTransition(async () => {
+      try {
+        setMessage(null);
+        await updateHabitAction(habitId, patch);
+        router.refresh();
+      } catch (e) {
+        setMessage(e instanceof Error ? e.message : "Could not update schedule.");
+      }
+    });
+  }
 
   return (
     <section aria-labelledby="habits-manage-heading">
@@ -32,10 +50,15 @@ export function HabitManager({
       </h2>
       <Card className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          Add new goals anytime. Choose 3–5 to start; edit frequency or pause
-          below — no medical targets.
+          Add new goals anytime. Choose the days and an optional time, then edit
+          or pause below — no medical targets.
         </p>
         <HabitQuickAdd />
+        {message ? (
+          <p className="text-sm text-red-600" role="alert">
+            {message}
+          </p>
+        ) : null}
       </Card>
 
       <ul className="mt-3 space-y-2">
@@ -46,11 +69,8 @@ export function HabitManager({
                 <div>
                   <p className="font-medium">{habit.title}</p>
                   <p className="text-xs text-muted-foreground">
-                    {habit.frequencyType === "daily"
-                      ? "Every day"
-                      : `${habit.frequencyTarget}× per week`}{" "}
-                    · {habit.weeklyCompletion}/
-                    {habit.frequencyType === "daily" ? 7 : habit.frequencyTarget} this week
+                    {habitScheduleSummary(habit)} · {habit.weeklyCompletion}/
+                    {scheduledDaysPerWeek(habit)} this week
                     {habit.paused ? " · paused" : ""}
                   </p>
                 </div>
@@ -99,10 +119,21 @@ export function HabitManager({
                     })
                   }
                 >
-                  <option value="daily">Every day</option>
+                  <option value="daily">Daily</option>
                   <option value="times_per_week">Times per week</option>
                 </select>
               </div>
+              <HabitSchedulePicker
+                daysMask={habit.scheduleDaysMask}
+                reminderTime={habit.reminderTime ?? ""}
+                disabled={pending}
+                onDaysMaskChange={(mask) =>
+                  saveSchedule(habit.id, { scheduleDaysMask: mask })
+                }
+                onReminderTimeChange={(time) =>
+                  saveSchedule(habit.id, { reminderTime: time || null })
+                }
+              />
               {joinedChallenges.length > 0 ? (
                 <label className="block text-xs">
                   <span className="text-muted-foreground">Link to challenge (optional)</span>

@@ -4,7 +4,7 @@ import {
   type WeeklyConsistency,
 } from "@/lib/progress/consistency";
 import { MILESTONE_DEFINITIONS } from "@/lib/progress/milestones";
-import { buildWeekDayIndicators } from "@/lib/habits/schedule";
+import { buildWeekDayIndicators, normalizeDaysMask, normalizeReminderTime } from "@/lib/habits/schedule";
 import { todayDateKey } from "@/lib/dates";
 import type {
   ConsistencySnapshot,
@@ -22,6 +22,8 @@ type GoalRow = {
   template_key?: string | null;
   frequency_type?: string | null;
   frequency_target?: number | null;
+  schedule_days_mask?: number | null;
+  reminder_time?: string | null;
   paused_at?: string | null;
   linked_challenge_id?: string | null;
 };
@@ -50,22 +52,37 @@ function mapGoalRow(
     templateKey: g.template_key ?? null,
     frequencyType,
     frequencyTarget,
+    scheduleDaysMask: normalizeDaysMask(g.schedule_days_mask),
+    reminderTime: normalizeReminderTime(g.reminder_time),
     paused: Boolean(g.paused_at),
     linkedChallengeId: g.linked_challenge_id ?? null,
   };
 }
 
 async function fetchGoalRows(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
+  const withSchedule =
+    "id, title, category, template_key, frequency_type, frequency_target, paused_at, linked_challenge_id, schedule_days_mask, reminder_time";
   const fullSelect =
     "id, title, category, template_key, frequency_type, frequency_target, paused_at, linked_challenge_id";
   const legacySelect = "id, title, category";
 
   let { data, error } = await supabase
     .from("member_goals")
-    .select(fullSelect)
+    .select(withSchedule)
     .eq("user_id", userId)
     .eq("active", true)
     .order("sort_order");
+
+  if (error && /schedule_days_mask|reminder_time/i.test(error.message)) {
+    const retry = await supabase
+      .from("member_goals")
+      .select(fullSelect)
+      .eq("user_id", userId)
+      .eq("active", true)
+      .order("sort_order");
+    data = retry.data as typeof data;
+    error = retry.error;
+  }
 
   if (error && /template_key|frequency_|paused_at|linked_challenge|schema cache/i.test(error.message)) {
     const legacy = await supabase
@@ -293,13 +310,25 @@ export async function fetchAllMemberGoals(userId: string): Promise<PersonalGoal[
   const supabase = await createClient();
   const today = todayDateKey();
 
+  const withSchedule =
+    "id, title, category, template_key, frequency_type, frequency_target, paused_at, linked_challenge_id, schedule_days_mask, reminder_time, active";
   const fullSelect =
     "id, title, category, template_key, frequency_type, frequency_target, paused_at, linked_challenge_id, active";
   let { data: rows, error } = await supabase
     .from("member_goals")
-    .select(fullSelect)
+    .select(withSchedule)
     .eq("user_id", userId)
     .order("sort_order");
+
+  if (error && /schedule_days_mask|reminder_time/i.test(error.message)) {
+    const retry = await supabase
+      .from("member_goals")
+      .select(fullSelect)
+      .eq("user_id", userId)
+      .order("sort_order");
+    rows = retry.data as typeof rows;
+    error = retry.error;
+  }
 
   if (error && /template_key|frequency_|schema cache/i.test(error.message)) {
     const legacy = await supabase

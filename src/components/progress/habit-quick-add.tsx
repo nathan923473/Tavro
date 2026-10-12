@@ -1,7 +1,9 @@
 "use client";
 
 import { createHabitAction } from "@/app/(app)/progress/actions";
+import { HabitSchedulePicker } from "@/components/progress/habit-schedule-picker";
 import { Button } from "@/components/ui/button";
+import { ALL_WEEKDAYS_MASK } from "@/lib/habits/schedule";
 import {
   compactHabitPresets,
   CUSTOM_HABIT_PRESET_KEY,
@@ -49,13 +51,20 @@ export function HabitQuickAdd({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [customTitle, setCustomTitle] = useState("");
+  const [daysMask, setDaysMask] = useState(ALL_WEEKDAYS_MASK);
+  const [reminderTime, setReminderTime] = useState("");
   const [message, setMessage] = useState<string | null>(null);
 
   function addHabit(title: string, templateKey: string) {
     startTransition(async () => {
       try {
         setMessage(null);
-        await createHabitAction({ title, templateKey });
+        await createHabitAction({
+          title,
+          templateKey,
+          scheduleDaysMask: daysMask,
+          reminderTime: reminderTime || null,
+        });
         setCustomTitle("");
         router.refresh();
       } catch (e) {
@@ -66,6 +75,13 @@ export function HabitQuickAdd({
 
   return (
     <div className="space-y-3">
+      <HabitSchedulePicker
+        daysMask={daysMask}
+        reminderTime={reminderTime}
+        disabled={pending}
+        onDaysMaskChange={setDaysMask}
+        onReminderTimeChange={setReminderTime}
+      />
       <p className="text-sm text-muted-foreground">
         Tap a preset or type a custom habit{compact ? " — or manage all on Progress." : "."}
       </p>
@@ -118,7 +134,7 @@ export function HabitQuickAdd({
           href="/progress#habits-manage-heading"
           className="text-sm font-medium text-primary"
         >
-          Edit frequency, pause, or link to a challenge →
+          Edit days, time, pause, or link to a challenge →
         </Link>
       ) : null}
       {message ? (

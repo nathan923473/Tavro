@@ -6,6 +6,7 @@ import { ShareWithGroupCard } from "@/components/progress/share-with-group-card"
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
+import { scheduledDaysPerWeek } from "@/lib/habits/schedule";
 import { fetchChallengesForUser } from "@/lib/data/challenges";
 import {
   fetchAllMemberGoals,
@@ -136,8 +137,7 @@ export default async function ProgressPage() {
                 <Card padding="sm">
                   <p className="font-medium">{h.title}</p>
                   <p className="text-sm text-muted-foreground">
-                    {h.weeklyCompletion}/
-                    {h.frequencyType === "daily" ? 7 : h.frequencyTarget} this week
+                    {h.weeklyCompletion}/{scheduledDaysPerWeek(h)} this week
                   </p>
                 </Card>
               </li>
