@@ -12,11 +12,23 @@ type BeforeInstallPromptEvent = Event & {
 
 function detectClientEnv() {
   if (typeof window === "undefined") {
-    return { isIos: false, isStandalone: false };
+    return {
+      isIos: false,
+      isIosChrome: false,
+      isStandalone: false,
+    };
   }
   const ua = window.navigator.userAgent.toLowerCase();
+  const isIos = /iphone|ipad|ipod/.test(ua);
   return {
-    isIos: /iphone|ipad|ipod/.test(ua),
+    isIos,
+    /** iPhone Chrome/Firefox/etc. — Share sheet often omits Add to Home Screen. */
+    isIosChrome:
+      isIos &&
+      (/crios/.test(ua) ||
+        /fxios/.test(ua) ||
+        /edgios/.test(ua) ||
+        /gsa/.test(ua)),
     isStandalone:
       window.matchMedia("(display-mode: standalone)").matches ||
       ("standalone" in window.navigator &&
@@ -30,12 +42,14 @@ export function InstallPrompt() {
     useState<BeforeInstallPromptEvent | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [isIos, setIsIos] = useState(false);
+  const [isIosChrome, setIsIosChrome] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
     function syncEnv() {
       const env = detectClientEnv();
       setIsIos(env.isIos);
+      setIsIosChrome(env.isIosChrome);
       setIsStandalone(env.isStandalone);
     }
     syncEnv();
@@ -79,14 +93,35 @@ export function InstallPrompt() {
           <Download className="h-4 w-4" aria-hidden />
           Install on this device
         </Button>
+      ) : isIos && isIosChrome ? (
+        <ol className="mt-4 space-y-2 text-sm text-muted-foreground">
+          <li>
+            On iPhone, <strong className="text-foreground">Chrome and Google</strong>{" "}
+            often hide &quot;Add to Home Screen&quot; in Share. Use one of these:
+          </li>
+          <li>
+            In Chrome: tap <strong className="text-foreground">⋯</strong> (menu) →{" "}
+            <strong className="text-foreground">Add to Home Screen</strong> if you
+            see it.
+          </li>
+          <li>
+            Or copy the address, open <strong className="text-foreground">Safari</strong>
+            , paste the link, tap{" "}
+            <Share className="inline h-3.5 w-3.5 text-primary" aria-hidden /> Share,
+            scroll down → <strong className="text-foreground">Add to Home Screen</strong>.
+          </li>
+        </ol>
       ) : isIos ? (
         <ol className="mt-4 space-y-2 text-sm text-muted-foreground">
           <li className="flex items-start gap-2">
             <Share className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
-            Tap Share in Safari
+            In <strong className="text-foreground">Safari</strong>, tap Share
           </li>
-          <li>Scroll and choose &quot;Add to Home Screen&quot;</li>
-          <li>Open Tavro from your home screen</li>
+          <li>
+            Scroll the row of actions and tap{" "}
+            <strong className="text-foreground">Add to Home Screen</strong>
+          </li>
+          <li>Open Tavro from your home screen icon</li>
         </ol>
       ) : (
         <p className="mt-4 text-sm text-muted-foreground">
