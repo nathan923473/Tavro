@@ -30,7 +30,7 @@ export function InstallPrompt({ id = "add-to-home-screen" }: InstallPromptProps)
           <Smartphone className="h-5 w-5" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="font-semibold">Add to home screen</h2>
+          <h2 className="font-semibold">Add app to home screen</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Detected: {platformLabel}
           </p>

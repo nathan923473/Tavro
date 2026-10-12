@@ -29,7 +29,7 @@ export function HomeInstallBanner() {
           <Smartphone className="h-4 w-4" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">Add Tavro to your home screen</p>
+          <p className="text-sm font-semibold">Add app to home screen</p>
           <p className="mt-0.5 text-xs text-muted-foreground">{platformLabel}</p>
           {!expanded ? (
             <p className="mt-1 text-sm text-muted-foreground">
