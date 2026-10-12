@@ -50,6 +50,10 @@ export function GroupTabProgress({
   }, [group.weeklyCommitments]);
 
   const scheduledThisWeek = group.checkInBoard.filter((m) => m.scheduledToday).length;
+  const previewCount = Math.min(99, Math.max(1, Math.floor(commitTarget) || 1));
+  const commitmentPreview = commitTitle.trim()
+    ? `${commitTitle.trim()} · ${previewCount} ${previewCount === 1 ? "time" : "times"} this week`
+    : null;
 
   return (
     <div className="space-y-4">
@@ -131,7 +135,7 @@ export function GroupTabProgress({
                           run(() => updateGroupCommitmentProgressAction(c.id, c.progressCount + 1))
                         }
                       >
-                        +1 progress
+                        Log one time
                       </Button>
                       <Button
                         type="button"
@@ -152,22 +156,35 @@ export function GroupTabProgress({
           New commitment
           <input
             className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
-            placeholder="Walk 4 times this week"
+            placeholder="Walk"
             value={commitTitle}
             onChange={(e) => setCommitTitle(e.target.value)}
           />
         </label>
         <label className="block text-sm">
-          Target count
+          How many times this week?
           <input
             type="number"
             min={1}
             max={99}
             className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
             value={commitTarget}
-            onChange={(e) => setCommitTarget(Number(e.target.value))}
+            onChange={(e) => {
+              const next = Number(e.target.value);
+              if (!Number.isFinite(next)) {
+                setCommitTarget(1);
+                return;
+              }
+              setCommitTarget(Math.min(99, Math.max(1, Math.floor(next))));
+            }}
           />
         </label>
+        {commitmentPreview ? (
+          <p className="rounded-xl bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">Preview</span>
+            <span className="mt-0.5 block">{commitmentPreview}</span>
+          </p>
+        ) : null}
         <Button
           type="button"
           fullWidth
@@ -177,7 +194,7 @@ export function GroupTabProgress({
               await saveGroupWeeklyCommitmentAction({
                 groupId: group.id,
                 title: commitTitle,
-                targetCount: commitTarget,
+                targetCount: previewCount,
               });
               setCommitTitle("");
             })
