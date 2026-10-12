@@ -2,8 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { listUserGroupCandidateIds } from "@/lib/data/resolve-user-group-id";
 import { unwrapOne } from "@/lib/data/relations";
 import { formatTimeAgo, todayDateKey } from "@/lib/dates";
+import { fetchSharedCommitmentBoard } from "@/lib/data/group-shared-commitments";
 import { autoShareActiveMemberGoals } from "@/lib/groups/auto-share-member-goals";
-import { fetchSharedCommitmentBoard } from "@/lib/groups/shared-commitments";
 import { currentWeekStartKey, previousWeekStartKey } from "@/lib/groups/week";
 import { ACCOUNTABILITY_GROUP_MIN_MEMBERS } from "@/lib/copy/accountability-groups";
 import {
@@ -245,6 +245,23 @@ async function loadGroupHub(
     members = fallback.data as MemberRow[] | null;
   }
 
+  const memberNames = new Map<string, string>();
+  for (const member of members ?? []) {
+    const profile = unwrapOne(member.profile);
+    memberNames.set(member.user_id, profile?.display_name?.trim() || "Member");
+  }
+
+  const memberIdsRes = await supabase
+    .from("group_members")
+    .select("user_id")
+    .eq("group_id", groupId);
+  if (!memberIdsRes.error) {
+    for (const row of memberIdsRes.data ?? []) {
+      const id = row.user_id as string;
+      if (!memberNames.has(id)) memberNames.set(id, "Member");
+    }
+  }
+
   const today = todayDateKey();
   const weekStart = currentWeekStartKey();
 
@@ -281,33 +298,32 @@ async function loadGroupHub(
       });
   }
 
+  for (const row of boardRows) {
+    const name = row.displayName.trim();
+    if (name && (memberNames.get(row.userId) === "Member" || !memberNames.has(row.userId))) {
+      memberNames.set(row.userId, name);
+    }
+  }
+
   const weekStartKey = weekStart;
   let weeklyCommitments: AccountabilityGroup["weeklyCommitments"] = [];
   const commitmentsRes = await supabase
     .from("group_weekly_commitments")
-    .select(
-      `
-      id, user_id, title, target_count, progress_count,
-      profile:profiles!group_weekly_commitments_user_id_fkey ( display_name )
-    `,
-    )
+    .select("id, user_id, title, target_count, progress_count")
     .eq("group_id", groupId)
     .eq("week_start", weekStartKey)
     .order("sort_order", { ascending: true });
 
   if (!commitmentsRes.error) {
-    weeklyCommitments = (commitmentsRes.data ?? []).map((c) => {
-      const profile = unwrapOne(c.profile);
-      return {
-        id: c.id,
-        userId: c.user_id,
-        displayName: profile?.display_name ?? "Member",
-        title: c.title,
-        targetCount: c.target_count,
-        progressCount: c.progress_count,
-        isOwn: c.user_id === userId,
-      };
-    });
+    weeklyCommitments = (commitmentsRes.data ?? []).map((c) => ({
+      id: c.id,
+      userId: c.user_id,
+      displayName: memberNames.get(c.user_id) ?? "Member",
+      title: c.title,
+      targetCount: c.target_count,
+      progressCount: c.progress_count,
+      isOwn: c.user_id === userId,
+    }));
   }
 
   const weekCheckInCounts = new Map<string, number>();
@@ -669,11 +685,6 @@ async function loadGroupHub(
   const focusCustomLabel =
     typeof groupRow.focus_custom_label === "string" ? groupRow.focus_custom_label : "";
 
-  const memberNames = new Map<string, string>();
-  for (const member of members ?? []) {
-    const profile = unwrapOne(member.profile);
-    memberNames.set(member.user_id, profile?.display_name?.trim() || "Member");
-  }
   await autoShareActiveMemberGoals(supabase, userId, groupId);
   const sharedBoard = await fetchSharedCommitmentBoard(
     supabase,
