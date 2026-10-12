@@ -6,6 +6,7 @@ import {
 import { MILESTONE_DEFINITIONS } from "@/lib/progress/milestones";
 import { buildWeekDayIndicators } from "@/lib/habits/schedule";
 import { todayDateKey } from "@/lib/dates";
+import { ALL_DAYS_MASK, normalizeScheduleMask } from "@/lib/habits/weekdays";
 import type {
   ConsistencySnapshot,
   DailyCheckInMood,
@@ -22,6 +23,8 @@ type GoalRow = {
   template_key?: string | null;
   frequency_type?: string | null;
   frequency_target?: number | null;
+  schedule_days_mask?: number | null;
+  reminder_time?: string | null;
   paused_at?: string | null;
   linked_challenge_id?: string | null;
 };
@@ -50,6 +53,10 @@ function mapGoalRow(
     templateKey: g.template_key ?? null,
     frequencyType,
     frequencyTarget,
+    scheduleDaysMask: normalizeScheduleMask(
+      g.schedule_days_mask ?? ALL_DAYS_MASK,
+    ),
+    reminderTimeLocal: g.reminder_time ?? null,
     paused: Boolean(g.paused_at),
     linkedChallengeId: g.linked_challenge_id ?? null,
   };
@@ -57,7 +64,7 @@ function mapGoalRow(
 
 async function fetchGoalRows(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
   const fullSelect =
-    "id, title, category, template_key, frequency_type, frequency_target, paused_at, linked_challenge_id";
+    "id, title, category, template_key, frequency_type, frequency_target, schedule_days_mask, reminder_time, paused_at, linked_challenge_id";
   const legacySelect = "id, title, category";
 
   let { data, error } = await supabase
@@ -67,7 +74,12 @@ async function fetchGoalRows(supabase: Awaited<ReturnType<typeof createClient>>,
     .eq("active", true)
     .order("sort_order");
 
-  if (error && /template_key|frequency_|paused_at|linked_challenge|schema cache/i.test(error.message)) {
+  if (
+    error &&
+    /template_key|frequency_|schedule_days|reminder_time|paused_at|linked_challenge|schema cache/i.test(
+      error.message,
+    )
+  ) {
     const legacy = await supabase
       .from("member_goals")
       .select(legacySelect)

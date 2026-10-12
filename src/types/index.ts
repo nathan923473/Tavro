@@ -16,6 +16,10 @@ export type PersonalGoal = {
   templateKey: string | null;
   frequencyType: HabitFrequencyType;
   frequencyTarget: number;
+  /** Bit 0 = Mon … bit 6 = Sun; 127 = every day. */
+  scheduleDaysMask: number;
+  /** Local time hint HH:MM:SS from DB, optional. */
+  reminderTimeLocal: string | null;
   paused: boolean;
   linkedChallengeId: string | null;
 };

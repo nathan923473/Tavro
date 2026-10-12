@@ -354,6 +354,8 @@ export async function toggleGoalAction(goalId: string) {
       frequencyType:
         g.frequency_type === "times_per_week" ? ("times_per_week" as const) : ("daily" as const),
       frequencyTarget: g.frequency_target ?? 7,
+      scheduleDaysMask: 127,
+      reminderTimeLocal: null,
       paused: Boolean(g.paused_at),
       linkedChallengeId: null,
     }));

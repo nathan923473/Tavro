@@ -5,6 +5,7 @@ import { HabitQuickAdd } from "@/components/progress/habit-quick-add";
 import { Card } from "@/components/ui/card";
 import type { ChallengeParticipantHub } from "@/lib/data/challenge-participant-hub";
 import { habitsScheduledToday } from "@/lib/habits/schedule";
+import { formatReminderTimeLocal } from "@/lib/habits/weekdays";
 import { habitsCompletedToday } from "@/lib/progress/consistency";
 import type { AccountabilityGroup, PersonalGoal } from "@/types";
 import { Check, Circle } from "lucide-react";
@@ -13,7 +14,14 @@ import { useRouter } from "next/navigation";
 import { useMemo, useTransition } from "react";
 
 type GoalRow =
-  | { kind: "habit"; id: string; label: string; done: boolean; goalId: string }
+  | {
+      kind: "habit";
+      id: string;
+      label: string;
+      timeHint: string | null;
+      done: boolean;
+      goalId: string;
+    }
   | { kind: "challenge"; id: string; label: string; done: boolean; href: string }
   | { kind: "group"; id: string; label: string; done: boolean; href: string };
 
@@ -44,6 +52,7 @@ export function TodaysGoals({
         kind: "habit",
         id: `habit-${g.id}`,
         label: g.title,
+        timeHint: formatReminderTimeLocal(g.reminderTimeLocal),
         done: g.completedToday,
         goalId: g.id,
       });
@@ -163,7 +172,14 @@ export function TodaysGoals({
                     ) : (
                       <Circle className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
                     )}
-                    <span className="flex-1 text-sm font-medium">{row.label}</span>
+                    <span className="flex-1 text-sm font-medium">
+                      {row.label}
+                      {row.timeHint ? (
+                        <span className="block text-xs font-normal text-muted-foreground">
+                          {row.timeHint}
+                        </span>
+                      ) : null}
+                    </span>
                   </button>
                 ) : (
                   <Link

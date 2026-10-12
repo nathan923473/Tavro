@@ -2,6 +2,12 @@
 
 import { requireUserId } from "@/lib/auth/require-user-id";
 import { presetByKey, CUSTOM_HABIT_PRESET_KEY } from "@/lib/habits/presets";
+import {
+  ALL_DAYS_MASK,
+  normalizeScheduleMask,
+  popcountDays,
+  reminderTimeForDb,
+} from "@/lib/habits/weekdays";
 import type { GoalCategory, HabitFrequencyType } from "@/types";
 import { revalidatePath } from "next/cache";
 
@@ -17,6 +23,8 @@ export async function createHabitAction(input: {
   category?: GoalCategory;
   frequencyType?: HabitFrequencyType;
   frequencyTarget?: number;
+  scheduleDaysMask?: number;
+  reminderTimeLocal?: string | null;
 }) {
   const { supabase, userId } = await requireUserId();
   const title = input.title.trim();
@@ -27,6 +35,13 @@ export async function createHabitAction(input: {
     input.frequencyType ?? preset?.frequencyType ?? "daily";
   const frequencyTarget =
     input.frequencyTarget ?? preset?.frequencyTarget ?? (frequencyType === "daily" ? 7 : 3);
+  const scheduleDaysMask = normalizeScheduleMask(
+    input.scheduleDaysMask ?? ALL_DAYS_MASK,
+  );
+  if (popcountDays(scheduleDaysMask) < 1) {
+    throw new Error("Pick at least one day for this habit.");
+  }
+  const reminderTime = reminderTimeForDb(input.reminderTimeLocal ?? "");
 
   let activeCount = 0;
   const countRes = await supabase
@@ -58,11 +73,13 @@ export async function createHabitAction(input: {
     template_key: input.templateKey ?? CUSTOM_HABIT_PRESET_KEY,
     frequency_type: frequencyType,
     frequency_target: Math.min(7, Math.max(1, frequencyTarget)),
+    schedule_days_mask: scheduleDaysMask,
+    ...(reminderTime ? { reminder_time: reminderTime } : {}),
   };
 
   const { error } = await supabase.from("member_goals").insert(row);
   if (error) {
-    if (/template_key|frequency_|schema cache/i.test(error.message)) {
+    if (/template_key|frequency_|schedule_days|reminder_time|schema cache/i.test(error.message)) {
       const { error: legacyErr } = await supabase.from("member_goals").insert({
         user_id: userId,
         title: row.title,
@@ -84,6 +101,8 @@ export async function updateHabitAction(
     title?: string;
     frequencyType?: HabitFrequencyType;
     frequencyTarget?: number;
+    scheduleDaysMask?: number;
+    reminderTimeLocal?: string | null;
   },
 ) {
   const { supabase, userId } = await requireUserId();
@@ -92,6 +111,17 @@ export async function updateHabitAction(
   if (input.frequencyType !== undefined) patch.frequency_type = input.frequencyType;
   if (input.frequencyTarget !== undefined) {
     patch.frequency_target = Math.min(7, Math.max(1, input.frequencyTarget));
+  }
+  if (input.scheduleDaysMask !== undefined) {
+    const mask = normalizeScheduleMask(input.scheduleDaysMask);
+    if (popcountDays(mask) < 1) throw new Error("Pick at least one day for this habit.");
+    patch.schedule_days_mask = mask;
+  }
+  if (input.reminderTimeLocal !== undefined) {
+    const t = input.reminderTimeLocal
+      ? reminderTimeForDb(input.reminderTimeLocal)
+      : null;
+    patch.reminder_time = t;
   }
 
   const { error } = await supabase

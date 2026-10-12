@@ -1,10 +1,24 @@
+import {
+  dayIndexFromDateKey,
+  isScheduledOnDayIndex,
+  normalizeScheduleMask,
+  todayDayIndex,
+} from "@/lib/habits/weekdays";
 import type { PersonalGoal } from "@/types";
+
+function isHabitScheduledOnDayIndex(goal: PersonalGoal, dayIndex: number): boolean {
+  if (goal.paused) return false;
+  const mask = normalizeScheduleMask(goal.scheduleDaysMask);
+  if (!isScheduledOnDayIndex(mask, dayIndex)) return false;
+  if (goal.frequencyType === "times_per_week") {
+    return goal.weeklyCompletion < goal.frequencyTarget;
+  }
+  return true;
+}
 
 /** Whether this habit counts toward today's plan (not a weekly rest day). */
 export function isHabitScheduledToday(goal: PersonalGoal): boolean {
-  if (goal.paused) return false;
-  if (goal.frequencyType === "daily") return true;
-  return goal.weeklyCompletion < goal.frequencyTarget;
+  return isHabitScheduledOnDayIndex(goal, todayDayIndex());
 }
 
 export function habitsScheduledToday(goals: PersonalGoal[]): PersonalGoal[] {
@@ -17,6 +31,9 @@ export function isHabitScheduledOnDate(
   dateKey: string,
   weekCompletionsByGoal: Map<string, Set<string>>,
 ): boolean {
+  const dayIndex = dayIndexFromDateKey(dateKey);
+  const mask = normalizeScheduleMask(goal.scheduleDaysMask);
+  if (!isScheduledOnDayIndex(mask, dayIndex)) return false;
   if (goal.paused) return false;
   if (goal.frequencyType === "daily") return true;
 

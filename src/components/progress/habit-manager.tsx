@@ -9,11 +9,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { HabitQuickAdd } from "@/components/progress/habit-quick-add";
+import { HabitSchedulePicker } from "@/components/progress/habit-schedule-picker";
+import {
+  formatReminderTimeLocal,
+  formatScheduleDaysLabel,
+  popcountDays,
+  reminderTimeForInput,
+} from "@/lib/habits/weekdays";
 import type { Challenge } from "@/types";
 import type { PersonalGoal } from "@/types";
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 
 export function HabitManager({
   habits,
@@ -24,6 +31,17 @@ export function HabitManager({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [editingScheduleId, setEditingScheduleId] = useState<string | null>(
+    null,
+  );
+  const [editMask, setEditMask] = useState(127);
+  const [editTime, setEditTime] = useState("");
+
+  function openScheduleEdit(habit: PersonalGoal) {
+    setEditingScheduleId(habit.id);
+    setEditMask(habit.scheduleDaysMask);
+    setEditTime(reminderTimeForInput(habit.reminderTimeLocal));
+  }
 
   return (
     <section aria-labelledby="habits-manage-heading">
@@ -46,11 +64,18 @@ export function HabitManager({
                 <div>
                   <p className="font-medium">{habit.title}</p>
                   <p className="text-xs text-muted-foreground">
-                    {habit.frequencyType === "daily"
-                      ? "Every day"
-                      : `${habit.frequencyTarget}× per week`}{" "}
+                    {formatScheduleDaysLabel(habit.scheduleDaysMask)}
+                    {habit.frequencyType === "times_per_week"
+                      ? ` · ${habit.frequencyTarget}×/week`
+                      : null}{" "}
                     · {habit.weeklyCompletion}/
-                    {habit.frequencyType === "daily" ? 7 : habit.frequencyTarget} this week
+                    {habit.frequencyType === "times_per_week"
+                      ? habit.frequencyTarget
+                      : popcountDays(habit.scheduleDaysMask)}{" "}
+                    this week
+                    {habit.reminderTimeLocal
+                      ? ` · ${formatReminderTimeLocal(habit.reminderTimeLocal)}`
+                      : ""}
                     {habit.paused ? " · paused" : ""}
                   </p>
                 </div>
@@ -102,7 +127,48 @@ export function HabitManager({
                   <option value="daily">Every day</option>
                   <option value="times_per_week">Times per week</option>
                 </select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-9 text-xs"
+                  disabled={pending}
+                  onClick={() =>
+                    editingScheduleId === habit.id
+                      ? setEditingScheduleId(null)
+                      : openScheduleEdit(habit)
+                  }
+                >
+                  {editingScheduleId === habit.id ? "Close" : "Days & time"}
+                </Button>
               </div>
+              {editingScheduleId === habit.id ? (
+                <div className="rounded-xl border border-border/80 bg-muted/20 p-3">
+                  <HabitSchedulePicker
+                    compact
+                    scheduleDaysMask={editMask}
+                    onScheduleDaysMaskChange={setEditMask}
+                    reminderTime={editTime}
+                    onReminderTimeChange={setEditTime}
+                  />
+                  <Button
+                    type="button"
+                    className="mt-3 min-h-9 w-full text-xs"
+                    disabled={pending}
+                    onClick={() =>
+                      startTransition(async () => {
+                        await updateHabitAction(habit.id, {
+                          scheduleDaysMask: editMask,
+                          reminderTimeLocal: editTime || null,
+                        });
+                        setEditingScheduleId(null);
+                        router.refresh();
+                      })
+                    }
+                  >
+                    Save days & time
+                  </Button>
+                </div>
+              ) : null}
               {joinedChallenges.length > 0 ? (
                 <label className="block text-xs">
                   <span className="text-muted-foreground">Link to challenge (optional)</span>

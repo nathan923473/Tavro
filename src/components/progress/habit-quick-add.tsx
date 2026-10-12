@@ -3,6 +3,10 @@
 import { createHabitAction } from "@/app/(app)/progress/actions";
 import { Button } from "@/components/ui/button";
 import {
+  HabitSchedulePicker,
+  defaultHabitScheduleMask,
+} from "@/components/progress/habit-schedule-picker";
+import {
   compactHabitPresets,
   CUSTOM_HABIT_PRESET_KEY,
   HABIT_PRESET_GROUP_LABELS,
@@ -10,6 +14,7 @@ import {
   presetsForGroup,
   type HabitPreset,
 } from "@/lib/habits/presets";
+import { popcountDays } from "@/lib/habits/weekdays";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -24,18 +29,18 @@ type HabitQuickAddProps = {
 function PresetChip({
   preset,
   pending,
-  onAdd,
+  onPick,
 }: {
   preset: HabitPreset;
   pending: boolean;
-  onAdd: (title: string, templateKey: string) => void;
+  onPick: (title: string, templateKey: string) => void;
 }) {
   return (
     <button
       type="button"
       disabled={pending}
       className="rounded-full border border-border px-3 py-1.5 text-left text-xs font-medium"
-      onClick={() => onAdd(preset.label, preset.key)}
+      onClick={() => onPick(preset.label, preset.key)}
     >
       + {preset.label}
     </button>
@@ -49,14 +54,40 @@ export function HabitQuickAdd({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [customTitle, setCustomTitle] = useState("");
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftTemplateKey, setDraftTemplateKey] = useState(CUSTOM_HABIT_PRESET_KEY);
+  const [scheduleDaysMask, setScheduleDaysMask] = useState(defaultHabitScheduleMask);
+  const [reminderTime, setReminderTime] = useState("");
   const [message, setMessage] = useState<string | null>(null);
 
-  function addHabit(title: string, templateKey: string) {
+  const canSubmit =
+    draftTitle.trim().length > 0 && popcountDays(scheduleDaysMask) >= 1;
+
+  function startDraft(title: string, templateKey: string) {
+    setDraftTitle(title);
+    setDraftTemplateKey(templateKey);
+    setMessage(null);
+    if (templateKey === CUSTOM_HABIT_PRESET_KEY) {
+      setCustomTitle(title);
+    }
+  }
+
+  function submitHabit() {
+    if (!canSubmit) return;
     startTransition(async () => {
       try {
         setMessage(null);
-        await createHabitAction({ title, templateKey });
+        await createHabitAction({
+          title: draftTitle.trim(),
+          templateKey: draftTemplateKey,
+          scheduleDaysMask,
+          reminderTimeLocal: reminderTime || null,
+        });
         setCustomTitle("");
+        setDraftTitle("");
+        setDraftTemplateKey(CUSTOM_HABIT_PRESET_KEY);
+        setScheduleDaysMask(defaultHabitScheduleMask);
+        setReminderTime("");
         router.refresh();
       } catch (e) {
         setMessage(e instanceof Error ? e.message : "Could not add habit.");
@@ -67,12 +98,18 @@ export function HabitQuickAdd({
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        Tap a preset or type a custom habit{compact ? " — or manage all on Progress." : "."}
+        Tap a preset or type a custom habit, then choose days and an optional
+        time{compact ? " — or manage all on Progress." : "."}
       </p>
       {compact ? (
         <div className="flex flex-wrap gap-2">
           {compactHabitPresets().map((preset) => (
-            <PresetChip key={preset.key} preset={preset} pending={pending} onAdd={addHabit} />
+            <PresetChip
+              key={preset.key}
+              preset={preset}
+              pending={pending}
+              onPick={startDraft}
+            />
           ))}
         </div>
       ) : (
@@ -84,7 +121,12 @@ export function HabitQuickAdd({
               </p>
               <div className="flex flex-wrap gap-2">
                 {presetsForGroup(group).map((preset) => (
-                  <PresetChip key={preset.key} preset={preset} pending={pending} onAdd={addHabit} />
+                  <PresetChip
+                    key={preset.key}
+                    preset={preset}
+                    pending={pending}
+                    onPick={startDraft}
+                  />
                 ))}
               </div>
             </div>
@@ -94,25 +136,48 @@ export function HabitQuickAdd({
       <div className="flex gap-2">
         <input
           value={customTitle}
-          onChange={(e) => setCustomTitle(e.target.value)}
+          onChange={(e) => {
+            setCustomTitle(e.target.value);
+            startDraft(e.target.value, CUSTOM_HABIT_PRESET_KEY);
+          }}
           placeholder="Custom habit"
           className="min-h-11 flex-1 rounded-xl border border-border px-3 py-2 text-sm"
           onKeyDown={(e) => {
-            if (e.key === "Enter" && customTitle.trim()) {
-              addHabit(customTitle.trim(), CUSTOM_HABIT_PRESET_KEY);
-            }
+            if (e.key === "Enter" && canSubmit) submitHabit();
           }}
         />
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={pending || !customTitle.trim()}
-          onClick={() => addHabit(customTitle.trim(), CUSTOM_HABIT_PRESET_KEY)}
-        >
-          <Plus className="h-4 w-4" aria-hidden />
-          Add
-        </Button>
       </div>
+
+      {draftTitle.trim() ? (
+        <div className="rounded-2xl border border-border/80 bg-muted/30 p-3">
+          <p className="text-sm font-medium">
+            Add: <span className="text-primary">{draftTitle.trim()}</span>
+          </p>
+          <HabitSchedulePicker
+            className="mt-3"
+            compact={compact}
+            scheduleDaysMask={scheduleDaysMask}
+            onScheduleDaysMaskChange={setScheduleDaysMask}
+            reminderTime={reminderTime}
+            onReminderTimeChange={setReminderTime}
+          />
+          <Button
+            type="button"
+            className="mt-3"
+            fullWidth
+            disabled={pending || !canSubmit}
+            onClick={submitHabit}
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+            Save habit
+          </Button>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          Pick a preset or type a name to set days and time.
+        </p>
+      )}
+
       {showProgressLink ? (
         <Link
           href="/progress#habits-manage-heading"
