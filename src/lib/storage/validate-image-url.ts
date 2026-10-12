@@ -1,9 +1,7 @@
-const PRESET = /^preset:[1-6]$/;
-
 export function isAllowedProfileAvatarUrl(url: string, supabaseUrl: string) {
   const trimmed = url.trim();
   if (!trimmed || trimmed.length > 2048) return false;
-  if (PRESET.test(trimmed)) return true;
+  if (trimmed.startsWith("preset:")) return false;
   try {
     const parsed = new URL(trimmed);
     if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;

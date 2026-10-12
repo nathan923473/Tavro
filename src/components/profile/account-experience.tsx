@@ -1,4 +1,3 @@
-import { ProfileAvatarEditor } from "@/components/profile/profile-avatar-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -62,20 +61,6 @@ export async function AccountExperience() {
             One login for member and creator tools. Permissions enforced on the
             server and in Supabase RLS.
           </p>
-        </div>
-      </div>
-
-      <div className="mt-4 rounded-xl border-2 border-primary/25 bg-primary/5 p-4">
-        <h3 className="text-base font-semibold">Profile picture</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Upload a photo or pick a style below.
-        </p>
-        <div className="mt-3">
-          <ProfileAvatarEditor
-            userId={user.id}
-            displayName={profile?.displayName ?? null}
-            avatarUrl={profile?.avatarUrl ?? null}
-          />
         </div>
       </div>
 
