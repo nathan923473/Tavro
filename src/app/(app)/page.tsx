@@ -1,4 +1,5 @@
 import { HomeAccountabilityGroups } from "@/components/dashboard/home-accountability-groups";
+import { HomeInstallBanner } from "@/components/pwa/home-install-banner";
 import { HomeChallengesSection } from "@/components/dashboard/home-challenges-section";
 import { HomeDailyCheckIn } from "@/components/dashboard/home-daily-check-in";
 import { HomeCreatorStudioShortcut } from "@/components/dashboard/home-creator-studio-shortcut";
@@ -113,6 +114,8 @@ export default async function HomePage() {
           primaryAction={primaryAction}
           loggedIn={Boolean(userId)}
         />
+
+        <HomeInstallBanner />
 
         {profile?.role === "creator" || profile?.role === "admin" ? (
           <HomeCreatorStudioShortcut />

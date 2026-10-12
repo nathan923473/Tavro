@@ -14,7 +14,7 @@ import { ProfilePhotoCard } from "@/components/profile/profile-photo-card";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { AdminSupabaseDiagnostics } from "@/components/admin/admin-supabase-diagnostics";
 import { DeleteAccountSection } from "@/components/profile/delete-account-section";
-import { InstallPrompt } from "@/components/pwa/install-prompt";
+import { AddToHomeScreenCard } from "@/components/pwa/add-to-home-screen-card";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchMemberGoals } from "@/lib/data/member";
 import { userReferralPath } from "@/lib/site-url";
@@ -148,7 +148,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
 
         {user ? <TimezoneSettingsCard timezone={timezone} auState={auState} /> : null}
         <NotificationPreferencesCard />
-        <InstallPrompt />
+        <AddToHomeScreenCard />
 
         <Card>
           <h2 className="font-semibold">Privacy</h2>
