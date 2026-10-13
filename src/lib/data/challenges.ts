@@ -113,6 +113,8 @@ export async function fetchChallengesForUser(userId: string | null): Promise<{
     return { mine: [], discover: [] };
   }
 
+  const publicRows = rows.filter((r) => r.visibility === "public");
+
   let joinedIds = new Set<string>();
   const progress: Record<string, number> = {};
 
@@ -127,9 +129,9 @@ export async function fetchChallengesForUser(userId: string | null): Promise<{
     }
   }
 
-  const galleryMap = await fetchChallengeGalleryMap(rows.map((r) => r.id));
+  const galleryMap = await fetchChallengeGalleryMap(publicRows.map((r) => r.id));
 
-  const all = rows.map((r) =>
+  const all = publicRows.map((r) =>
     mapChallenge(
       r as ChallengeRow,
       userId,
@@ -187,6 +189,7 @@ export async function fetchJoinedChallengesForHome(
     .from("challenges")
     .select(select)
     .in("id", ids)
+    .eq("visibility", "public")
     .order("start_date", { ascending: false });
 
   if (error || !rows) {
@@ -224,7 +227,7 @@ export async function fetchChallengeByInviteSlug(
     .eq("invite_slug", slug)
     .maybeSingle();
 
-  if (!row) return null;
+  if (!row || row.visibility !== "public") return null;
 
   let joinedIds = new Set<string>();
   const progress: Record<string, number> = {};

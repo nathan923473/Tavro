@@ -57,13 +57,6 @@ export default async function ChallengesPage() {
           joinedChallengeIds={mine.map((c) => c.id)}
         />
 
-        <Link
-          href="/challenges/create"
-          className="block rounded-2xl border border-dashed border-border bg-surface px-4 py-3 text-center text-sm font-semibold text-primary"
-        >
-          + Create private invite-only challenge
-        </Link>
-
         {profile?.role === "creator" || profile?.role === "admin" ? (
           <Link
             href="/studio/challenges"

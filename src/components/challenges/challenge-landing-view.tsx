@@ -103,8 +103,8 @@ function ChallengeLandingBody({
     return (
       <Card>
         <p className="text-sm text-muted-foreground">
-          This challenge link is not available publicly. If you were invited privately, ask the
-          host for an updated link.
+          This challenge link is not available. Explore free creator challenges from the
+          Challenges tab.
         </p>
       </Card>
     );

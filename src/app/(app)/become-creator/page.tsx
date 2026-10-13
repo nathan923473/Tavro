@@ -70,11 +70,8 @@ export default async function BecomeCreatorPage({
 
         <Card className="border-dashed">
           <p className="text-sm text-muted-foreground">
-            Members can always create{" "}
-            <Link href="/challenges/create" className="font-medium text-primary">
-              private invite-only challenges
-            </Link>{" "}
-            without creator approval.
+            After approval, you publish free public challenges from Creator Studio — the only way
+            to host a challenge on Tavro.
           </p>
         </Card>
       </div>
