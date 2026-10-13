@@ -1,6 +1,8 @@
+import { StudioInviteCreatorsPanel } from "@/components/creator/studio/studio-invite-creators-panel";
 import { StudioLayout } from "@/components/creator/studio/studio-layout";
 import { Card } from "@/components/ui/card";
 import { requireApprovedCreator } from "@/lib/auth/profile";
+import { fetchCreatorReferralApplicationCount } from "@/lib/data/creator-acquisition";
 import { fetchOwnerCommunity } from "@/lib/data/communities";
 import Link from "next/link";
 import { Bell, Link2, Megaphone, UserCircle } from "lucide-react";
@@ -8,8 +10,10 @@ import { Bell, Link2, Megaphone, UserCircle } from "lucide-react";
 export const metadata = { title: "Creator profile & settings" };
 
 export default async function StudioSettingsPage() {
-  const { user } = await requireApprovedCreator();
+  const { user, profile } = await requireApprovedCreator();
   const community = await fetchOwnerCommunity(user.id);
+  const referralApplicationCount = await fetchCreatorReferralApplicationCount(user.id);
+  const referralCode = profile.referralCode ?? "";
 
   const links = [
     {
@@ -53,6 +57,13 @@ export default async function StudioSettingsPage() {
         You cannot change creator approval here. Contact support if your application
         status needs review.
       </Card>
+
+      {referralCode ? (
+        <StudioInviteCreatorsPanel
+          referralCode={referralCode}
+          referralApplicationCount={referralApplicationCount}
+        />
+      ) : null}
 
       <ul className="space-y-2">
         {links.map(({ href, label, description, icon: Icon }) => (

@@ -32,12 +32,11 @@ export function UserAvatar({
       .toUpperCase() || "?";
 
   const [imageFailed, setImageFailed] = useState(false);
-  const trimmedUrl = avatarUrl?.trim() || null;
-  const photoUrl =
-    trimmedUrl && !trimmedUrl.startsWith("preset:") ? trimmedUrl : null;
+  const trimmedUrl =
+    avatarUrl?.trim() && !avatarUrl.startsWith("preset:") ? avatarUrl.trim() : null;
   const sizeClass = sizeMap[size];
 
-  if (photoUrl && !imageFailed) {
+  if (trimmedUrl && !imageFailed) {
     return (
       <div
         className={cn(
@@ -47,7 +46,7 @@ export function UserAvatar({
         )}
       >
         <Image
-          src={photoUrl}
+          src={trimmedUrl}
           alt=""
           fill
           className="object-cover"

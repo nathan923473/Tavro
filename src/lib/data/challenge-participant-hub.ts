@@ -172,14 +172,14 @@ export async function fetchChallengeParticipantHub(
   const fullSelect = `
       id, title, description, short_description, goal_description, category,
       start_date, end_date, start_at, end_at, challenge_timezone, schedule_mode,
-      invite_slug, cover_url, created_by, community_id,
+      invite_slug, cover_url, created_by, community_id, visibility,
       creator:profiles!challenges_created_by_fkey ( display_name ),
       community:creator_communities ( slug, community_name, avatar_url, owner_id ),
       participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count )
     `;
   const legacySelect = `
       id, title, description, short_description, goal_description, category,
-      start_date, end_date, invite_slug, cover_url, created_by, community_id,
+      start_date, end_date, invite_slug, cover_url, created_by, community_id, visibility,
       creator:profiles!challenges_created_by_fkey ( display_name ),
       community:creator_communities ( slug, community_name, avatar_url, owner_id ),
       participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count )
@@ -193,6 +193,7 @@ export async function fetchChallengeParticipantHub(
     ch = first.data as HubChallengeRow | null;
   }
   if (!ch) return null;
+  if ((ch as { visibility?: string }).visibility === "private") return null;
 
   const startDate = ch.start_date;
   const endDate = ch.end_date;
@@ -398,6 +399,13 @@ export async function fetchChallengeParticipantHub(
     creatorDisplayName,
     today,
   );
+
+  if (phase === "completed" && (membership?.progress_percent ?? 0) >= 50) {
+    await supabase.from("member_milestones").upsert(
+      { user_id: userId, milestone_key: "first_challenge" },
+      { onConflict: "user_id,milestone_key", ignoreDuplicates: true },
+    );
+  }
 
   let completionOffer: ChallengeParticipantHub["completionOffer"] = null;
   if (phase === "completed" && ch.community_id) {

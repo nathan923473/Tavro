@@ -16,14 +16,46 @@ export type PersonalGoal = {
   templateKey: string | null;
   frequencyType: HabitFrequencyType;
   frequencyTarget: number;
-  /** Bit 0 = Monday … bit 6 = Sunday. 127 = every day. */
+  /** Bit 0 = Mon … bit 6 = Sun; 127 = every day. */
   scheduleDaysMask: number;
-  /** `HH:MM`, or null when the habit has no set time. */
-  reminderTime: string | null;
+  /** Local time hint HH:MM:SS from DB, optional. */
+  reminderTimeLocal: string | null;
   paused: boolean;
   linkedChallengeId: string | null;
-  /** Accountability group this habit is shared with. Null stays private. */
+  /** When set, this habit is visible to that accountability group. */
   sharedGroupId: string | null;
+};
+
+export type SharedCommitmentStatus =
+  | "completed"
+  | "pending"
+  | "missed"
+  | "not_scheduled"
+  | "paused";
+
+export type GroupSharedCommitment = {
+  shareId: string;
+  memberGoalId: string;
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  title: string;
+  frequencyLabel: string;
+  todayStatus: SharedCommitmentStatus;
+  celebrationCount: number;
+  viewerCelebrated: boolean;
+  isOwn: boolean;
+};
+
+export type GroupWeeklyReflection = {
+  id: string;
+  userId: string;
+  displayName: string;
+  weekStart: string;
+  wentWell: string;
+  struggledWith: string;
+  focusNext: string;
+  isOwn: boolean;
 };
 
 export type DailyCheckInMood = "rough" | "okay" | "good" | "great";
@@ -67,13 +99,20 @@ export type GroupMember = {
 
 export type GroupJoinMode = "approval" | "auto";
 
+export type GroupJoinRequestSource = "invite" | "discovery";
+
 export type GroupJoinRequest = {
   id: string;
   userId: string;
   displayName: string;
   avatarUrl: string | null;
   createdAt: string;
+  requestSource?: GroupJoinRequestSource;
 };
+
+export type GroupVisibility = "private" | "discoverable";
+
+export type GroupCheckInFrequency = "daily" | "weekdays" | "weekly" | "flexible";
 
 export type GroupFocusType =
   | "walking"
@@ -85,28 +124,6 @@ export type GroupFocusType =
   | "custom";
 
 export type GroupDailyCheckInStatus = "completed" | "partial" | "missed" | "rest";
-
-export type GroupSharedCommitment = {
-  shareId: string;
-  goalId: string;
-  userId: string;
-  displayName: string;
-  title: string;
-  targetCount: number;
-  progressCount: number;
-  completedToday: boolean;
-  paused: boolean;
-  isOwn: boolean;
-  celebratedByViewer: boolean;
-  celebrationCount: number;
-};
-
-export type GroupSharedReflection = {
-  userId: string;
-  displayName: string;
-  body: string;
-  isOwn: boolean;
-};
 
 export type GroupWeeklyCommitment = {
   id: string;
@@ -212,6 +229,10 @@ export type AccountabilityGroup = {
   inviteCode: string;
   joinMode: GroupJoinMode;
   invitesEnabled: boolean;
+  visibility: GroupVisibility;
+  discoveryPaused: boolean;
+  checkInFrequency: GroupCheckInFrequency;
+  discoverySummary: string;
   ownerId: string;
   isOwner: boolean;
   pendingRequests: GroupJoinRequest[];
@@ -226,7 +247,7 @@ export type AccountabilityGroup = {
   recentCheckIns: GroupRecentCheckIn[];
   viewerScheduledToday: boolean;
   sharedCommitments: GroupSharedCommitment[];
-  sharedReflections: GroupSharedReflection[];
+  weeklyReflections: GroupWeeklyReflection[];
 };
 
 export type GroupActivity = GroupFeedItem;

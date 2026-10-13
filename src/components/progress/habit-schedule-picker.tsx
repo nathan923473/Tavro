@@ -1,91 +1,101 @@
 "use client";
 
 import {
-  ALL_WEEKDAYS_MASK,
-  WEEKDAY_OPTIONS,
-  habitDaysLabel,
-} from "@/lib/habits/schedule";
+  ALL_DAYS_MASK,
+  formatReminderTimeLocal,
+  normalizeScheduleMask,
+  selectedDaysFromMask,
+  toggleDayInMask,
+  WEEKDAY_SHORT,
+} from "@/lib/habits/weekdays";
 import { cn } from "@/lib/cn";
 
 type HabitSchedulePickerProps = {
-  daysMask: number;
+  scheduleDaysMask: number;
+  onScheduleDaysMaskChange: (mask: number) => void;
   reminderTime: string;
-  onDaysMaskChange: (mask: number) => void;
-  onReminderTimeChange: (value: string) => void;
-  disabled?: boolean;
+  onReminderTimeChange: (hhmm: string) => void;
+  compact?: boolean;
+  className?: string;
 };
 
 export function HabitSchedulePicker({
-  daysMask,
+  scheduleDaysMask,
+  onScheduleDaysMaskChange,
   reminderTime,
-  onDaysMaskChange,
   onReminderTimeChange,
-  disabled = false,
+  compact = false,
+  className,
 }: HabitSchedulePickerProps) {
-  const mask = daysMask >= 1 && daysMask <= ALL_WEEKDAYS_MASK ? daysMask : ALL_WEEKDAYS_MASK;
-
-  function toggleDay(bit: number) {
-    const next = mask & bit ? mask & ~bit : mask | bit;
-    if (next < 1) return;
-    onDaysMaskChange(next);
-  }
+  const mask = normalizeScheduleMask(scheduleDaysMask);
+  const selected = selectedDaysFromMask(mask);
 
   return (
-    <div className="space-y-2">
+    <div className={cn("space-y-3", className)}>
       <div>
-        <p className="mb-1.5 text-sm font-medium">Days</p>
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Days">
-          {WEEKDAY_OPTIONS.map((day) => {
-            const selected = (mask & day.bit) !== 0;
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Which days?
+        </p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {WEEKDAY_SHORT.map((label, index) => {
+            const on = selected[index];
             return (
               <button
-                key={day.full}
+                key={label}
                 type="button"
-                disabled={disabled}
-                aria-pressed={selected}
-                aria-label={day.full}
+                aria-pressed={on}
                 className={cn(
-                  "min-h-11 min-w-11 rounded-full px-2 text-xs font-semibold disabled:opacity-50",
-                  selected
-                    ? "bg-primary text-primary-foreground"
-                    : "border border-border text-foreground",
+                  "min-h-9 min-w-[2.75rem] rounded-xl border px-2 text-xs font-semibold transition-colors",
+                  on
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-surface text-muted-foreground",
                 )}
-                onClick={() => toggleDay(day.bit)}
+                onClick={() =>
+                  onScheduleDaysMaskChange(toggleDayInMask(mask, index))
+                }
               >
-                {day.label}
+                {label}
               </button>
             );
           })}
         </div>
-        <p className="mt-1.5 text-xs text-muted-foreground">{habitDaysLabel(mask)}</p>
+        {!selected.some(Boolean) ? (
+          <p className="mt-1 text-xs text-red-600">Select at least one day.</p>
+        ) : null}
       </div>
-      <label className="block text-sm">
-        <span className="font-medium">Time (optional)</span>
-        <span className="mt-1.5 flex items-center gap-2">
+
+      <label className="block">
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Reminder time {compact ? "" : "(optional)"}
+        </span>
+        <div className="mt-2 flex items-center gap-2">
           <input
             type="time"
             value={reminderTime}
-            disabled={disabled}
-            onChange={(event) => {
-              const value = event.target.value;
-              if (value === "" || /^([01]\d|2[0-3]):[0-5]\d$/.test(value)) {
-                onReminderTimeChange(value);
-              }
-            }}
-            className="min-h-11 rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none ring-primary focus:ring-2 disabled:opacity-50"
+            onChange={(e) => onReminderTimeChange(e.target.value)}
+            className="min-h-11 flex-1 rounded-xl border border-border bg-surface px-3 text-sm"
           />
           {reminderTime ? (
             <button
               type="button"
-              disabled={disabled}
-              className="text-sm font-medium text-primary disabled:opacity-50"
+              className="text-xs font-medium text-muted-foreground underline-offset-2 hover:underline"
               onClick={() => onReminderTimeChange("")}
             >
               Clear
             </button>
           ) : null}
-        </span>
+        </div>
+        {!compact ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Shown on Today&apos;s goals for now — push reminders may come later.
+            {reminderTime
+              ? ` (${formatReminderTimeLocal(`${reminderTime}:00`) ?? reminderTime})`
+              : ""}
+          </p>
+        ) : null}
       </label>
     </div>
   );
 }
+
+export const defaultHabitScheduleMask = ALL_DAYS_MASK;

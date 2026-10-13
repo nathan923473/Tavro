@@ -5,7 +5,9 @@ import {
   sendGroupEncouragementAction,
 } from "@/app/(app)/groups/actions";
 import { GroupCheckInReactions } from "@/components/groups/group-check-in-reactions";
+import { GroupSharedCommitmentsDashboard } from "@/components/groups/group-shared-commitments-dashboard";
 import { GroupWeeklyCommitmentsBoard } from "@/components/groups/group-weekly-commitments-board";
+import { GroupWeeklyReflectionCard } from "@/components/groups/group-weekly-reflection-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -26,7 +28,14 @@ export function GroupTabProgress({
   run: (action: () => Promise<unknown>) => void;
 }) {
   const [commitTitle, setCommitTitle] = useState("");
-  const [commitTarget, setCommitTarget] = useState("3");
+  /** String so users can clear the field and type a new number (avoids "13" when replacing "1"). */
+  const [commitTargetInput, setCommitTargetInput] = useState("3");
+
+  function parsedCommitTarget(): number {
+    const n = Number.parseInt(commitTargetInput.trim(), 10);
+    if (!Number.isFinite(n)) return 3;
+    return Math.min(99, Math.max(1, n));
+  }
   const [encourageTarget, setEncourageTarget] = useState("");
   const [encourageMessage, setEncourageMessage] = useState(
     "Hey! Thinking of you — hope today feels manageable. You've got this.",
@@ -49,17 +58,11 @@ export function GroupTabProgress({
   }, [group.weeklyCommitments]);
 
   const scheduledThisWeek = group.checkInBoard.filter((m) => m.scheduledToday).length;
-  const parsedTarget = Number.parseInt(commitTarget, 10);
-  const previewCount =
-    commitTarget.trim() === "" || !Number.isFinite(parsedTarget)
-      ? 3
-      : Math.min(99, Math.max(1, parsedTarget));
-  const commitmentPreview = commitTitle.trim()
-    ? `${commitTitle.trim()} · ${previewCount} ${previewCount === 1 ? "time" : "times"} this week`
-    : null;
 
   return (
     <div className="space-y-4">
+      <GroupSharedCommitmentsDashboard group={group} pending={pending} run={run} />
+      <GroupWeeklyReflectionCard group={group} pending={pending} run={run} />
       <Card className="space-y-3">
         <h3 className="font-semibold">This week</h3>
         <div className="grid grid-cols-2 gap-3 text-sm">
@@ -104,98 +107,89 @@ export function GroupTabProgress({
         ) : null}
       </Card>
 
+      <GroupWeeklyCommitmentsBoard group={group} pending={pending} run={run} />
+
       <Card className="space-y-3">
         <div>
-          <h3 className="font-semibold">Weekly commitments</h3>
+          <h3 className="font-semibold">Add a commitment for this week</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Everyone’s weekly targets. Progress is about showing up, not comparing totals.
+            Visible to everyone in this group as soon as you add it.
           </p>
         </div>
-        <GroupWeeklyCommitmentsBoard
-          commitments={group.weeklyCommitments}
-          pending={pending}
-          run={run}
-        />
-        <label className="block text-sm" htmlFor={`commitment-title-${group.id}`}>
+        <label className="block text-sm font-medium">
           What do you want to do?
           <input
-            id={`commitment-title-${group.id}`}
-            className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
-            placeholder="Walk"
+            className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm font-normal"
+            placeholder="e.g. Morning walk"
             value={commitTitle}
             onChange={(e) => setCommitTitle(e.target.value)}
           />
+          <span className="mt-1 block text-xs font-normal text-muted-foreground">
+            Short name only — put the number of times in the next field.
+          </span>
         </label>
-        <div className="text-sm">
-          <label className="block" htmlFor={`commitment-count-${group.id}`}>
-            How many times this week?
-          </label>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            {[2, 3, 4, 5].map((count) => {
-              const selected = commitTarget === String(count);
-              return (
-                <button
-                  key={count}
-                  type="button"
-                  aria-pressed={selected}
-                  className={`min-h-11 rounded-full px-3 text-sm font-semibold ${
-                    selected
-                      ? "bg-primary text-primary-foreground"
-                      : "border border-border text-foreground"
-                  }`}
-                  onClick={() => setCommitTarget(String(count))}
-                >
-                  {count}×
-                </button>
-              );
-            })}
+        <fieldset className="block text-sm font-medium">
+          <legend className="mb-1">How many times this week?</legend>
+          <div className="flex flex-wrap gap-2">
+            {[2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                className={`min-h-10 rounded-xl border px-4 text-sm font-semibold ${
+                  parsedCommitTarget() === n && commitTargetInput === String(n)
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-surface text-foreground"
+                }`}
+                onClick={() => setCommitTargetInput(String(n))}
+              >
+                {n}×
+              </button>
+            ))}
+          </div>
+          <label className="mt-2 block text-xs font-normal text-muted-foreground">
+            Or type a number (1–99)
             <input
-              id={`commitment-count-${group.id}`}
               type="text"
               inputMode="numeric"
+              pattern="[0-9]*"
               autoComplete="off"
-              className="min-h-11 w-16 rounded-xl border border-border px-3 py-2 text-sm"
-              value={commitTarget}
-              onFocus={(event) => event.currentTarget.select()}
-              onMouseUp={(event) => event.preventDefault()}
-              onChange={(event) => {
-                const digits = event.target.value.replace(/\D/g, "");
-                if (!digits) {
-                  setCommitTarget("");
-                  return;
-                }
-                setCommitTarget(String(Math.min(99, Number.parseInt(digits, 10))));
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm font-normal text-foreground"
+              value={commitTargetInput}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, "").slice(0, 2);
+                setCommitTargetInput(digits);
               }}
-              onBlur={(event) => {
-                const digits = event.currentTarget.value.replace(/\D/g, "");
-                if (!digits) {
-                  setCommitTarget("3");
-                  return;
-                }
-                const parsed = Number.parseInt(digits, 10);
-                setCommitTarget(String(Math.min(99, Math.max(1, parsed))));
+              onBlur={() => {
+                if (!commitTargetInput.trim()) setCommitTargetInput("3");
               }}
             />
-          </div>
-        </div>
-        {commitmentPreview ? (
-          <p className="rounded-xl bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">Preview</span>
-            <span className="mt-0.5 block">{commitmentPreview}</span>
+          </label>
+          <span className="mt-1 block text-xs font-normal text-muted-foreground">
+            Example: 4 means you&apos;ll tap &quot;Log one time&quot; up to four times (Mon–Sun).
+          </span>
+        </fieldset>
+        {commitTitle.trim() ? (
+          <p className="rounded-xl bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+            Preview:{" "}
+            <span className="font-medium text-foreground">{commitTitle.trim()}</span> — 0 of{" "}
+            {parsedCommitTarget()}{" "}
+            {parsedCommitTarget() === 1 ? "time" : "times"} this week
           </p>
         ) : null}
         <Button
           type="button"
           fullWidth
-          disabled={pending || !commitTitle.trim()}
+          disabled={pending || !commitTitle.trim() || !commitTargetInput.trim()}
           onClick={() =>
             run(async () => {
               await saveGroupWeeklyCommitmentAction({
                 groupId: group.id,
                 title: commitTitle,
-                targetCount: previewCount,
+                targetCount: parsedCommitTarget(),
               });
               setCommitTitle("");
+              setCommitTargetInput("3");
             })
           }
         >

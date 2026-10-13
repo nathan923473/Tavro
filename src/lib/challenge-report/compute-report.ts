@@ -559,12 +559,12 @@ export async function findPreviousCompletedReport(
 
   const { data: reportRow } = await admin
     .from("creator_challenge_reports")
-    .select("payload")
+    .select("report")
     .eq("challenge_id", prevCh.id)
     .maybeSingle();
 
-  if (reportRow?.payload) {
-    return reportRow.payload as AnyChallengeReportPayload;
+  if (reportRow?.report) {
+    return reportRow.report as AnyChallengeReportPayload;
   }
 
   try {

@@ -84,12 +84,12 @@ export async function getOrGenerateChallengeReport(
   const supabase = await createClient();
   const { data: existing, error: readErr } = await supabase
     .from("creator_challenge_reports")
-    .select("payload")
+    .select("report")
     .eq("challenge_id", challengeId)
     .maybeSingle();
 
-  if (existing?.payload && !readErr) {
-    return { status: "ready", report: existing.payload as AnyChallengeReportPayload };
+  if (existing?.report && !readErr) {
+    return { status: "ready", report: existing.report as AnyChallengeReportPayload };
   }
 
   const admin = createAdminClient();
@@ -113,27 +113,27 @@ export async function getOrGenerateChallengeReport(
     const ownerId = chMeta?.created_by ?? userId;
     const { error: insertErr } = await supabase.from("creator_challenge_reports").insert({
       challenge_id: challengeId,
-      creator_id: ownerId,
-      payload: report,
+      created_by: ownerId,
+      report,
     });
 
     if (insertErr && !/duplicate|unique|23505/i.test(insertErr.message)) {
-      if (/creator_challenge_reports|schema cache|creator_id|payload/i.test(insertErr.message)) {
+      if (/creator_challenge_reports|schema cache/i.test(insertErr.message)) {
         return {
           status: "error",
-          message: "Run migration 044_creator_challenge_reports.sql in Supabase.",
+          message: "Run migration 040_creator_challenge_reports.sql in Supabase.",
         };
       }
     }
 
     const { data: after } = await supabase
       .from("creator_challenge_reports")
-      .select("payload")
+      .select("report")
       .eq("challenge_id", challengeId)
       .maybeSingle();
 
-    if (after?.payload) {
-      return { status: "ready", report: after.payload as AnyChallengeReportPayload };
+    if (after?.report) {
+      return { status: "ready", report: after.report as AnyChallengeReportPayload };
     }
 
     return { status: "ready", report };

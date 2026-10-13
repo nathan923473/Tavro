@@ -5,133 +5,131 @@ import {
   updateGroupCommitmentProgressAction,
 } from "@/app/(app)/groups/actions";
 import { Button } from "@/components/ui/button";
-import type { GroupWeeklyCommitment } from "@/types";
+import { Card } from "@/components/ui/card";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import type { AccountabilityGroup, GroupWeeklyCommitment } from "@/types";
 import { useMemo } from "react";
 
-type MemberCommitments = {
-  userId: string;
-  displayName: string;
-  isOwn: boolean;
-  items: GroupWeeklyCommitment[];
-};
-
-function groupByMember(commitments: GroupWeeklyCommitment[]): MemberCommitments[] {
-  const order: string[] = [];
-  const byUser = new Map<string, GroupWeeklyCommitment[]>();
-  for (const item of commitments) {
-    const list = byUser.get(item.userId);
-    if (list) {
-      list.push(item);
-    } else {
-      byUser.set(item.userId, [item]);
-      order.push(item.userId);
+function groupByMember(commitments: GroupWeeklyCommitment[]) {
+  const map = new Map<
+    string,
+    { displayName: string; items: GroupWeeklyCommitment[] }
+  >();
+  for (const c of commitments) {
+    let bucket = map.get(c.userId);
+    if (!bucket) {
+      bucket = { displayName: c.displayName, items: [] };
+      map.set(c.userId, bucket);
     }
+    bucket.items.push(c);
   }
-
-  return order
-    .map((userId) => {
-      const items = byUser.get(userId) ?? [];
-      return {
-        userId,
-        displayName: items[0]?.displayName ?? "Member",
-        isOwn: Boolean(items[0]?.isOwn),
-        items,
-      };
-    })
-    .sort((a, b) => {
-      if (a.isOwn !== b.isOwn) return a.isOwn ? -1 : 1;
-      return a.displayName.localeCompare(b.displayName);
-    });
+  return [...map.entries()];
 }
 
 export function GroupWeeklyCommitmentsBoard({
-  commitments,
+  group,
   pending,
   run,
 }: {
-  commitments: GroupWeeklyCommitment[];
+  group: AccountabilityGroup;
   pending: boolean;
   run: (action: () => Promise<unknown>) => void;
 }) {
-  const members = useMemo(() => groupByMember(commitments), [commitments]);
-
-  if (members.length === 0) {
-    return <p className="text-sm text-muted-foreground">No commitments yet this week.</p>;
-  }
+  const byMember = useMemo(
+    () => groupByMember(group.weeklyCommitments),
+    [group.weeklyCommitments],
+  );
 
   return (
-    <ul className="space-y-3">
-      {members.map((member) => (
-        <li key={member.userId} className="space-y-2">
-          <p className="text-sm font-medium">{member.isOwn ? "You" : member.displayName}</p>
-          <ul className="space-y-2">
-            {member.items.map((commitment) => {
-              const done = commitment.progressCount >= commitment.targetCount;
-              const logged = Math.min(commitment.progressCount, commitment.targetCount);
-              return (
-                <li
-                  key={commitment.id}
-                  className={`rounded-xl border px-3 py-2 ${done ? "border-[#B8F4DA] bg-[#B8F4DA]/25" : "border-border"}`}
-                >
-                  <p className={`text-sm font-medium ${done ? "opacity-80" : ""}`}>
-                    {commitment.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {logged}/{commitment.targetCount} completed
-                  </p>
-                  {member.isOwn ? (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="min-h-8 px-2 text-xs"
-                        disabled={pending || done}
-                        onClick={() =>
-                          run(() =>
-                            updateGroupCommitmentProgressAction(
-                              commitment.id,
-                              commitment.progressCount + 1,
-                            ),
-                          )
-                        }
-                      >
-                        Log one time
-                      </Button>
-                      {commitment.progressCount > 0 ? (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="min-h-8 px-2 text-xs"
-                          disabled={pending}
-                          onClick={() =>
-                            run(() =>
-                              updateGroupCommitmentProgressAction(
-                                commitment.id,
-                                commitment.progressCount - 1,
-                              ),
-                            )
-                          }
-                        >
-                          Undo last log
-                        </Button>
+    <Card className="space-y-3">
+      <div>
+        <h3 className="font-semibold">This week&apos;s group commitments</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Anything you add here is visible to everyone in this private group. Progress habits
+          from Home also appear above when you&apos;re in the group.
+        </p>
+      </div>
+
+      {byMember.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No one has added a commitment this week yet — add yours below.
+        </p>
+      ) : (
+        <ul className="space-y-3">
+          {byMember.map(([userId, member]) => (
+            <li key={userId} className="rounded-2xl border border-border/80 bg-surface/50 p-3">
+              <div className="mb-2 flex items-center gap-2">
+                <UserAvatar displayName={member.displayName} size="sm" />
+                <p className="text-sm font-semibold">{member.displayName}</p>
+              </div>
+              <ul className="space-y-2">
+                {member.items.map((c) => {
+                  const done = c.progressCount >= c.targetCount;
+                  return (
+                    <li
+                      key={c.id}
+                      className={`rounded-xl border px-3 py-2 ${done ? "border-[#B8F4DA] bg-[#B8F4DA]/25" : "border-border bg-background"}`}
+                    >
+                      <p className="text-sm font-medium">{c.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {Math.min(c.progressCount, c.targetCount)} of {c.targetCount} times this
+                        week
+                      </p>
+                      {c.isOwn ? (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            className="min-h-8 px-2 text-xs"
+                            disabled={pending || done}
+                            onClick={() =>
+                              run(() =>
+                                updateGroupCommitmentProgressAction(
+                                  c.id,
+                                  c.progressCount + 1,
+                                ),
+                              )
+                            }
+                          >
+                            Log one time
+                          </Button>
+                          {c.progressCount > 0 ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="min-h-8 px-2 text-xs"
+                              disabled={pending}
+                              onClick={() =>
+                                run(() =>
+                                  updateGroupCommitmentProgressAction(
+                                    c.id,
+                                    c.progressCount - 1,
+                                  ),
+                                )
+                              }
+                            >
+                              Undo last log
+                            </Button>
+                          ) : null}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="min-h-8 px-2 text-xs"
+                            disabled={pending}
+                            onClick={() => run(() => deleteGroupWeeklyCommitmentAction(c.id))}
+                          >
+                            Remove
+                          </Button>
+                        </div>
                       ) : null}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="min-h-8 px-2 text-xs"
-                        disabled={pending}
-                        onClick={() => run(() => deleteGroupWeeklyCommitmentAction(commitment.id))}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-        </li>
-      ))}
-    </ul>
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }

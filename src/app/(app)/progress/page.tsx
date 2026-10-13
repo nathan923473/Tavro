@@ -1,4 +1,6 @@
 import { HabitManager } from "@/components/progress/habit-manager";
+import { ProgressHighlightsCard } from "@/components/progress/progress-highlights-card";
+import { MILESTONE_DEFINITIONS } from "@/lib/progress/milestones";
 import { LogWeighInCard } from "@/components/progress/log-weigh-in-card";
 import { WeightProgressChart } from "@/components/progress/weight-progress-chart";
 import { WeightTrackingSettings } from "@/components/progress/weight-tracking-settings";
@@ -6,9 +8,8 @@ import { ShareWithGroupCard } from "@/components/progress/share-with-group-card"
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
-import { scheduledDaysPerWeek } from "@/lib/habits/schedule";
 import { fetchChallengesForUser } from "@/lib/data/challenges";
-import { fetchViewerAccountabilityGroup } from "@/lib/data/groups";
+import { fetchUserAccountabilityGroups } from "@/lib/data/user-accountability-groups";
 import {
   fetchAllMemberGoals,
   fetchMilestones,
@@ -34,7 +35,7 @@ export default async function ProgressPage() {
     weighIns,
     summary,
     weightEnabled,
-    accountabilityGroup,
+    accountabilityGroups,
   ] = userId
     ? await Promise.all([
         fetchAllMemberGoals(userId),
@@ -45,7 +46,7 @@ export default async function ProgressPage() {
         fetchWeighIns(userId),
         fetchWeightSummary(userId),
         fetchWeightTrackingEnabled(userId),
-        fetchViewerAccountabilityGroup(userId),
+        fetchUserAccountabilityGroups(userId),
       ])
     : [
         [],
@@ -56,7 +57,7 @@ export default async function ProgressPage() {
         [],
         null,
         true,
-        null,
+        [],
       ];
 
   const joined = challenges.mine;
@@ -78,11 +79,20 @@ export default async function ProgressPage() {
         </Card>
 
         {userId ? (
-          <HabitManager
-            habits={habits}
-            joinedChallenges={joined}
-            accountabilityGroup={accountabilityGroup}
-          />
+          <>
+            <ProgressHighlightsCard
+              consistencyPercent={consistency.percent}
+              consistencyMessage={consistency.message}
+              habitsActive={habits.filter((h) => !h.paused).length}
+              joinedChallenges={joined}
+              completedChallengeCount={completedChallenges.length}
+            />
+            <HabitManager
+              habits={habits}
+              joinedChallenges={joined}
+              accountabilityGroups={accountabilityGroups}
+            />
+          </>
         ) : null}
 
         <section aria-labelledby="this-week-heading">
@@ -145,7 +155,8 @@ export default async function ProgressPage() {
                 <Card padding="sm">
                   <p className="font-medium">{h.title}</p>
                   <p className="text-sm text-muted-foreground">
-                    {h.weeklyCompletion}/{scheduledDaysPerWeek(h)} this week
+                    {h.weeklyCompletion}/
+                    {h.frequencyType === "daily" ? 7 : h.frequencyTarget} this week
                   </p>
                 </Card>
               </li>
@@ -171,6 +182,10 @@ export default async function ProgressPage() {
                   <Card padding="sm">
                     <p className="font-medium">{m.label}</p>
                     <p className="text-xs text-muted-foreground">
+                      {MILESTONE_DEFINITIONS[m.key]?.description ??
+                        "Keep building consistent habits."}
+                    </p>
+                    <p className="mt-1 text-[10px] text-muted-foreground">
                       Unlocked {new Date(m.unlockedAt).toLocaleDateString()}
                     </p>
                   </Card>

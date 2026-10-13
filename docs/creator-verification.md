@@ -1,42 +1,44 @@
-# Creator application & approval (Tavro)
+# Creator social verification
 
-## Default flow (no invite links)
+## Flow
 
-1. Public landing: `/creators`
-2. Member applies at `/become-creator` (same account as members)
-3. Application status: `awaiting_review` (Instagram DM **not** required by default)
-4. Admin reviews at `/admin/creator-applications`
-5. **Approve creator** → `profiles.creator_status = approved` → Creator Studio unlocks
+1. Member submits **Become a creator** with required **primary social link**.
+2. Backend RPC `submit_creator_application` creates row:
+   - `status = pending_verification`
+   - unique `verification_code` (48h expiry)
+   - `user_id = auth.uid()` (never client-supplied)
+3. Applicant verifies ownership:
+   - **Bio:** add code to public bio → **Check my bio** (automated fetch, best-effort)
+   - **DM:** message official handle → admin **Confirm verification manually**
+4. On success → `verification_state = verified`, `status = awaiting_review`
+5. **Admin only** approves → `approve_creator_application` sets `profiles.creator_status = approved`
 
-There is **no private creator invitation system**. Challenge/group invite links are unrelated.
-
-## Test accounts
-
-Admins can grant or revoke Creator Studio for one test account from
-`/admin/creator-applications` without an application or Instagram check.
-See `docs/approve-creator.md`. That path sets `profiles.creator_status = approved`
-and `is_test_account = true`. It does not approve the public application queue.
-
-## Optional ownership verification
-
-Admins may click **Request ownership verification** when needed. That sets
-`pending_verification` and shows the applicant the DM code panel. After checking
-Instagram, admin uses **Confirm Instagram ownership**. This stays separate from
-**Approve creator**.
-
-Bio verification is not used.
-
-## Configure official Instagram handle (only if using DM checks)
-
-```env
-OFFICIAL_VERIFICATION_DM_TARGET=@your_real_handle on Instagram
-```
+Social verification **never** auto-approves creator privileges.
 
 ## Database
 
-Run if not already applied:
+Run after 002, **in two steps** (Supabase SQL Editor):
 
-- `039_fix_creator_application_status_guard.sql`
-- `040_dm_only_creator_verification.sql`
-- `041_simplify_creator_application_flow.sql`
-- `042_admin_test_creator_access.sql`
+1. `005a_application_status_enum_values.sql` — run **by itself**, click **Run**
+2. `005b_creator_social_verification.sql` — run second
+
+If you run both enum changes and functions in one paste, Postgres often errors with **unsafe use of new enum value**.
+
+## Admin
+
+1. Set `profiles.is_admin = true` for your user (see `docs/approve-creator.md`).
+2. Open `/admin/creator-applications`.
+
+Optional env:
+
+```env
+OFFICIAL_VERIFICATION_DM_TARGET=@yourbrand on Instagram
+```
+
+## Security tests
+
+```bash
+npm run test:creator-security
+```
+
+See `scripts/test-creator-security.mjs` for what is checked.

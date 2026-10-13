@@ -43,12 +43,14 @@ export function GroupTabToday({
   pending,
   run,
   onOpenProgress,
+  discoveryOwnerEligible = false,
 }: {
   group: AccountabilityGroup;
   viewerUserId?: string | null;
   pending: boolean;
   run: (action: () => Promise<unknown>) => void;
   onOpenProgress: () => void;
+  discoveryOwnerEligible?: boolean;
 }) {
   const soloOwner = group.memberCount <= 1;
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -145,6 +147,11 @@ export function GroupTabToday({
           maxMembers={group.maxMembers}
           joinMode={group.joinMode}
           pendingRequests={group.pendingRequests}
+          visibility={group.visibility}
+          discoveryPaused={group.discoveryPaused}
+          checkInFrequency={group.checkInFrequency}
+          discoverySummary={group.discoverySummary}
+          discoveryOwnerEligible={discoveryOwnerEligible}
         />
       ) : null}
 
@@ -449,6 +456,11 @@ export function GroupTabToday({
         maxMembers={group.maxMembers}
         joinMode={group.joinMode}
         pendingRequests={group.pendingRequests}
+        visibility={group.visibility}
+        discoveryPaused={group.discoveryPaused}
+        checkInFrequency={group.checkInFrequency}
+        discoverySummary={group.discoverySummary}
+        discoveryOwnerEligible={discoveryOwnerEligible}
       />
 
       <GroupHubSettingsModal

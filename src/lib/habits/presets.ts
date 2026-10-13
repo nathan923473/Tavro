@@ -1,6 +1,11 @@
 import type { GoalCategory } from "@/types";
 
-export type HabitPresetGroup = "movement" | "nutrition" | "sleep";
+export type HabitPresetGroup =
+  | "movement"
+  | "nutrition"
+  | "hydration"
+  | "sleep"
+  | "wellbeing";
 
 export type HabitPreset = {
   key: string;
@@ -12,15 +17,19 @@ export type HabitPreset = {
 };
 
 export const HABIT_PRESET_GROUP_LABELS: Record<HabitPresetGroup, string> = {
-  movement: "Movement",
-  nutrition: "Nutrition",
-  sleep: "Sleep",
+  movement: "Walking & movement",
+  nutrition: "Healthy eating routines",
+  hydration: "Hydration habits",
+  sleep: "Sleep consistency",
+  wellbeing: "General wellbeing",
 };
 
 export const HABIT_PRESET_GROUP_ORDER: HabitPresetGroup[] = [
   "movement",
   "nutrition",
+  "hydration",
   "sleep",
+  "wellbeing",
 ];
 
 export const HABIT_PRESETS: HabitPreset[] = [
@@ -115,7 +124,23 @@ export const HABIT_PRESETS: HabitPreset[] = [
   {
     key: "water_each_meal",
     label: "Drink water with each meal",
-    group: "nutrition",
+    group: "hydration",
+    category: "nutrition",
+    frequencyType: "daily",
+    frequencyTarget: 7,
+  },
+  {
+    key: "water_morning",
+    label: "Drink a glass of water after waking",
+    group: "hydration",
+    category: "nutrition",
+    frequencyType: "daily",
+    frequencyTarget: 7,
+  },
+  {
+    key: "water_bottle",
+    label: "Refill my water bottle once today",
+    group: "hydration",
     category: "nutrition",
     frequencyType: "daily",
     frequencyTarget: 7,
@@ -147,8 +172,24 @@ export const HABIT_PRESETS: HabitPreset[] = [
   {
     key: "morning_sunlight",
     label: "Get outside for morning sunlight",
-    group: "sleep",
-    category: "routine",
+    group: "wellbeing",
+    category: "mindfulness",
+    frequencyType: "daily",
+    frequencyTarget: 7,
+  },
+  {
+    key: "mindful_pause",
+    label: "Take a 5-minute mindful pause",
+    group: "wellbeing",
+    category: "mindfulness",
+    frequencyType: "daily",
+    frequencyTarget: 7,
+  },
+  {
+    key: "gratitude_note",
+    label: "Write one thing that went well today",
+    group: "wellbeing",
+    category: "mindfulness",
     frequencyType: "daily",
     frequencyTarget: 7,
   },

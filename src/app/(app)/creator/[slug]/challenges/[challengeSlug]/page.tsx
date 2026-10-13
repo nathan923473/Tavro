@@ -5,6 +5,7 @@ import {
   fetchChallengeLandingByCommunityAndSlug,
   landingCanonicalPath,
 } from "@/lib/data/challenge-landing";
+import { challengeLandingMetadata } from "@/lib/seo/challenge-open-graph";
 import { notFound, redirect } from "next/navigation";
 
 type Props = {
@@ -19,7 +20,14 @@ export async function generateMetadata({ params }: Props) {
     challengeSlug,
     user?.id ?? null,
   );
-  return { title: data?.challenge.title ?? "Challenge" };
+  if (!data) return { title: "Challenge" };
+  const canonicalPath = landingCanonicalPath(data);
+  return challengeLandingMetadata({
+    title: data.challenge.title,
+    description: data.shortDescription ?? data.challenge.description,
+    canonicalPath,
+    coverUrl: data.challenge.coverUrl,
+  });
 }
 
 export default async function CreatorChallengePublicPage({ params }: Props) {

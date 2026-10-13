@@ -1,15 +1,13 @@
 "use server";
 
 import { requireUserId } from "@/lib/auth/require-user-id";
-import { resolveUserGroupId } from "@/lib/data/resolve-user-group-id";
-import { autoShareActiveMemberGoals } from "@/lib/groups/auto-share-member-goals";
-import { sharedCommitmentSchemaError } from "@/lib/groups/shared-commitments";
-import {
-  ALL_WEEKDAYS_MASK,
-  normalizeDaysMask,
-  normalizeReminderTime,
-} from "@/lib/habits/schedule";
 import { presetByKey, CUSTOM_HABIT_PRESET_KEY } from "@/lib/habits/presets";
+import {
+  ALL_DAYS_MASK,
+  normalizeScheduleMask,
+  popcountDays,
+  reminderTimeForDb,
+} from "@/lib/habits/weekdays";
 import type { GoalCategory, HabitFrequencyType } from "@/types";
 import { revalidatePath } from "next/cache";
 
@@ -27,7 +25,7 @@ export async function createHabitAction(input: {
   frequencyType?: HabitFrequencyType;
   frequencyTarget?: number;
   scheduleDaysMask?: number;
-  reminderTime?: string | null;
+  reminderTimeLocal?: string | null;
 }) {
   const { supabase, userId } = await requireUserId();
   const title = input.title.trim();
@@ -38,6 +36,13 @@ export async function createHabitAction(input: {
     input.frequencyType ?? preset?.frequencyType ?? "daily";
   const frequencyTarget =
     input.frequencyTarget ?? preset?.frequencyTarget ?? (frequencyType === "daily" ? 7 : 3);
+  const scheduleDaysMask = normalizeScheduleMask(
+    input.scheduleDaysMask ?? ALL_DAYS_MASK,
+  );
+  if (popcountDays(scheduleDaysMask) < 1) {
+    throw new Error("Pick at least one day for this habit.");
+  }
+  const reminderTime = reminderTimeForDb(input.reminderTimeLocal ?? "");
 
   let activeCount = 0;
   const countRes = await supabase
@@ -60,16 +65,6 @@ export async function createHabitAction(input: {
     throw new Error("Keep it focused — pause or remove a habit first (max 10).");
   }
 
-  const scheduleDaysMask = input.scheduleDaysMask ?? ALL_WEEKDAYS_MASK;
-  if (scheduleDaysMask !== normalizeDaysMask(scheduleDaysMask)) {
-    throw new Error("Pick at least one day.");
-  }
-  const reminderTime =
-    input.reminderTime === undefined ? null : normalizeReminderTime(input.reminderTime);
-  if (input.reminderTime && !reminderTime) {
-    throw new Error("Use a valid time.");
-  }
-
   const row: Record<string, unknown> = {
     user_id: userId,
     title: preset?.label ?? title,
@@ -80,28 +75,13 @@ export async function createHabitAction(input: {
     frequency_type: frequencyType,
     frequency_target: Math.min(7, Math.max(1, frequencyTarget)),
     schedule_days_mask: scheduleDaysMask,
-    reminder_time: reminderTime,
+    ...(reminderTime ? { reminder_time: reminderTime } : {}),
   };
 
   let { error } = await supabase.from("member_goals").insert(row);
-  if (
-    error &&
-    /schedule_days_mask|reminder_time/i.test(error.message)
-  ) {
-    const customSchedule = scheduleDaysMask !== ALL_WEEKDAYS_MASK || Boolean(reminderTime);
-    if (customSchedule) {
-      throw new Error(
-        "Run migration 046_habit_weekday_schedule.sql in Supabase, then try again.",
-      );
-    }
-    const withoutSchedule = { ...row };
-    delete withoutSchedule.schedule_days_mask;
-    delete withoutSchedule.reminder_time;
-    const retry = await supabase.from("member_goals").insert(withoutSchedule);
-    error = retry.error;
-  }
+
   if (error) {
-    if (/template_key|frequency_|schema cache/i.test(error.message)) {
+    if (/template_key|frequency_|schedule_days|reminder_time|schema cache/i.test(error.message)) {
       const { error: legacyErr } = await supabase.from("member_goals").insert({
         user_id: userId,
         title: row.title,
@@ -109,13 +89,22 @@ export async function createHabitAction(input: {
         sort_order: row.sort_order,
       });
       if (legacyErr) throw new Error(legacyErr.message);
+      error = null;
     } else {
       throw new Error(error.message);
     }
   }
 
-  const groupId = await resolveUserGroupId(supabase, userId);
-  if (groupId) await autoShareActiveMemberGoals(supabase, userId, groupId);
+  if (!error) {
+    const { resolveUserGroupId } = await import("@/lib/data/resolve-user-group-id");
+    const { ensureMemberGoalsSharedWithGroup } = await import(
+      "@/lib/groups/auto-share-member-goals"
+    );
+    const groupId = await resolveUserGroupId(supabase, userId);
+    if (groupId) {
+      await ensureMemberGoalsSharedWithGroup(supabase, userId, groupId);
+    }
+  }
 
   revalidateProgressPaths();
 }
@@ -127,7 +116,7 @@ export async function updateHabitAction(
     frequencyType?: HabitFrequencyType;
     frequencyTarget?: number;
     scheduleDaysMask?: number;
-    reminderTime?: string | null;
+    reminderTimeLocal?: string | null;
   },
 ) {
   const { supabase, userId } = await requireUserId();
@@ -138,17 +127,15 @@ export async function updateHabitAction(
     patch.frequency_target = Math.min(7, Math.max(1, input.frequencyTarget));
   }
   if (input.scheduleDaysMask !== undefined) {
-    if (input.scheduleDaysMask !== normalizeDaysMask(input.scheduleDaysMask)) {
-      throw new Error("Pick at least one day.");
-    }
-    patch.schedule_days_mask = input.scheduleDaysMask;
+    const mask = normalizeScheduleMask(input.scheduleDaysMask);
+    if (popcountDays(mask) < 1) throw new Error("Pick at least one day for this habit.");
+    patch.schedule_days_mask = mask;
   }
-  if (input.reminderTime !== undefined) {
-    const reminderTime = normalizeReminderTime(input.reminderTime);
-    if (input.reminderTime && !reminderTime) {
-      throw new Error("Use a valid time.");
-    }
-    patch.reminder_time = reminderTime;
+  if (input.reminderTimeLocal !== undefined) {
+    const t = input.reminderTimeLocal
+      ? reminderTimeForDb(input.reminderTimeLocal)
+      : null;
+    patch.reminder_time = t;
   }
 
   const { error } = await supabase
@@ -157,12 +144,7 @@ export async function updateHabitAction(
     .eq("id", habitId)
     .eq("user_id", userId);
 
-  if (error) {
-    if (/schedule_days_mask|reminder_time/i.test(error.message)) {
-      throw new Error("Run migration 046_habit_weekday_schedule.sql in Supabase, then try again.");
-    }
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
   revalidateProgressPaths();
 }
 
@@ -188,9 +170,8 @@ export async function deleteHabitAction(habitId: string) {
   await supabase
     .from("member_goal_group_shares")
     .delete()
-    .eq("goal_id", habitId)
+    .eq("member_goal_id", habitId)
     .eq("user_id", userId);
-
   const { error } = await supabase
     .from("member_goals")
     .update({ active: false })
@@ -200,48 +181,63 @@ export async function deleteHabitAction(habitId: string) {
   revalidateProgressPaths();
 }
 
-export async function setHabitGroupShareAction(habitId: string, groupId: string | null) {
+export async function setHabitGroupShareAction(input: {
+  habitId: string;
+  groupId: string | null;
+}) {
   const { supabase, userId } = await requireUserId();
-  const { data: habit, error: habitError } = await supabase
+
+  const { data: habit } = await supabase
     .from("member_goals")
     .select("id")
-    .eq("id", habitId)
+    .eq("id", input.habitId)
     .eq("user_id", userId)
     .eq("active", true)
     .maybeSingle();
-  if (habitError) throw new Error(habitError.message);
   if (!habit) throw new Error("Habit not found.");
 
-  if (!groupId) {
+  if (!input.groupId) {
     const { error } = await supabase
       .from("member_goal_group_shares")
       .delete()
-      .eq("goal_id", habitId)
+      .eq("member_goal_id", input.habitId)
       .eq("user_id", userId);
-    if (error) throw sharedCommitmentSchemaError(error.message);
+    if (error && !/member_goal_group_shares|schema cache/i.test(error.message)) {
+      throw new Error(error.message);
+    }
     revalidateProgressPaths();
     return;
   }
 
-  const membership = await supabase
+  const memberCheck = await supabase
     .from("group_members")
     .select("group_id")
-    .eq("group_id", groupId)
+    .eq("group_id", input.groupId)
     .eq("user_id", userId)
     .maybeSingle();
-  if (!membership.data) {
-    throw new Error("Join that accountability group before sharing a habit.");
+  if (!memberCheck.data) {
+    throw new Error("You must be a member of that group to share a habit.");
   }
 
-  const { error } = await supabase.from("member_goal_group_shares").upsert(
-    {
-      goal_id: habitId,
-      group_id: groupId,
-      user_id: userId,
-    },
-    { onConflict: "goal_id" },
-  );
-  if (error) throw sharedCommitmentSchemaError(error.message);
+  await supabase
+    .from("member_goal_group_shares")
+    .delete()
+    .eq("member_goal_id", input.habitId)
+    .eq("user_id", userId);
+
+  const { error } = await supabase.from("member_goal_group_shares").insert({
+    member_goal_id: input.habitId,
+    group_id: input.groupId,
+    user_id: userId,
+  });
+
+  if (error) {
+    if (/member_goal_group_shares|schema cache/i.test(error.message)) {
+      throw new Error("Run migration 047_shared_member_goal_commitments.sql in Supabase.");
+    }
+    throw new Error(error.message);
+  }
+
   revalidateProgressPaths();
 }
 

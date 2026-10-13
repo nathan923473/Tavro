@@ -2,30 +2,30 @@
 
 import { GroupOwnerPendingCard } from "@/components/groups/group-owner-pending-card";
 import { GroupTabChat } from "@/components/groups/group-tab-chat";
-import { GroupSharedCommitmentsDashboard } from "@/components/groups/group-shared-commitments-dashboard";
 import { GroupTabProgress } from "@/components/groups/group-tab-progress";
 import { GroupTabToday } from "@/components/groups/group-tab-today";
 import type { AccountabilityGroup, GroupActivity } from "@/types";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-type HubTab = "today" | "chat" | "commitments" | "progress";
+type HubTab = "today" | "chat" | "progress";
 
 const TAB_LABELS: { id: HubTab; label: string }[] = [
   { id: "today", label: "Today" },
   { id: "chat", label: "Chat" },
-  { id: "commitments", label: "Commitments" },
-  { id: "progress", label: "Progress" },
+  { id: "progress", label: "Commitments" },
 ];
 
 export function GroupHubView({
   group,
   feed,
   viewerUserId = null,
+  discoveryOwnerEligible = false,
 }: {
   group: AccountabilityGroup;
   feed: GroupActivity[];
   viewerUserId?: string | null;
+  discoveryOwnerEligible?: boolean;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<HubTab>("today");
@@ -77,15 +77,12 @@ export function GroupHubView({
           pending={pending}
           run={run}
           onOpenProgress={() => setTab("progress")}
+          discoveryOwnerEligible={discoveryOwnerEligible}
         />
       ) : null}
 
       {tab === "chat" ? (
         <GroupTabChat feed={feed} viewerUserId={viewerUserId} pending={pending} run={run} />
-      ) : null}
-
-      {tab === "commitments" ? (
-        <GroupSharedCommitmentsDashboard group={group} pending={pending} run={run} />
       ) : null}
 
       {tab === "progress" ? (

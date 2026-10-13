@@ -1,6 +1,10 @@
 import { GroupsInteractive } from "@/components/groups/groups-interactive";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
+import {
+  fetchDiscoveryEligibility,
+  fetchDiscoverableGroups,
+} from "@/lib/data/group-discovery";
 import { fetchUserGroup } from "@/lib/data/groups";
 
 import {
@@ -17,6 +21,12 @@ export default async function GroupsPage() {
     ? await fetchUserGroup(userId)
     : { group: null, feed: [], pendingJoin: null, existingGroupBlocked: false };
 
+  const discoveryEligible = userId ? (await fetchDiscoveryEligibility(userId)).eligible : false;
+  const discoverableGroups =
+    userId && !group && !pendingJoin && discoveryEligible
+      ? await fetchDiscoverableGroups({})
+      : [];
+
   return (
     <div className="animate-fade-up">
       <PageHeader
@@ -31,6 +41,8 @@ export default async function GroupsPage() {
           viewerUserId={userId}
           pendingJoin={pendingJoin}
           existingGroupBlocked={existingGroupBlocked}
+          discoveryEligible={discoveryEligible}
+          initialDiscoverableGroups={discoverableGroups}
         />
       </div>
     </div>

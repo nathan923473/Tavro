@@ -15,6 +15,7 @@ import { ChallengeDateRange } from "@/components/challenges/challenge-date-range
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { LandingAttribution } from "@/components/analytics/landing-attribution";
 import { ChallengeCoverImage } from "@/components/challenges/challenge-cover-image";
+import { ChallengeCoachCta } from "@/components/challenges/challenge-coach-cta";
 import { CalendarRange, Gift, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -102,8 +103,8 @@ function ChallengeLandingBody({
     return (
       <Card>
         <p className="text-sm text-muted-foreground">
-          This challenge link is not available publicly. If you were invited privately, ask the
-          host for an updated link.
+          This challenge link is not available. Explore free creator challenges from the
+          Challenges tab.
         </p>
       </Card>
     );
@@ -285,6 +286,8 @@ function ChallengeLandingBody({
           More from {challenge.creatorName} →
         </Link>
       ) : null}
+
+      <ChallengeCoachCta />
     </div>
   );
 }

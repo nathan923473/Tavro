@@ -2,53 +2,40 @@ import type { createClient } from "@/lib/supabase/server";
 
 type ServerSupabase = Awaited<ReturnType<typeof createClient>>;
 
-const MISSING_SCHEMA = /schema cache|does not exist|member_goal_group_shares/i;
-
-/**
- * Share this member's active Progress habits with their P.A. group.
- * Habits that already have a share row are left alone. Missing schema is a no-op.
- */
-export async function autoShareActiveMemberGoals(
+/** Share active Progress habits with the member's accountability group (private group visibility). */
+export async function ensureMemberGoalsSharedWithGroup(
   supabase: ServerSupabase,
   userId: string,
   groupId: string,
 ): Promise<void> {
-  try {
-    let goals = await supabase
-      .from("member_goals")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("active", true);
+  const member = await supabase
+    .from("group_members")
+    .select("group_id")
+    .eq("group_id", groupId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!member.data) return;
 
-    if (goals.error && /active|schema cache/i.test(goals.error.message)) {
-      goals = await supabase.from("member_goals").select("id").eq("user_id", userId);
-    }
-    if (goals.error || !goals.data?.length) return;
+  const { data: goals, error: goalsError } = await supabase
+    .from("member_goals")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("active", true);
 
-    const goalIds = goals.data.map((row) => row.id as string);
-    const existing = await supabase
-      .from("member_goal_group_shares")
-      .select("goal_id")
-      .eq("user_id", userId)
-      .in("goal_id", goalIds);
+  if (goalsError || !goals?.length) return;
 
-    if (existing.error) return;
+  const rows = goals.map((g) => ({
+    member_goal_id: g.id as string,
+    group_id: groupId,
+    user_id: userId,
+  }));
 
-    const shared = new Set((existing.data ?? []).map((row) => row.goal_id as string));
-    const missing = goalIds.filter((id) => !shared.has(id));
-    if (!missing.length) return;
+  const { error } = await supabase.from("member_goal_group_shares").upsert(rows, {
+    onConflict: "member_goal_id,group_id",
+    ignoreDuplicates: true,
+  });
 
-    const { error } = await supabase.from("member_goal_group_shares").insert(
-      missing.map((goalId) => ({
-        goal_id: goalId,
-        group_id: groupId,
-        user_id: userId,
-      })),
-    );
-    if (error && !MISSING_SCHEMA.test(error.message) && !/duplicate|unique/i.test(error.message)) {
-      console.error("autoShareActiveMemberGoals", error.message);
-    }
-  } catch (error) {
-    console.error("autoShareActiveMemberGoals", error);
+  if (error && !/member_goal_group_shares|schema cache|duplicate/i.test(error.message)) {
+    console.error("ensureMemberGoalsSharedWithGroup", error.message);
   }
 }

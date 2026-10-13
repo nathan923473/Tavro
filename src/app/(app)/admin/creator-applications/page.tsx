@@ -1,65 +1,49 @@
+import { CreatorAcquisitionSummary } from "@/components/admin/creator-acquisition-summary";
 import { CreatorApplicationReviewList } from "@/components/admin/creator-application-review-list";
-import { TestCreatorAccessPanel } from "@/components/admin/test-creator-access-panel";
 import { PageHeader } from "@/components/layout/page-header";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { listApplicationsForAdmin } from "@/lib/creator/applications";
-import {
-  listTestCreatorAccounts,
-  lookupTestCreatorAccount,
-  normalizeAccountEmail,
-} from "@/lib/creator/test-access";
+import { fetchCreatorAcquisitionStats } from "@/lib/data/creator-acquisition";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Creator applications" };
 
-export default async function AdminCreatorApplicationsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ email?: string; notice?: string; error?: string }>;
-}) {
+export default async function AdminCreatorApplicationsPage() {
   await requireAdmin();
-  const params = await searchParams;
-  const applications = await listApplicationsForAdmin();
-  const testAccounts = await listTestCreatorAccounts();
-  const rawEmail = (params.email ?? "").trim();
-  const email = normalizeAccountEmail(rawEmail);
-  const emailInvalid = rawEmail.length > 0 && !email;
-  const lookup = email ? await lookupTestCreatorAccount(email) : null;
-  const migrationRequired =
-    testAccounts.status === "migration" || lookup?.status === "migration";
+  const [applications, stats] = await Promise.all([
+    listApplicationsForAdmin(),
+    fetchCreatorAcquisitionStats(),
+  ]);
+
+  const referrerIds = [
+    ...new Set(
+      applications.map((a) => a.referred_by_user_id).filter(Boolean) as string[],
+    ),
+  ];
+  const referrerNames: Record<string, string> = {};
+  if (referrerIds.length) {
+    const supabase = await createClient();
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, display_name")
+      .in("id", referrerIds);
+    for (const p of profiles ?? []) {
+      referrerNames[p.id] = p.display_name?.trim() || p.id;
+    }
+  }
 
   return (
     <div className="animate-fade-up">
       <PageHeader
         title="Creator applications"
-        subtitle="Private admin review · public applications stay manual"
+        subtitle="Private admin review · verification required before approval"
       />
-      <div className="space-y-8 px-4 py-4">
-        <TestCreatorAccessPanel
-          migrationRequired={migrationRequired}
-          loadError={
-            testAccounts.status === "error"
-              ? "Could not load test accounts."
-              : lookup?.status === "error"
-                ? "Could not look up that account."
-                : null
-          }
-          accounts={testAccounts.status === "ok" ? testAccounts.accounts : []}
-          query={email ?? ""}
-          match={lookup?.status === "found" ? lookup.account : null}
-          lookupMissing={lookup?.status === "missing"}
-          notice={params.notice ?? null}
-          error={params.error ?? (emailInvalid ? "invalid" : null)}
+      <div className="px-4 py-4">
+        <CreatorAcquisitionSummary stats={stats} />
+        <CreatorApplicationReviewList
+          applications={applications}
+          referrerNames={referrerNames}
         />
-        <section className="space-y-3">
-          <div>
-            <h2 className="text-lg font-semibold">Public applications</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              These still need a manual Approve creator decision. Applying does
-              not grant Creator Studio.
-            </p>
-          </div>
-          <CreatorApplicationReviewList applications={applications} />
-        </section>
       </div>
     </div>
   );

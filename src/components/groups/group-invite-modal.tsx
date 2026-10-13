@@ -2,7 +2,12 @@
 
 import { GroupInvitePanel } from "@/components/groups/group-invite-panel";
 import { Card } from "@/components/ui/card";
-import type { GroupJoinMode, GroupJoinRequest } from "@/types";
+import type {
+  GroupCheckInFrequency,
+  GroupJoinMode,
+  GroupJoinRequest,
+  GroupVisibility,
+} from "@/types";
 import { X } from "lucide-react";
 import { useEffect } from "react";
 
@@ -17,6 +22,11 @@ export function GroupInviteModal({
   maxMembers,
   joinMode,
   pendingRequests,
+  visibility = "private",
+  discoveryPaused = false,
+  checkInFrequency = "flexible",
+  discoverySummary = "",
+  discoveryOwnerEligible = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -28,6 +38,11 @@ export function GroupInviteModal({
   maxMembers: number;
   joinMode: GroupJoinMode;
   pendingRequests: GroupJoinRequest[];
+  visibility?: GroupVisibility;
+  discoveryPaused?: boolean;
+  checkInFrequency?: GroupCheckInFrequency;
+  discoverySummary?: string;
+  discoveryOwnerEligible?: boolean;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -70,6 +85,11 @@ export function GroupInviteModal({
             maxMembers={maxMembers}
             joinMode={joinMode}
             pendingRequests={pendingRequests}
+            visibility={visibility}
+            discoveryPaused={discoveryPaused}
+            checkInFrequency={checkInFrequency}
+            discoverySummary={discoverySummary}
+            discoveryOwnerEligible={discoveryOwnerEligible}
           />
         </Card>
       </div>

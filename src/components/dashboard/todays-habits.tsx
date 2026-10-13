@@ -4,7 +4,7 @@ import { toggleGoalAction } from "@/app/(app)/member/actions";
 import { HabitQuickAdd } from "@/components/progress/habit-quick-add";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
-import { formatReminderTime, habitsScheduledToday } from "@/lib/habits/schedule";
+import { habitsScheduledToday } from "@/lib/habits/schedule";
 import { habitsCompletedToday } from "@/lib/progress/consistency";
 import type { PersonalGoal } from "@/types";
 import { Check, Circle } from "lucide-react";
@@ -117,21 +117,14 @@ export function TodaysHabits({
                   ) : (
                     <Circle className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
                   )}
-                  <span className="min-w-0 flex-1">
-                    <span
-                      className={
-                        goal.completedToday
-                          ? "block text-sm font-medium text-[#1B2440]"
-                          : "block text-sm font-medium"
-                      }
-                    >
-                      {goal.title}
-                    </span>
-                    {formatReminderTime(goal.reminderTime) ? (
-                      <span className="block text-xs text-muted-foreground">
-                        {formatReminderTime(goal.reminderTime)}
-                      </span>
-                    ) : null}
+                  <span
+                    className={
+                      goal.completedToday
+                        ? "flex-1 text-sm font-medium text-[#1B2440]"
+                        : "flex-1 text-sm font-medium"
+                    }
+                  >
+                    {goal.title}
                   </span>
                 </button>
               </Card>

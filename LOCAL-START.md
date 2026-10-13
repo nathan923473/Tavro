@@ -129,7 +129,7 @@ Then:
 npm run check:media
 ```
 
-- **Members:** Profile tab → **Profile picture** (upload a photo).
+- **Members:** Profile tab → **Profile picture** (upload or pick a style).
 - **Creators:** Studio → **Challenge cover & gallery** (or right after publishing a challenge).
 
 Full guide: **`docs/PHOTO-UPLOADS.md`**.

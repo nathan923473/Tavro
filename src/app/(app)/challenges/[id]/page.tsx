@@ -3,6 +3,8 @@ import { BackButton } from "@/components/layout/back-button";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchMyChallengeFeedback } from "@/lib/challenge-report/challenge-feedback-actions";
 import { fetchChallengeParticipantHub } from "@/lib/data/challenge-participant-hub";
+import { fetchUserGroup } from "@/lib/data/groups";
+import { fetchWeeklyConsistencySummary } from "@/lib/data/member";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
@@ -33,6 +35,11 @@ export default async function JoinedChallengePage({ params }: Props) {
       ? await fetchMyChallengeFeedback(id, user.id)
       : null;
 
+  const [groupState, consistency] = await Promise.all([
+    fetchUserGroup(user.id),
+    fetchWeeklyConsistencySummary(user.id),
+  ]);
+
   return (
     <div className="animate-fade-up pb-6">
       <div className="sticky top-0 z-40 border-b border-border/50 bg-background/90 px-3 py-3 backdrop-blur-md">
@@ -44,6 +51,10 @@ export default async function JoinedChallengePage({ params }: Props) {
             hub={hub}
             viewerUserId={user.id}
             feedbackInitial={feedbackInitial}
+            hasAccountabilityGroup={Boolean(groupState.group)}
+            habitConsistencyPercent={
+              consistency.planned > 0 ? consistency.percent : null
+            }
           />
         </Suspense>
       </div>

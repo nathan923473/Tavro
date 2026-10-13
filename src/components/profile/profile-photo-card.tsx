@@ -11,8 +11,8 @@ export async function ProfilePhotoCard() {
     <Card className="border-primary/25 ring-1 ring-primary/10">
       <h2 className="text-lg font-semibold">Profile picture</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Upload a photo — shown on your account and in your private
-        accountability group.
+        Upload a photo to personalize your account and private accountability
+        group. Without a photo, a simple default with your initials is used.
       </p>
       <div className="mt-4">
         <ProfileAvatarEditor

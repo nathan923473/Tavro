@@ -1,4 +1,5 @@
-import { habitsScheduledToday, scheduledDaysPerWeek } from "@/lib/habits/schedule";
+import { habitsScheduledToday } from "@/lib/habits/schedule";
+import { normalizeScheduleMask, popcountDays } from "@/lib/habits/weekdays";
 import type { PersonalGoal } from "@/types";
 
 export type WeeklyConsistency = {
@@ -11,7 +12,10 @@ export type WeeklyConsistency = {
 export function weeklyPlannedCompletions(goals: PersonalGoal[]): number {
   return goals.reduce((sum, g) => {
     if (g.paused) return sum;
-    return sum + scheduledDaysPerWeek(g);
+    if (g.frequencyType === "times_per_week") {
+      return sum + Math.min(7, Math.max(1, g.frequencyTarget));
+    }
+    return sum + popcountDays(normalizeScheduleMask(g.scheduleDaysMask));
   }, 0);
 }
 

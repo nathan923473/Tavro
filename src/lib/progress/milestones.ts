@@ -26,4 +26,12 @@ export const MILESTONE_DEFINITIONS: Record<
     label: "30-day consistency",
     description: "Thirty days of showing up for your habits.",
   },
+  returned_after_break: {
+    label: "Back on track",
+    description: "Returned to your challenge after a break — progress still counts.",
+  },
+  weekly_goal_met: {
+    label: "Strong week",
+    description: "Hit at least 70% of your planned habits this week.",
+  },
 };

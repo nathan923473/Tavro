@@ -1,122 +1,24 @@
+import {
+  dayIndexFromDateKey,
+  isScheduledOnDayIndex,
+  normalizeScheduleMask,
+  todayDayIndex,
+} from "@/lib/habits/weekdays";
 import type { PersonalGoal } from "@/types";
 
-/** Bit 0 = Monday … bit 6 = Sunday. */
-export const ALL_WEEKDAYS_MASK = 127;
-
-export const WEEKDAY_OPTIONS = [
-  { label: "Mon", full: "Monday", bit: 1 },
-  { label: "Tue", full: "Tuesday", bit: 2 },
-  { label: "Wed", full: "Wednesday", bit: 4 },
-  { label: "Thu", full: "Thursday", bit: 8 },
-  { label: "Fri", full: "Friday", bit: 16 },
-  { label: "Sat", full: "Saturday", bit: 32 },
-  { label: "Sun", full: "Sunday", bit: 64 },
-] as const;
-
-export function normalizeDaysMask(mask: number | null | undefined): number {
-  if (typeof mask !== "number" || !Number.isInteger(mask) || mask < 1 || mask > ALL_WEEKDAYS_MASK) {
-    return ALL_WEEKDAYS_MASK;
-  }
-  return mask;
-}
-
-/** `HH:MM` from a time input or a Postgres `time` value. */
-export function normalizeReminderTime(value: string | null | undefined): string | null {
-  if (!value) return null;
-  const match = /^(\d{2}):(\d{2})/.exec(value);
-  if (!match) return null;
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  if (hours > 23 || minutes > 59) return null;
-  return `${match[1]}:${match[2]}`;
-}
-
-export function formatReminderTime(value: string | null | undefined): string | null {
-  const normalized = normalizeReminderTime(value);
-  if (!normalized) return null;
-  const [hourText, minutes] = normalized.split(":");
-  const hours = Number(hourText);
-  const suffix = hours >= 12 ? "PM" : "AM";
-  const h12 = hours % 12 || 12;
-  return `${h12}:${minutes} ${suffix}`;
-}
-
-export function habitDaysLabel(mask: number | null | undefined): string {
-  const normalized = normalizeDaysMask(mask);
-  if (normalized === ALL_WEEKDAYS_MASK) return "Every day";
-  const selected = WEEKDAY_OPTIONS.filter((day) => (normalized & day.bit) !== 0).map(
-    (day) => day.label,
-  );
-  if (normalized === 31) return "Weekdays";
-  if (normalized === 96) return "Weekends";
-  return selected.join(", ");
-}
-
-export function habitScheduleSummary(
-  goal: Pick<PersonalGoal, "scheduleDaysMask" | "reminderTime" | "frequencyType" | "frequencyTarget">,
-): string {
-  const days = habitDaysLabel(goal.scheduleDaysMask);
-  const time = formatReminderTime(goal.reminderTime);
-  const times =
-    goal.frequencyType === "times_per_week" ? `${goal.frequencyTarget}× per week` : null;
-  const parts: string[] = [];
-  if (times && days === "Every day") parts.push(times);
-  else {
-    parts.push(days);
-    if (times) parts.push(times);
-  }
-  if (time) parts.push(time);
-  return parts.join(" · ");
-}
-
-export function scheduledDaysPerWeek(
-  goal: Pick<PersonalGoal, "frequencyType" | "frequencyTarget" | "scheduleDaysMask">,
-): number {
-  const days = popcount(normalizeDaysMask(goal.scheduleDaysMask));
+function isHabitScheduledOnDayIndex(goal: PersonalGoal, dayIndex: number): boolean {
+  if (goal.paused) return false;
+  const mask = normalizeScheduleMask(goal.scheduleDaysMask);
+  if (!isScheduledOnDayIndex(mask, dayIndex)) return false;
   if (goal.frequencyType === "times_per_week") {
-    const target = Math.min(7, Math.max(1, goal.frequencyTarget));
-    return Math.min(days, target);
+    return goal.weeklyCompletion < goal.frequencyTarget;
   }
-  return days;
-}
-
-function popcount(mask: number): number {
-  let count = 0;
-  let bits = mask;
-  while (bits) {
-    count += bits & 1;
-    bits >>= 1;
-  }
-  return count;
-}
-
-export function utcWeekdayFromDateKey(dateKey: string): number {
-  return new Date(`${dateKey}T12:00:00.000Z`).getUTCDay();
-}
-
-function weekdayBitForUtcDay(utcDay: number): number {
-  if (utcDay === 0) return 64;
-  return 1 << (utcDay - 1);
-}
-
-export function dateMatchesDaysMask(
-  dateKey: string,
-  mask: number | null | undefined,
-): boolean {
-  const bit = weekdayBitForUtcDay(utcWeekdayFromDateKey(dateKey));
-  return (normalizeDaysMask(mask) & bit) !== 0;
-}
-
-function dateKeyFromDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
+  return true;
 }
 
 /** Whether this habit counts toward today's plan (not a weekly rest day). */
-export function isHabitScheduledToday(goal: PersonalGoal, now: Date = new Date()): boolean {
-  if (goal.paused) return false;
-  if (!dateMatchesDaysMask(dateKeyFromDate(now), goal.scheduleDaysMask)) return false;
-  if (goal.frequencyType === "daily") return true;
-  return goal.weeklyCompletion < goal.frequencyTarget;
+export function isHabitScheduledToday(goal: PersonalGoal): boolean {
+  return isHabitScheduledOnDayIndex(goal, todayDayIndex());
 }
 
 export function habitsScheduledToday(goals: PersonalGoal[]): PersonalGoal[] {
@@ -129,8 +31,10 @@ export function isHabitScheduledOnDate(
   dateKey: string,
   weekCompletionsByGoal: Map<string, Set<string>>,
 ): boolean {
+  const dayIndex = dayIndexFromDateKey(dateKey);
+  const mask = normalizeScheduleMask(goal.scheduleDaysMask);
+  if (!isScheduledOnDayIndex(mask, dayIndex)) return false;
   if (goal.paused) return false;
-  if (!dateMatchesDaysMask(dateKey, goal.scheduleDaysMask)) return false;
   if (goal.frequencyType === "daily") return true;
 
   const weekStart = weekStartForDateKey(dateKey);

@@ -83,20 +83,16 @@ So “Copy invite link” buttons use your local URL while testing.
 
 ### iPhone (Safari)
 
-1. Open the app in **Safari**.
+1. Open the app in **Safari** (installation from Chrome on iOS is limited).
 2. Tap **Share** → **Add to Home Screen**.
 3. Launch **Tavro** from your home screen for standalone mode.
-
-### iPhone (Chrome)
-
-Chrome on iPhone cannot add the app. Use **Copy link**, open that link in Safari, then **Share** → **Add to Home Screen**.
 
 ### Android (Chrome)
 
 1. Open the app in Chrome.
 2. When prompted, tap **Install app**, or use the menu → **Install app** / **Add to Home screen**.
 
-Home shows an **Add to home screen** tip (**Show how**). Dismiss it with **Not now** — that choice is stored in localStorage. The steps stay on **Profile → Add to home screen**.
+You can also use **Profile → Install the app** for platform-specific hints.
 
 ## Environment variables (next phase)
 

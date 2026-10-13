@@ -10,7 +10,7 @@ import {
 import { buildCreatorChallengeWindow } from "@/lib/challenge-lifecycle/creator-windows";
 import { RECOMMENDED_REGISTRATION_OPEN_DAYS_BEFORE_START } from "@/lib/challenge-lifecycle/config";
 import type { StudioChallengeBucket } from "@/types/creator-studio";
-import { BarChart3, PlusCircle } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = { title: "Studio challenges" };
@@ -58,9 +58,8 @@ export default async function StudioChallengesPage() {
         </Link>
         <Link
           href="/studio/challenges/demo/report"
-          className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/5 px-3 text-sm font-semibold text-primary"
+          className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-primary/40 bg-primary/5 px-3 text-sm font-semibold text-primary"
         >
-          <BarChart3 className="h-4 w-4" aria-hidden />
           Preview sample report
         </Link>
       </div>
@@ -91,25 +90,21 @@ export default async function StudioChallengesPage() {
                         />
                       ) : null}
                     </div>
-                    <div className="flex shrink-0 flex-wrap gap-2">
-                      {c.bucket === "completed" ? (
-                        <Link
-                          href={`/studio/challenges/${c.id}/report`}
-                          className="inline-flex min-h-9 items-center justify-center rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground"
-                        >
-                          View report
-                        </Link>
-                      ) : null}
+                    <div className="flex shrink-0 gap-2">
                       {c.publishStatus !== "draft" ? (
                         <Link
                           href={`/challenges/${c.id}`}
-                          className={
-                            c.bucket === "completed"
-                              ? "inline-flex min-h-9 items-center justify-center rounded-lg border border-border px-3 text-xs font-semibold text-primary"
-                              : "inline-flex min-h-9 items-center justify-center rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground"
-                          }
+                          className="inline-flex min-h-9 items-center justify-center rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground"
                         >
                           Open challenge
+                        </Link>
+                      ) : null}
+                      {c.bucket === "completed" ? (
+                        <Link
+                          href={`/studio/challenges/${c.id}/report`}
+                          className="inline-flex min-h-9 items-center justify-center rounded-lg border border-primary/40 bg-primary/5 px-3 text-xs font-semibold text-primary"
+                        >
+                          View report
                         </Link>
                       ) : null}
                       <Link

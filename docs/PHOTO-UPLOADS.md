@@ -23,7 +23,7 @@ npm run check:media
 ## Members — profile picture
 
 1. **Profile** tab → **Profile picture** card.
-2. **Upload photo**.
+2. **Upload photo** or pick one of the six styles.
 3. Your photo appears on Profile, Home, and **private accountability group** member list.
 
 You can also set a photo during **onboarding** (step “Add a profile picture”).

@@ -1,15 +1,30 @@
 "use client";
 
 import {
-  celebrateSharedCommitmentAction,
-  checkInSharedHabitAction,
-  saveSharedCommitmentReflectionAction,
+  celebrateSharedHabitAction,
+  sendGroupEncouragementAction,
 } from "@/app/(app)/groups/actions";
 import { toggleGoalAction } from "@/app/(app)/member/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import type { AccountabilityGroup } from "@/types";
-import { useState } from "react";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import { statusLabel } from "@/lib/groups/shared-habit-status";
+import type { AccountabilityGroup, GroupSharedCommitment } from "@/types";
+import { ThumbsUp } from "lucide-react";
+import { useMemo, useState } from "react";
+
+function statusTone(status: GroupSharedCommitment["todayStatus"]): string {
+  switch (status) {
+    case "completed":
+      return "bg-[#B8F4DA]/40 text-[#1B2440] border-[#B8F4DA]";
+    case "pending":
+      return "bg-secondary/60 text-foreground border-border";
+    case "missed":
+      return "bg-muted text-muted-foreground border-border";
+    default:
+      return "bg-surface text-muted-foreground border-border";
+  }
+}
 
 export function GroupSharedCommitmentsDashboard({
   group,
@@ -20,159 +35,185 @@ export function GroupSharedCommitmentsDashboard({
   pending: boolean;
   run: (action: () => Promise<unknown>) => void;
 }) {
-  const ownReflection = group.sharedReflections.find((reflection) => reflection.isOwn);
-  const [reflection, setReflection] = useState(ownReflection?.body ?? "");
-  const otherReflections = group.sharedReflections.filter((item) => !item.isOwn);
+  const [encourageUserId, setEncourageUserId] = useState<string | null>(null);
+  const [encourageMessage, setEncourageMessage] = useState(
+    "Nice work showing up — proud of you!",
+  );
+
+  const byMember = useMemo(() => {
+    const map = new Map<
+      string,
+      { displayName: string; avatarUrl: string | null; items: GroupSharedCommitment[] }
+    >();
+    for (const c of group.sharedCommitments) {
+      let bucket = map.get(c.userId);
+      if (!bucket) {
+        bucket = {
+          displayName: c.displayName,
+          avatarUrl: c.avatarUrl,
+          items: [],
+        };
+        map.set(c.userId, bucket);
+      }
+      bucket.items.push(c);
+    }
+    return [...map.entries()];
+  }, [group.sharedCommitments]);
+
+  const summary = useMemo(() => {
+    const today = group.sharedCommitments.filter(
+      (c) => c.todayStatus === "completed" || c.todayStatus === "pending",
+    );
+    const done = today.filter((c) => c.todayStatus === "completed").length;
+    return { done, total: today.length };
+  }, [group.sharedCommitments]);
+
+  if (!group.sharedCommitments.length) {
+    return (
+      <Card className="space-y-2">
+        <h3 className="font-semibold">Shared commitments</h3>
+        <p className="text-sm text-muted-foreground">
+          Daily habits from Progress appear here for group members automatically. Add weekly
+          targets in the section below.
+        </p>
+      </Card>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <Card className="space-y-3">
+    <Card className="space-y-3">
+      <div className="flex items-start justify-between gap-2">
         <div>
           <h3 className="font-semibold">Shared commitments</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Active habits from Progress show up here for your group. Weight and private check-in
-            notes stay private.
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Habits shared from Progress — synced when someone checks them off.
           </p>
         </div>
-        {group.sharedCommitments.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No habits here yet. Add one on Progress and it shows up for your group.
+        {summary.total > 0 ? (
+          <p className="shrink-0 text-sm font-semibold tabular-nums text-primary">
+            {summary.done}/{summary.total} done today
           </p>
-        ) : (
-          <ul className="space-y-2">
-            {group.sharedCommitments.map((commitment) => {
-              const done = Math.min(commitment.progressCount, commitment.targetCount);
-              const pct = commitment.targetCount
-                ? Math.round((done / commitment.targetCount) * 100)
-                : 0;
-              return (
-                <li key={commitment.shareId} className="rounded-xl border border-border px-3 py-2">
-                  <p className="text-sm font-medium">
-                    {commitment.isOwn ? "You" : commitment.displayName}
-                    <span className="font-normal text-muted-foreground"> · {commitment.title}</span>
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {commitment.paused
-                      ? "Paused"
-                      : `${done}/${commitment.targetCount} this week`}
-                    {commitment.celebrationCount > 0
-                      ? ` · ${commitment.celebrationCount} celebration${commitment.celebrationCount === 1 ? "" : "s"}`
-                      : ""}
-                  </p>
-                  {commitment.paused ? null : (
-                    <div
-                      className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"
-                      role="progressbar"
-                      aria-valuemin={0}
-                      aria-valuemax={commitment.targetCount}
-                      aria-valuenow={done}
-                      aria-label={`${commitment.title}: ${done} of ${commitment.targetCount} this week`}
+        ) : null}
+      </div>
+
+      <ul className="space-y-3">
+        {byMember.map(([userId, member]) => (
+          <li key={userId} className="rounded-2xl border border-border/80 bg-surface/50 p-3">
+            <div className="mb-2 flex items-center gap-2">
+              <UserAvatar
+                displayName={member.displayName}
+                avatarUrl={member.avatarUrl}
+                size="sm"
+              />
+              <p className="text-sm font-semibold">{member.displayName}</p>
+            </div>
+            <ul className="space-y-2">
+              {member.items.map((c) => (
+                <li
+                  key={c.shareId}
+                  className="flex flex-col gap-2 rounded-xl border border-border/60 bg-background px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">{c.title}</p>
+                    <p className="text-xs text-muted-foreground">{c.frequencyLabel}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusTone(c.todayStatus)}`}
                     >
-                      <div
-                        className="h-full rounded-full bg-primary"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  )}
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {commitment.isOwn ? (
-                      <>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          className="min-h-8 px-2 text-xs"
-                          disabled={pending || commitment.paused || commitment.completedToday}
-                          onClick={() =>
-                            run(() =>
-                              checkInSharedHabitAction({
-                                groupId: group.id,
-                                goalId: commitment.goalId,
-                              }),
-                            )
-                          }
-                        >
-                          {commitment.completedToday ? "Checked in" : "Check in"}
-                        </Button>
-                        {commitment.completedToday ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            className="min-h-8 px-2 text-xs"
-                            disabled={pending}
-                            onClick={() => run(() => toggleGoalAction(commitment.goalId))}
-                          >
-                            Undo today
-                          </Button>
-                        ) : null}
-                      </>
-                    ) : (
+                      {statusLabel(c.todayStatus)}
+                    </span>
+                    {c.isOwn && c.todayStatus === "completed" ? (
                       <Button
                         type="button"
-                        variant="secondary"
+                        variant="outline"
                         className="min-h-8 px-2 text-xs"
-                        disabled={pending || commitment.celebratedByViewer}
+                        disabled={pending}
+                        onClick={() => run(() => toggleGoalAction(c.memberGoalId))}
+                      >
+                        Undo today
+                      </Button>
+                    ) : null}
+                    {c.todayStatus === "completed" && !c.isOwn ? (
+                      <Button
+                        type="button"
+                        variant={c.viewerCelebrated ? "secondary" : "outline"}
+                        className="min-h-8 gap-1 px-2 text-xs"
+                        disabled={pending || c.viewerCelebrated}
                         onClick={() =>
                           run(() =>
-                            celebrateSharedCommitmentAction({
+                            celebrateSharedHabitAction({
                               groupId: group.id,
-                              shareId: commitment.shareId,
+                              memberGoalId: c.memberGoalId,
+                              forUserId: c.userId,
                             }),
                           )
                         }
                       >
-                        {commitment.celebratedByViewer ? "Celebrated" : "Celebrate"}
+                        <ThumbsUp className="h-3.5 w-3.5" aria-hidden />
+                        {c.viewerCelebrated
+                          ? "Celebrated"
+                          : c.celebrationCount > 0
+                            ? `👍 ${c.celebrationCount}`
+                            : "Celebrate"}
                       </Button>
-                    )}
+                    ) : null}
+                    {!c.isOwn && c.todayStatus !== "completed" ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="min-h-8 px-2 text-xs"
+                        disabled={pending}
+                        onClick={() => setEncourageUserId(userId)}
+                      >
+                        Check in
+                      </Button>
+                    ) : null}
                   </div>
                 </li>
-              );
-            })}
-          </ul>
-        )}
-      </Card>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ul>
 
-      <Card className="space-y-3">
-        <div>
-          <h3 className="font-semibold">Weekly reflection</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            A short note for your group about this week. It is not your private Progress reflection.
-          </p>
+      {encourageUserId ? (
+        <div className="rounded-xl border border-primary/20 bg-secondary/30 p-3">
+          <p className="text-sm font-medium">Send supportive check-in</p>
+          <textarea
+            className="mt-2 min-h-[72px] w-full rounded-xl border border-border px-3 py-2 text-sm"
+            value={encourageMessage}
+            onChange={(e) => setEncourageMessage(e.target.value)}
+          />
+          <div className="mt-2 flex gap-2">
+            <Button
+              type="button"
+              className="min-h-9 flex-1 text-xs"
+              disabled={pending}
+              onClick={() =>
+                run(async () => {
+                  await sendGroupEncouragementAction({
+                    groupId: group.id,
+                    toUserId: encourageUserId,
+                    message: encourageMessage,
+                  });
+                  setEncourageUserId(null);
+                })
+              }
+            >
+              Send encouragement
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-9 text-xs"
+              onClick={() => setEncourageUserId(null)}
+            >
+              Cancel
+            </Button>
+          </div>
         </div>
-        <textarea
-          rows={3}
-          maxLength={500}
-          value={reflection}
-          onChange={(event) => setReflection(event.target.value)}
-          placeholder="What helped you show up this week?"
-          className="w-full rounded-xl border border-border px-3 py-2 text-sm"
-        />
-        <Button
-          type="button"
-          variant="secondary"
-          fullWidth
-          disabled={pending}
-          onClick={() =>
-            run(() =>
-              saveSharedCommitmentReflectionAction({
-                groupId: group.id,
-                body: reflection,
-              }),
-            )
-          }
-        >
-          Save reflection
-        </Button>
-        {otherReflections.length > 0 ? (
-          <ul className="space-y-2 border-t border-border pt-3">
-            {otherReflections.map((item) => (
-              <li key={item.userId} className="text-sm">
-                <p className="font-medium">{item.displayName}</p>
-                <p className="text-muted-foreground">{item.body}</p>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </Card>
-    </div>
+      ) : null}
+    </Card>
   );
 }

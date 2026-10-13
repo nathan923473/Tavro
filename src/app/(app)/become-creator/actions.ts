@@ -1,5 +1,7 @@
 "use server";
 
+import { readCreatorApplicationAttribution } from "@/lib/creator/growth-actions";
+import { bioContainsVerificationCode } from "@/lib/creator/verification";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -22,11 +24,24 @@ export async function submitCreatorApplication(formData: FormData): Promise<void
     throw new Error("You must be logged in.");
   }
 
-  const { data: appId, error } = await supabase.rpc("submit_creator_application", {
+  const attribution = await readCreatorApplicationAttribution();
+  const rpcArgs = {
     p_display_name: displayName,
     p_pitch: pitch,
     p_social_link: socialLink,
-  });
+    p_referred_by_user_id: attribution?.referredByUserId ?? null,
+    p_application_source: attribution?.source ?? "unknown",
+  };
+
+  let { data: appId, error } = await supabase.rpc("submit_creator_application", rpcArgs);
+
+  if (error && /p_referred_by|p_application_source|schema cache/i.test(error.message)) {
+    ({ data: appId, error } = await supabase.rpc("submit_creator_application", {
+      p_display_name: displayName,
+      p_pitch: pitch,
+      p_social_link: socialLink,
+    }));
+  }
 
   if (error) {
     throw new Error(error.message);
@@ -41,8 +56,72 @@ export async function submitCreatorApplication(formData: FormData): Promise<void
   redirect(`/become-creator?submitted=1&app=${appId}`);
 }
 
-/** Applicant confirms they sent the Instagram DM — does not verify ownership. */
-export async function confirmDmSent(applicationId: string): Promise<{
+export async function verifyBioForApplication(applicationId: string): Promise<{
+  ok: boolean;
+  message: string;
+}> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false, message: "Log in to verify." };
+  }
+
+  const { data: app, error: loadError } = await supabase
+    .from("creator_applications")
+    .select("*")
+    .eq("id", applicationId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (loadError || !app) {
+    return { ok: false, message: "Application not found." };
+  }
+
+  if (!app.verification_code || !app.social_link) {
+    return { ok: false, message: "Missing verification data." };
+  }
+
+  if (
+    app.verification_code_expires_at &&
+    new Date(app.verification_code_expires_at) < new Date()
+  ) {
+    return { ok: false, message: "Verification code expired. Submit a new application." };
+  }
+
+  const check = await bioContainsVerificationCode(
+    app.social_link,
+    app.verification_code,
+  );
+
+  if (!check.found) {
+    return {
+      ok: false,
+      message:
+        check.error ??
+        "Code not found in your public bio yet. Add the code, save, then try again.",
+    };
+  }
+
+  const { error } = await supabase.rpc("mark_verification_verified", {
+    app_id: applicationId,
+    method: "bio",
+  });
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath("/become-creator");
+  revalidatePath("/admin/creator-applications");
+  return {
+    ok: true,
+    message: "Social account verified. Your application is awaiting admin review.",
+  };
+}
+
+export async function requestDmVerification(applicationId: string): Promise<{
   ok: boolean;
   message: string;
 }> {
@@ -54,34 +133,6 @@ export async function confirmDmSent(applicationId: string): Promise<{
     return { ok: false, message: "Log in first." };
   }
 
-  const { data: app, error: loadError } = await supabase
-    .from("creator_applications")
-    .select("id, verification_code_expires_at, verification_state")
-    .eq("id", applicationId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (loadError || !app) {
-    return { ok: false, message: "Application not found." };
-  }
-
-  if (app.verification_state === "verified") {
-    return {
-      ok: true,
-      message: "Ownership already verified. Waiting for admin approval.",
-    };
-  }
-
-  if (
-    app.verification_code_expires_at &&
-    new Date(app.verification_code_expires_at) < new Date()
-  ) {
-    return {
-      ok: false,
-      message: "Verification code expired. Contact support or reapply when enabled.",
-    };
-  }
-
   const { error } = await supabase.rpc("request_dm_verification", {
     app_id: applicationId,
   });
@@ -91,10 +142,8 @@ export async function confirmDmSent(applicationId: string): Promise<{
   }
 
   revalidatePath("/become-creator");
-  revalidatePath("/admin/creator-applications");
   return {
     ok: true,
-    message:
-      "Thanks — we recorded that you sent the DM. An admin will confirm ownership after checking Instagram. This does not approve you as a creator yet.",
+    message: "DM verification requested. An admin will confirm after you message us.",
   };
 }

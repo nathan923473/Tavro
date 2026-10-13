@@ -9,8 +9,6 @@ Run once in SQL Editor:
 
 Extends `member_goals` with frequency, pause, and optional `linked_challenge_id`.
 
-Then run `supabase/migrations/046_habit_weekday_schedule.sql`. That adds `schedule_days_mask` (bit 0 = Monday through bit 6 = Sunday; 127 = every day) and optional `reminder_time`. The add-habit form includes a day and time picker. Existing habits stay every day, with no reminder.
-
 ## Member flow
 
 - **Home:** Today's habits (one tap), optional mood check-in, linked challenge activity, weekly consistency.

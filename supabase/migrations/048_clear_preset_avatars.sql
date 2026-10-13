@@ -1,15 +1,4 @@
--- Profile photos are uploads only. Decorative preset: values are no longer valid.
--- Some communities inherited a preset when the profile photo was saved and the
--- community had no avatar of its own.
-
+-- Style presets removed; use initials default until user uploads a photo.
 update public.profiles
-set
-  avatar_url = null,
-  updated_at = now()
-where avatar_url like 'preset:%';
-
-update public.creator_communities
-set
-  avatar_url = null,
-  updated_at = now()
+set avatar_url = null, updated_at = now()
 where avatar_url like 'preset:%';

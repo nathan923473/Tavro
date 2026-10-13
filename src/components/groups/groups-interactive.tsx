@@ -5,10 +5,18 @@ import {
   requestJoinGroupByInviteCodeAction,
   type GroupJoinMode,
 } from "@/app/(app)/groups/actions";
+import { GroupDiscoveryPanel } from "@/components/groups/group-discovery-panel";
 import { GroupHubView } from "@/components/groups/group-hub-view";
 import { GroupPendingJoinCard } from "@/components/groups/group-pending-join-card";
 import { GroupsMotivationBanner } from "@/components/groups/groups-motivation-banner";
 import type { PendingGroupJoin } from "@/lib/data/groups";
+import {
+  GROUP_CHECK_IN_FREQUENCY_OPTIONS,
+  GROUP_VISIBILITY_OPTIONS,
+  type DiscoverableGroupCard,
+  type GroupCheckInFrequency,
+  type GroupVisibility,
+} from "@/lib/groups/discovery";
 import { GROUP_FOCUS_OPTIONS } from "@/lib/groups/focus-labels";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -29,6 +37,8 @@ export function GroupsInteractive({
   viewerUserId = null,
   pendingJoin = null,
   existingGroupBlocked = false,
+  discoveryEligible = false,
+  initialDiscoverableGroups = [],
 }: {
   group: AccountabilityGroup | null;
   feed: GroupActivity[];
@@ -36,6 +46,8 @@ export function GroupsInteractive({
   viewerUserId?: string | null;
   pendingJoin?: PendingGroupJoin | null;
   existingGroupBlocked?: boolean;
+  discoveryEligible?: boolean;
+  initialDiscoverableGroups?: DiscoverableGroupCard[];
 }) {
   const router = useRouter();
   const createFormRef = useRef<HTMLDivElement>(null);
@@ -48,6 +60,11 @@ export function GroupsInteractive({
   const [newGroupFocusCustom, setNewGroupFocusCustom] = useState("");
   const [newGroupSharedGoal, setNewGroupSharedGoal] = useState("");
   const [joinMode, setJoinMode] = useState<GroupJoinMode>("approval");
+  const [visibility, setVisibility] = useState<GroupVisibility>("private");
+  const [checkInFrequency, setCheckInFrequency] = useState<GroupCheckInFrequency>("flexible");
+  const [discoveryBlurb, setDiscoveryBlurb] = useState("");
+
+  const noGroupUiBlocked = Boolean(pendingJoin) || existingGroupBlocked;
 
   if (!loggedIn) {
     return (
@@ -73,6 +90,16 @@ export function GroupsInteractive({
         />
 
         {pendingJoin ? <GroupPendingJoinCard pendingJoin={pendingJoin} /> : null}
+
+        <GroupDiscoveryPanel
+          eligible={discoveryEligible}
+          initialGroups={initialDiscoverableGroups}
+          hasPendingJoin={Boolean(pendingJoin)}
+          disabled={noGroupUiBlocked}
+          onScrollToCreate={() =>
+            createFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+          }
+        />
 
         {existingGroupBlocked && !pendingJoin ? (
           <Card className="border-primary/30 bg-primary/5">
@@ -155,15 +182,68 @@ export function GroupsInteractive({
             <input
               value={newGroupSharedGoal}
               onChange={(e) => setNewGroupSharedGoal(e.target.value)}
-              placeholder="Stay consistent with daily movement"
+              placeholder="e.g. Walk regularly, exercise 3× weekly, sustainable routines"
               className="mt-1 w-full rounded-xl border border-border px-3 py-2.5 text-sm"
             />
           </label>
           <label className="mt-3 block text-sm">
-            <span className="font-medium">Who can join?</span>
+            <span className="font-medium">Group visibility</span>
+            <select
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+              value={visibility}
+              onChange={(e) => {
+                const next = e.target.value as GroupVisibility;
+                setVisibility(next);
+                if (next === "discoverable") setJoinMode("approval");
+              }}
+            >
+              {GROUP_VISIBILITY_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1 block text-xs text-muted-foreground">
+              {GROUP_VISIBILITY_OPTIONS.find((o) => o.value === visibility)?.description}
+            </span>
+          </label>
+          {visibility === "discoverable" ? (
+            <>
+              <label className="mt-3 block text-sm">
+                <span className="font-medium">Check-in rhythm (for discovery)</span>
+                <select
+                  className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+                  value={checkInFrequency}
+                  onChange={(e) =>
+                    setCheckInFrequency(e.target.value as GroupCheckInFrequency)
+                  }
+                >
+                  {GROUP_CHECK_IN_FREQUENCY_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="mt-3 block text-sm">
+                <span className="font-medium">Short description for discovery</span>
+                <textarea
+                  value={discoveryBlurb}
+                  onChange={(e) => setDiscoveryBlurb(e.target.value)}
+                  placeholder="Who is this group for? Keep it general — no private details."
+                  rows={2}
+                  maxLength={280}
+                  className="mt-1 w-full rounded-xl border border-border px-3 py-2.5 text-sm"
+                />
+              </label>
+            </>
+          ) : null}
+          <label className="mt-3 block text-sm">
+            <span className="font-medium">Who can join with an invite?</span>
             <select
               className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
               value={joinMode}
+              disabled={visibility === "discoverable"}
               onChange={(e) => setJoinMode(e.target.value as GroupJoinMode)}
             >
               <option value="approval">Owner approval required</option>
@@ -193,6 +273,10 @@ export function GroupsInteractive({
                       newGroupFocus === "custom" ? newGroupFocusCustom.trim() : undefined,
                     sharedGoal: newGroupSharedGoal.trim(),
                     joinMode,
+                    visibility,
+                    checkInFrequency,
+                    discoverySummary:
+                      discoveryBlurb.trim() || newGroupDescription.trim(),
                   });
                   setStatus("Your group is ready — invite a few friends who share your goals.");
                   router.refresh();
@@ -257,5 +341,12 @@ export function GroupsInteractive({
     );
   }
 
-  return <GroupHubView group={group} feed={feed} viewerUserId={viewerUserId} />;
+  return (
+    <GroupHubView
+      group={group}
+      feed={feed}
+      viewerUserId={viewerUserId}
+      discoveryOwnerEligible={discoveryEligible}
+    />
+  );
 }

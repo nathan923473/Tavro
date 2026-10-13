@@ -2,14 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 import { listUserGroupCandidateIds } from "@/lib/data/resolve-user-group-id";
 import { unwrapOne } from "@/lib/data/relations";
 import { formatTimeAgo, todayDateKey } from "@/lib/dates";
-import { fetchSharedCommitmentBoard } from "@/lib/data/group-shared-commitments";
-import { autoShareActiveMemberGoals } from "@/lib/groups/auto-share-member-goals";
 import { currentWeekStartKey, previousWeekStartKey } from "@/lib/groups/week";
 import { ACCOUNTABILITY_GROUP_MIN_MEMBERS } from "@/lib/copy/accountability-groups";
 import {
   isPersonalGoalScheduledToday,
   scheduleLabel,
 } from "@/lib/groups/goal-schedule";
+import { fetchGroupSharedCommitments } from "@/lib/data/group-shared-commitments";
+import { ensureMemberGoalsSharedWithGroup } from "@/lib/groups/auto-share-member-goals";
 import type {
   AccountabilityGroup,
   GroupActivity,
@@ -19,6 +19,7 @@ import type {
   GroupFocusType,
   GroupJoinRequest,
   GroupMemberPersonalGoal,
+  GroupWeeklyReflection,
   GroupWeeklyRecap,
 } from "@/types";
 
@@ -68,40 +69,6 @@ export async function fetchUserGroup(userId: string): Promise<UserGroupState> {
     feed: [],
     pendingJoin: pending,
     existingGroupBlocked: candidateIds.length > 0,
-  };
-}
-
-export async function fetchViewerAccountabilityGroup(
-  userId: string,
-): Promise<{ id: string; name: string } | null> {
-  const supabase = await createClient();
-  const [groupId] = await listUserGroupCandidateIds(supabase, userId);
-  if (!groupId) return null;
-
-  const rpc = await supabase.rpc("get_accountability_group_for_viewer", {
-    p_group_id: groupId,
-  });
-  const rpcRow = !rpc.error && rpc.data
-    ? Array.isArray(rpc.data)
-      ? rpc.data[0]
-      : rpc.data
-    : null;
-  if (rpcRow && typeof rpcRow === "object" && "name" in rpcRow) {
-    const name = (rpcRow as { name?: unknown }).name;
-    return {
-      id: groupId,
-      name: typeof name === "string" && name.trim() ? name : "Accountability group",
-    };
-  }
-
-  const { data } = await supabase
-    .from("accountability_groups")
-    .select("id, name")
-    .eq("id", groupId)
-    .maybeSingle();
-  return {
-    id: groupId,
-    name: data?.name?.trim() || "Accountability group",
   };
 }
 
@@ -177,7 +144,7 @@ async function fetchGroupRowForViewer(
   }
 
   const groupSelect =
-    "id, name, goal, invite_code, max_members, join_mode, invites_enabled, created_by";
+    "id, name, goal, description, shared_goal, focus_type, focus_custom_label, invite_code, max_members, join_mode, invites_enabled, visibility, discovery_paused, check_in_frequency, discovery_summary, created_by";
 
   const full = await supabase
     .from("accountability_groups")
@@ -245,21 +212,13 @@ async function loadGroupHub(
     members = fallback.data as MemberRow[] | null;
   }
 
-  const memberNames = new Map<string, string>();
-  for (const member of members ?? []) {
-    const profile = unwrapOne(member.profile);
-    memberNames.set(member.user_id, profile?.display_name?.trim() || "Member");
-  }
-
-  const memberIdsRes = await supabase
-    .from("group_members")
-    .select("user_id")
-    .eq("group_id", groupId);
-  if (!memberIdsRes.error) {
-    for (const row of memberIdsRes.data ?? []) {
-      const id = row.user_id as string;
-      if (!memberNames.has(id)) memberNames.set(id, "Member");
-    }
+  const memberDisplayNameByUserId = new Map<string, string>();
+  for (const m of members ?? []) {
+    const profile = unwrapOne(m.profile);
+    memberDisplayNameByUserId.set(
+      m.user_id,
+      profile?.display_name?.trim() || "Member",
+    );
   }
 
   const today = todayDateKey();
@@ -298,32 +257,44 @@ async function loadGroupHub(
       });
   }
 
-  for (const row of boardRows) {
-    const name = row.displayName.trim();
-    if (name && (memberNames.get(row.userId) === "Member" || !memberNames.has(row.userId))) {
-      memberNames.set(row.userId, name);
-    }
-  }
-
   const weekStartKey = weekStart;
   let weeklyCommitments: AccountabilityGroup["weeklyCommitments"] = [];
-  const commitmentsRes = await supabase
+  const mapWeeklyCommitmentRows = (
+    rows: {
+      id: string;
+      user_id: string;
+      title: string;
+      target_count: number;
+      progress_count: number;
+    }[],
+  ) =>
+    rows.map((c) => ({
+      id: c.id,
+      userId: c.user_id,
+      displayName: memberDisplayNameByUserId.get(c.user_id) ?? "Member",
+      title: c.title,
+      targetCount: c.target_count,
+      progressCount: c.progress_count,
+      isOwn: c.user_id === userId,
+    }));
+
+  let commitmentsRes = await supabase
     .from("group_weekly_commitments")
     .select("id, user_id, title, target_count, progress_count")
     .eq("group_id", groupId)
     .eq("week_start", weekStartKey)
     .order("sort_order", { ascending: true });
 
+  if (commitmentsRes.error && /schema cache|group_weekly_commitments/i.test(commitmentsRes.error.message)) {
+    commitmentsRes = await supabase
+      .from("group_weekly_commitments")
+      .select("id, user_id, title, target_count, progress_count")
+      .eq("group_id", groupId)
+      .eq("week_start", weekStartKey);
+  }
+
   if (!commitmentsRes.error) {
-    weeklyCommitments = (commitmentsRes.data ?? []).map((c) => ({
-      id: c.id,
-      userId: c.user_id,
-      displayName: memberNames.get(c.user_id) ?? "Member",
-      title: c.title,
-      targetCount: c.target_count,
-      progressCount: c.progress_count,
-      isOwn: c.user_id === userId,
-    }));
+    weeklyCommitments = mapWeeklyCommitmentRows(commitmentsRes.data ?? []);
   }
 
   const weekCheckInCounts = new Map<string, number>();
@@ -651,6 +622,10 @@ async function loadGroupHub(
         displayName: String(r.display_name ?? "Member"),
         avatarUrl: typeof r.avatar_url === "string" ? r.avatar_url : null,
         createdAt: String(r.created_at ?? ""),
+        requestSource:
+          r.request_source === "discovery"
+            ? ("discovery" as const)
+            : ("invite" as const),
       }));
     if (pendingRequests.length > 0) {
       isOwner = true;
@@ -685,14 +660,12 @@ async function loadGroupHub(
   const focusCustomLabel =
     typeof groupRow.focus_custom_label === "string" ? groupRow.focus_custom_label : "";
 
-  await autoShareActiveMemberGoals(supabase, userId, groupId);
-  const sharedBoard = await fetchSharedCommitmentBoard(
-    supabase,
-    groupId,
-    userId,
-    weekStart,
-    memberNames,
-  );
+  await ensureMemberGoalsSharedWithGroup(supabase, userId, groupId);
+
+  const [sharedCommitments, weeklyReflections] = await Promise.all([
+    fetchGroupSharedCommitments(supabase, groupId, userId),
+    loadWeeklyReflections(supabase, groupId, userId, weekStart),
+  ]);
 
   const group: AccountabilityGroup = {
     id: String(groupRow.id),
@@ -717,6 +690,18 @@ async function loadGroupHub(
     joinMode:
       groupRow.join_mode === "auto" ? "auto" : "approval",
     invitesEnabled: groupRow.invites_enabled !== false,
+    visibility:
+      groupRow.visibility === "discoverable" ? "discoverable" : "private",
+    discoveryPaused: groupRow.discovery_paused === true,
+    checkInFrequency:
+      groupRow.check_in_frequency === "daily" ||
+      groupRow.check_in_frequency === "weekdays" ||
+      groupRow.check_in_frequency === "weekly" ||
+      groupRow.check_in_frequency === "flexible"
+        ? groupRow.check_in_frequency
+        : "flexible",
+    discoverySummary:
+      typeof groupRow.discovery_summary === "string" ? groupRow.discovery_summary : "",
     ownerId,
     isOwner,
     pendingRequests,
@@ -730,8 +715,8 @@ async function loadGroupHub(
     memberPersonalGoals,
     recentCheckIns,
     viewerScheduledToday,
-    sharedCommitments: sharedBoard.commitments,
-    sharedReflections: sharedBoard.reflections,
+    sharedCommitments,
+    weeklyReflections,
     members: (members ?? []).map((m) => {
       const profile = unwrapOne(m.profile);
       return {
@@ -750,6 +735,43 @@ async function loadGroupHub(
   };
 
   return { group, feed };
+}
+
+async function loadWeeklyReflections(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  groupId: string,
+  viewerUserId: string,
+  weekStart: string,
+): Promise<GroupWeeklyReflection[]> {
+  const res = await supabase
+    .from("group_weekly_reflections")
+    .select(
+      `
+      id, user_id, week_start, went_well, struggled_with, focus_next,
+      profile:profiles!group_weekly_reflections_user_id_fkey ( display_name )
+    `,
+    )
+    .eq("group_id", groupId)
+    .eq("week_start", weekStart)
+    .order("updated_at", { ascending: false });
+
+  if (res.error && /group_weekly_reflections|schema cache/i.test(res.error.message)) {
+    return [];
+  }
+
+  return (res.data ?? []).map((row) => {
+    const profile = unwrapOne(row.profile);
+    return {
+      id: row.id as string,
+      userId: row.user_id as string,
+      displayName: profile?.display_name ?? "Member",
+      weekStart: String(row.week_start),
+      wentWell: String(row.went_well ?? ""),
+      struggledWith: String(row.struggled_with ?? ""),
+      focusNext: String(row.focus_next ?? ""),
+      isOwn: row.user_id === viewerUserId,
+    };
+  });
 }
 
 function buildWeeklyRecap(input: {

@@ -53,7 +53,7 @@ export async function submitChallengeFeedbackAction(
     if (/challenge_participant_feedback|schema cache/i.test(error.message)) {
       return {
         ok: false,
-        message: "Feedback is not enabled yet — run migration 045_challenge_participant_feedback.sql.",
+        message: "Feedback is not enabled yet — run migration 041_challenge_participant_feedback.sql.",
       };
     }
     return { ok: false, message: error.message };

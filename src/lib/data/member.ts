@@ -4,9 +4,9 @@ import {
   type WeeklyConsistency,
 } from "@/lib/progress/consistency";
 import { MILESTONE_DEFINITIONS } from "@/lib/progress/milestones";
-import { buildWeekDayIndicators, normalizeDaysMask, normalizeReminderTime } from "@/lib/habits/schedule";
+import { buildWeekDayIndicators } from "@/lib/habits/schedule";
 import { todayDateKey } from "@/lib/dates";
-import { fetchHabitShareGroupIds } from "@/lib/groups/shared-commitments";
+import { ALL_DAYS_MASK, normalizeScheduleMask } from "@/lib/habits/weekdays";
 import type {
   ConsistencySnapshot,
   DailyCheckInMood,
@@ -33,7 +33,6 @@ function mapGoalRow(
   g: GoalRow,
   completedToday: Set<string>,
   weeklyByGoal: Record<string, number>,
-  sharedGroupId: string | null = null,
 ): PersonalGoal {
   const frequencyType =
     g.frequency_type === "times_per_week" ? "times_per_week" : "daily";
@@ -54,40 +53,58 @@ function mapGoalRow(
     templateKey: g.template_key ?? null,
     frequencyType,
     frequencyTarget,
-    scheduleDaysMask: normalizeDaysMask(g.schedule_days_mask),
-    reminderTime: normalizeReminderTime(g.reminder_time),
+    scheduleDaysMask: normalizeScheduleMask(
+      g.schedule_days_mask ?? ALL_DAYS_MASK,
+    ),
+    reminderTimeLocal: g.reminder_time ?? null,
     paused: Boolean(g.paused_at),
     linkedChallengeId: g.linked_challenge_id ?? null,
-    sharedGroupId,
+    sharedGroupId: null,
   };
 }
 
+async function fetchGoalShareByGroupId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  goalIds: string[],
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (!goalIds.length) return map;
+
+  const { data, error } = await supabase
+    .from("member_goal_group_shares")
+    .select("member_goal_id, group_id")
+    .eq("user_id", userId)
+    .in("member_goal_id", goalIds);
+
+  if (error && /member_goal_group_shares|schema cache/i.test(error.message)) {
+    return map;
+  }
+
+  for (const row of data ?? []) {
+    map.set(row.member_goal_id as string, row.group_id as string);
+  }
+  return map;
+}
+
 async function fetchGoalRows(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
-  const withSchedule =
-    "id, title, category, template_key, frequency_type, frequency_target, paused_at, linked_challenge_id, schedule_days_mask, reminder_time";
   const fullSelect =
-    "id, title, category, template_key, frequency_type, frequency_target, paused_at, linked_challenge_id";
+    "id, title, category, template_key, frequency_type, frequency_target, schedule_days_mask, reminder_time, paused_at, linked_challenge_id";
   const legacySelect = "id, title, category";
 
   let { data, error } = await supabase
     .from("member_goals")
-    .select(withSchedule)
+    .select(fullSelect)
     .eq("user_id", userId)
     .eq("active", true)
     .order("sort_order");
 
-  if (error && /schedule_days_mask|reminder_time/i.test(error.message)) {
-    const retry = await supabase
-      .from("member_goals")
-      .select(fullSelect)
-      .eq("user_id", userId)
-      .eq("active", true)
-      .order("sort_order");
-    data = retry.data as typeof data;
-    error = retry.error;
-  }
-
-  if (error && /template_key|frequency_|paused_at|linked_challenge|schema cache/i.test(error.message)) {
+  if (
+    error &&
+    /template_key|frequency_|schedule_days|reminder_time|paused_at|linked_challenge|schema cache/i.test(
+      error.message,
+    )
+  ) {
     const legacy = await supabase
       .from("member_goals")
       .select(legacySelect)
@@ -134,7 +151,11 @@ export async function fetchMemberGoals(userId: string): Promise<PersonalGoal[]> 
     weeklyByGoal[c.goal_id] = (weeklyByGoal[c.goal_id] ?? 0) + 1;
   }
 
-  return goals.map((g) => mapGoalRow(g, completedToday, weeklyByGoal));
+  const shareMap = await fetchGoalShareByGroupId(supabase, userId, ids);
+  return goals.map((g) => ({
+    ...mapGoalRow(g, completedToday, weeklyByGoal),
+    sharedGroupId: shareMap.get(g.id) ?? null,
+  }));
 }
 
 function weekStartKeyDaysAgo(daysAgo: number): string {
@@ -313,25 +334,13 @@ export async function fetchAllMemberGoals(userId: string): Promise<PersonalGoal[
   const supabase = await createClient();
   const today = todayDateKey();
 
-  const withSchedule =
-    "id, title, category, template_key, frequency_type, frequency_target, paused_at, linked_challenge_id, schedule_days_mask, reminder_time, active";
   const fullSelect =
-    "id, title, category, template_key, frequency_type, frequency_target, paused_at, linked_challenge_id, active";
+    "id, title, category, template_key, frequency_type, frequency_target, schedule_days_mask, reminder_time, paused_at, linked_challenge_id, active";
   let { data: rows, error } = await supabase
     .from("member_goals")
-    .select(withSchedule)
+    .select(fullSelect)
     .eq("user_id", userId)
     .order("sort_order");
-
-  if (error && /schedule_days_mask|reminder_time/i.test(error.message)) {
-    const retry = await supabase
-      .from("member_goals")
-      .select(fullSelect)
-      .eq("user_id", userId)
-      .order("sort_order");
-    rows = retry.data as typeof rows;
-    error = retry.error;
-  }
 
   if (error && /template_key|frequency_|schema cache/i.test(error.message)) {
     const legacy = await supabase
@@ -371,10 +380,11 @@ export async function fetchAllMemberGoals(userId: string): Promise<PersonalGoal[
     weeklyByGoal[c.goal_id] = (weeklyByGoal[c.goal_id] ?? 0) + 1;
   }
 
-  const sharedGroups = await fetchHabitShareGroupIds(supabase, userId, ids);
-  return goals.map((g) =>
-    mapGoalRow(g, completedToday, weeklyByGoal, sharedGroups.get(g.id) ?? null),
-  );
+  const shareMap = await fetchGoalShareByGroupId(supabase, userId, ids);
+  return goals.map((g) => ({
+    ...mapGoalRow(g, completedToday, weeklyByGoal),
+    sharedGroupId: shareMap.get(g.id) ?? null,
+  }));
 }
 
 export async function fetchTodayCheckIn(userId: string): Promise<{

@@ -3,6 +3,7 @@
 import { BrandWordmark } from "@/components/brand/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { APP_NAME } from "@/lib/branding";
 import { getOrCreateTabId, syncTabHintCookie } from "@/lib/auth/tab-id.client";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -23,13 +24,19 @@ export function ForgotPasswordForm() {
       const tabId = getOrCreateTabId();
       syncTabHintCookie(tabId);
       const supabase = createClient();
+      const normalizedEmail = email.trim().toLowerCase();
       const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent("/reset-password")}`;
+
       const { error } = await supabase.auth.resetPasswordForEmail(
-        email.trim().toLowerCase(),
+        normalizedEmail,
         { redirectTo },
       );
       if (error) throw error;
+
       setSent(true);
+      setMessage(
+        `If an account exists for that email, we sent a link to choose a new password. Check spam, then open the link on this device in ${APP_NAME}.`,
+      );
     } catch (e) {
       const raw = e instanceof Error ? e.message : "Something went wrong";
       if (
@@ -37,7 +44,7 @@ export function ForgotPasswordForm() {
         raw.includes("over_email_send_rate_limit")
       ) {
         setMessage(
-          "Too many reset emails were sent. Wait a bit, or raise the limit in Supabase → Authentication → Rate limits (see docs/supabase-auth-setup.md).",
+          "Too many emails were sent recently. Wait about an hour, or reset the password in Supabase → Authentication → Users for this email.",
         );
       } else {
         setMessage(raw);
@@ -50,66 +57,44 @@ export function ForgotPasswordForm() {
   return (
     <Card className="mx-auto max-w-md">
       <BrandWordmark size="sm" className="mb-4" />
-      <h1 className="text-xl font-bold">Reset your password</h1>
+      <h1 className="text-xl font-bold">Forgot your password?</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Enter the email you use for {APP_NAME}. We&apos;ll send a secure link to
+        set a new password.
+      </p>
       {sent ? (
-        <>
-          <p className="mt-1 text-sm text-muted-foreground" role="status">
-            If an account exists for {email.trim().toLowerCase()}, we sent a
-            reset link. Open it in this browser, then choose a new password.
-          </p>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            <Link href="/login" className="font-medium text-primary">
-              Back to log in
-            </Link>
-          </p>
-        </>
+        <p className="mt-4 text-sm text-foreground" role="status">
+          {message}
+        </p>
       ) : (
-        <>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Enter the email on your account and we&apos;ll send a reset link.
-          </p>
-          <form onSubmit={handleSubmit} className="mt-4 space-y-3">
-            <Field label="Email">
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-2xl border border-border bg-surface px-3 py-3 text-sm outline-none ring-primary focus:ring-2"
-                autoComplete="email"
-              />
-            </Field>
-            {message ? (
-              <p className="text-sm text-red-600" role="alert">
-                {message}
-              </p>
-            ) : null}
-            <Button type="submit" fullWidth disabled={loading}>
-              {loading ? "Please wait…" : "Send reset link"}
-            </Button>
-          </form>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            <Link href="/login" className="font-medium text-primary">
-              Back to log in
-            </Link>
-          </p>
-        </>
+        <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+          <div>
+            <label className="mb-1 block text-sm font-medium">Email</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-2xl border border-border bg-surface px-3 py-3 text-sm outline-none ring-primary focus:ring-2"
+              autoComplete="email"
+            />
+          </div>
+          {message ? (
+            <p className="text-sm text-red-600" role="alert">
+              {message}
+            </p>
+          ) : null}
+          <Button type="submit" fullWidth disabled={loading}>
+            {loading ? "Sending…" : "Send reset link"}
+          </Button>
+        </form>
       )}
+      <p className="mt-4 text-center text-sm text-muted-foreground">
+        Remembered it?{" "}
+        <Link href="/login" className="font-medium text-primary">
+          Back to log in
+        </Link>
+      </p>
     </Card>
-  );
-}
-
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label className="mb-1 block text-sm font-medium">{label}</label>
-      {children}
-    </div>
   );
 }

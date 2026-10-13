@@ -69,11 +69,9 @@ export async function fetchChallengeLandingByInviteSlug(
   const isPublicCreatorChallenge =
     row.visibility === "public" && published && Boolean(row.community_id);
   const creatorApproved = creator?.creator_status === "approved";
-  /** Shown on landing (includes private invite-only links). */
+  /** Shown on landing — public creator challenges only (private member challenges removed). */
   const isLandingVisible =
-    published &&
-    (row.visibility === "private" ||
-      (isPublicCreatorChallenge && creatorApproved));
+    published && isPublicCreatorChallenge && creatorApproved;
   /** Eligible for public discover search/lists. */
   const isApprovedPublic = isPublicCreatorChallenge && creatorApproved;
 

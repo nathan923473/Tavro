@@ -6,12 +6,6 @@ import { generateGroupInviteCode, normalizeGroupInviteCode } from "@/lib/groups/
 import {
   ACCOUNTABILITY_GROUP_MAX_MEMBERS,
 } from "@/lib/copy/accountability-groups";
-import { toggleGoalAction } from "@/app/(app)/member/actions";
-import { todayDateKey } from "@/lib/dates";
-import {
-  notifySharedHabitCelebration,
-  sharedCommitmentSchemaError,
-} from "@/lib/groups/shared-commitments";
 import { currentWeekStartKey } from "@/lib/groups/week";
 import type {
   GroupCheckInReactionKey,
@@ -19,6 +13,12 @@ import type {
   GroupFocusType,
   GroupPersonalScheduleType,
 } from "@/types";
+import { enqueueNotification } from "@/lib/data/notifications";
+import {
+  discoveryJoinErrorMessage,
+  type GroupCheckInFrequency,
+  type GroupVisibility,
+} from "@/lib/groups/discovery";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 
@@ -33,6 +33,9 @@ export type CreateGroupInput = {
   sharedGoal?: string;
   joinMode?: GroupJoinMode;
   maxMembers?: number;
+  visibility?: GroupVisibility;
+  checkInFrequency?: GroupCheckInFrequency;
+  discoverySummary?: string;
 };
 
 function parseOkRpc(data: unknown, messages: Record<string, string>): void {
@@ -98,7 +101,28 @@ export async function createAccountabilityGroupAction(input: CreateGroupInput) {
     ACCOUNTABILITY_GROUP_MAX_MEMBERS,
     Math.max(2, input.maxMembers ?? ACCOUNTABILITY_GROUP_MAX_MEMBERS),
   );
-  const joinMode = input.joinMode ?? "approval";
+  const visibility = input.visibility ?? "private";
+  const checkInFrequency = input.checkInFrequency ?? "flexible";
+  const discoverySummary = (
+    input.discoverySummary ??
+    input.description ??
+    ""
+  ).trim();
+  let joinMode = input.joinMode ?? "approval";
+  if (visibility === "discoverable") {
+    joinMode = "approval";
+  }
+
+  if (visibility === "discoverable") {
+    const { data: eligible } = await supabase.rpc("is_group_discovery_eligible", {
+      p_user_id: userId,
+    });
+    if (!eligible) {
+      throw new Error(
+        "Discoverable groups require verified adult (18+) status on the owner account before discovery can be enabled.",
+      );
+    }
+  }
 
   let inviteCode = generateGroupInviteCode();
   const groupId = randomUUID();
@@ -116,6 +140,9 @@ export async function createAccountabilityGroupAction(input: CreateGroupInput) {
       max_members: maxMembers,
       join_mode: joinMode,
       invites_enabled: true,
+      visibility,
+      check_in_frequency: checkInFrequency,
+      discovery_summary: discoverySummary.slice(0, 280),
       created_by: userId,
     });
 
@@ -175,6 +202,27 @@ export async function requestJoinGroupByInviteCodeAction(code: string) {
   revalidatePath(`/invite/group/${normalized}`);
 
   if (parsed.status === "pending") {
+    if (parsed.groupId) {
+      const { data: groupRow } = await supabase
+        .from("accountability_groups")
+        .select("name, created_by")
+        .eq("id", parsed.groupId)
+        .maybeSingle();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", userId)
+        .maybeSingle();
+      if (groupRow?.created_by) {
+        await enqueueNotification({
+          userId: groupRow.created_by,
+          kind: "group_join_request",
+          title: "New group join request",
+          body: `${profile?.display_name?.trim() || "Someone"} requested to join “${groupRow.name ?? "your group"}”.`,
+          linkPath: "/groups",
+        });
+      }
+    }
     return {
       ok: true as const,
       status: "pending" as const,
@@ -193,6 +241,12 @@ export async function requestJoinGroupByInviteCodeAction(code: string) {
 
 export async function approveGroupJoinRequestAction(requestId: string) {
   const { supabase } = await requireUserId();
+  const { data: reqRow } = await supabase
+    .from("group_join_requests")
+    .select("user_id, group_id, group:accountability_groups ( name )")
+    .eq("id", requestId)
+    .maybeSingle();
+
   const { data, error } = await supabase.rpc("approve_group_join_request", {
     p_request_id: requestId,
   });
@@ -204,19 +258,41 @@ export async function approveGroupJoinRequestAction(requestId: string) {
     }
     throw new Error(error.message);
   }
-  const row = data as { ok?: boolean; error?: string };
+  const row = data as { ok?: boolean; error?: string; applicant_id?: string };
   if (!row?.ok) {
     if (row?.error === "full") throw new Error("Group is full — free a spot first.");
     if (row?.error === "forbidden") throw new Error("Only the group owner can approve requests.");
     if (row?.error === "not_pending") throw new Error("This request is no longer pending.");
     throw new Error("Could not approve request.");
   }
+
+  const applicantId = row.applicant_id ?? reqRow?.user_id;
+  const group = reqRow?.group as { name?: string } | { name?: string }[] | null;
+  const groupName = Array.isArray(group) ? group[0]?.name : group?.name;
+  if (applicantId) {
+    await enqueueNotification({
+      userId: applicantId,
+      kind: "group_join_approved",
+      title: "You're in the group",
+      body: groupName
+        ? `Your request to join “${groupName}” was approved. Open Groups to say hi.`
+        : "Your group join request was approved. Open Groups to get started.",
+      linkPath: "/groups",
+    });
+  }
+
   revalidatePath("/groups");
   return { ok: true as const };
 }
 
 export async function declineGroupJoinRequestAction(requestId: string) {
   const { supabase } = await requireUserId();
+  const { data: reqRow } = await supabase
+    .from("group_join_requests")
+    .select("user_id, group:accountability_groups ( name )")
+    .eq("id", requestId)
+    .maybeSingle();
+
   const { data, error } = await supabase.rpc("decline_group_join_request", {
     p_request_id: requestId,
   });
@@ -230,6 +306,101 @@ export async function declineGroupJoinRequestAction(requestId: string) {
   if (row?.ok === false && row.error === "forbidden") {
     throw new Error("Only the group owner can decline requests.");
   }
+
+  if (reqRow?.user_id) {
+    const group = reqRow.group as { name?: string } | { name?: string }[] | null;
+    const groupName = Array.isArray(group) ? group[0]?.name : group?.name;
+    await enqueueNotification({
+      userId: reqRow.user_id,
+      kind: "group_join_declined",
+      title: "Join request update",
+      body: groupName
+        ? `Your request to join “${groupName}” wasn’t accepted this time. You can explore other groups or create your own.`
+        : "Your group join request wasn’t accepted this time. You can explore other groups or create your own.",
+      linkPath: "/groups",
+    });
+  }
+
+  revalidatePath("/groups");
+  return { ok: true as const };
+}
+
+export async function requestDiscoveryGroupJoinAction(groupId: string) {
+  const { supabase, userId } = await requireUserId();
+  await assertNotInOtherGroup(supabase, userId);
+
+  const { data, error } = await supabase.rpc("request_discovery_group_join", {
+    p_group_id: groupId,
+  });
+
+  if (error) {
+    if (/request_discovery_group_join|schema cache/i.test(error.message)) {
+      throw new Error("Run migration 042_group_discovery.sql in Supabase, then try again.");
+    }
+    throw new Error(error.message);
+  }
+
+  const row = data as {
+    ok?: boolean;
+    error?: string;
+    owner_id?: string;
+    group_id?: string;
+  };
+
+  if (!row?.ok) {
+    throw new Error(discoveryJoinErrorMessage(row?.error ?? "unknown"));
+  }
+
+  const { data: groupRow } = await supabase
+    .from("accountability_groups")
+    .select("name")
+    .eq("id", groupId)
+    .maybeSingle();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (row.owner_id) {
+    await enqueueNotification({
+      userId: row.owner_id,
+      kind: "group_discovery_join_request",
+      title: "New group join request",
+      body: `${profile?.display_name?.trim() || "Someone"} requested to join “${groupRow?.name ?? "your group"}” from group discovery.`,
+      linkPath: "/groups",
+    });
+  }
+
+  revalidatePath("/groups");
+  return {
+    ok: true as const,
+    message: "Request sent — the group owner will review it soon.",
+  };
+}
+
+export async function blockUserAction(blockedUserId: string) {
+  const { supabase, userId } = await requireUserId();
+  if (blockedUserId === userId) {
+    throw new Error("You cannot block yourself.");
+  }
+
+  const { error } = await supabase.from("user_blocks").insert({
+    blocker_id: userId,
+    blocked_id: blockedUserId,
+  });
+
+  if (error) {
+    if (/user_blocks|schema cache/i.test(error.message)) {
+      throw new Error("Run migration 042_group_discovery.sql in Supabase, then try again.");
+    }
+    if (error.code === "23505") {
+      return { ok: true as const };
+    }
+    throw new Error(error.message);
+  }
+
   revalidatePath("/groups");
   return { ok: true as const };
 }
@@ -266,6 +437,10 @@ export async function updateGroupSettingsAction(input: {
   focusType?: GroupFocusType;
   sharedGoal?: string;
   joinMode?: GroupJoinMode;
+  visibility?: GroupVisibility;
+  discoveryPaused?: boolean;
+  checkInFrequency?: GroupCheckInFrequency;
+  discoverySummary?: string;
 }) {
   const { supabase, userId } = await requireUserId();
   const { data: group } = await supabase
@@ -288,6 +463,29 @@ export async function updateGroupSettingsAction(input: {
     patch.goal = shared;
   }
   if (input.joinMode !== undefined) patch.join_mode = input.joinMode;
+
+  if (input.visibility !== undefined) {
+    if (input.visibility === "discoverable") {
+      const { data: eligible } = await supabase.rpc("is_group_discovery_eligible", {
+        p_user_id: userId,
+      });
+      if (!eligible) {
+        throw new Error(
+          "Discoverable groups require verified adult (18+) status on your account before discovery can be enabled.",
+        );
+      }
+      patch.visibility = "discoverable";
+      patch.join_mode = "approval";
+    } else {
+      patch.visibility = "private";
+    }
+  }
+
+  if (input.discoveryPaused !== undefined) patch.discovery_paused = input.discoveryPaused;
+  if (input.checkInFrequency !== undefined) patch.check_in_frequency = input.checkInFrequency;
+  if (input.discoverySummary !== undefined) {
+    patch.discovery_summary = input.discoverySummary.trim().slice(0, 280);
+  }
 
   if (Object.keys(patch).length === 0) return { ok: true as const };
 
@@ -609,6 +807,19 @@ export async function sendGroupEncouragementAction(input: {
   if (message.length < 2) throw new Error("Write a short encouraging note.");
   if (input.toUserId === userId) throw new Error("Pick another member to encourage.");
 
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const recent = await supabase
+    .from("group_encouragements")
+    .select("id")
+    .eq("group_id", input.groupId)
+    .eq("from_user_id", userId)
+    .eq("to_user_id", input.toUserId)
+    .gte("created_at", since)
+    .limit(1);
+  if (recent.data?.length) {
+    throw new Error("You already sent a check-in to this member in the last 24 hours.");
+  }
+
   const { error } = await supabase.from("group_encouragements").insert({
     group_id: input.groupId,
     from_user_id: userId,
@@ -616,6 +827,117 @@ export async function sendGroupEncouragementAction(input: {
     message,
   });
   if (error) throw migrationHint(error.message, "032_group_accountability_hub.sql");
+
+  const { data: fromProfile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", userId)
+    .maybeSingle();
+  const { enqueueNotification } = await import("@/lib/data/notifications");
+  await enqueueNotification({
+    userId: input.toUserId,
+    kind: "group_encouragement",
+    title: "Support from your group",
+    body: `${fromProfile?.display_name ?? "Someone"}: ${message.slice(0, 120)}`,
+    linkPath: "/groups",
+  });
+
+  revalidatePath("/groups");
+  revalidatePath("/notifications");
+  return { ok: true as const };
+}
+
+export async function celebrateSharedHabitAction(input: {
+  groupId: string;
+  memberGoalId: string;
+  forUserId: string;
+}) {
+  const { supabase, userId } = await requireUserId();
+  if (input.forUserId === userId) {
+    throw new Error("Others can celebrate when you complete a habit.");
+  }
+
+  const share = await supabase
+    .from("member_goal_group_shares")
+    .select("id")
+    .eq("group_id", input.groupId)
+    .eq("member_goal_id", input.memberGoalId)
+    .maybeSingle();
+  if (!share.data) throw new Error("This habit is not shared with the group.");
+
+  const today = new Date().toISOString().slice(0, 10);
+  const completed = await supabase
+    .from("goal_completions")
+    .select("goal_id")
+    .eq("goal_id", input.memberGoalId)
+    .eq("completion_date", today)
+    .maybeSingle();
+  if (!completed.data) {
+    throw new Error("Celebrate when they mark the habit done for today.");
+  }
+
+  const { error } = await supabase.from("group_shared_habit_celebrations").insert({
+    group_id: input.groupId,
+    member_goal_id: input.memberGoalId,
+    for_user_id: input.forUserId,
+    from_user_id: userId,
+    celebration_date: today,
+  });
+
+  if (error) {
+    if (/duplicate key|unique/i.test(error.message)) {
+      return { ok: true as const };
+    }
+    if (/group_shared_habit_celebrations|schema cache/i.test(error.message)) {
+      throw migrationHint(error.message, "047_shared_member_goal_commitments.sql");
+    }
+    throw new Error(error.message);
+  }
+
+  const { enqueueNotification } = await import("@/lib/data/notifications");
+  await enqueueNotification({
+    userId: input.forUserId,
+    kind: "habit_celebration",
+    title: "Your group noticed your win",
+    body: "Someone celebrated a habit you completed today.",
+    linkPath: "/groups",
+  });
+
+  revalidatePath("/groups");
+  revalidatePath("/notifications");
+  return { ok: true as const };
+}
+
+export async function saveGroupWeeklyReflectionAction(input: {
+  groupId: string;
+  wentWell: string;
+  struggledWith: string;
+  focusNext: string;
+}) {
+  const { supabase, userId } = await requireUserId();
+  const { currentWeekStartKey } = await import("@/lib/groups/week");
+  const weekStart = currentWeekStartKey();
+
+  const { error } = await supabase.from("group_weekly_reflections").upsert(
+    {
+      group_id: input.groupId,
+      user_id: userId,
+      week_start: weekStart,
+      went_well: input.wentWell.trim().slice(0, 500),
+      struggled_with: input.struggledWith.trim().slice(0, 500),
+      focus_next: input.focusNext.trim().slice(0, 500),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "group_id,user_id,week_start" },
+  );
+
+  if (error) {
+    if (/group_weekly_reflections|schema cache/i.test(error.message)) {
+      throw migrationHint(error.message, "047_shared_member_goal_commitments.sql");
+    }
+    throw new Error(error.message);
+  }
+
   revalidatePath("/groups");
   return { ok: true as const };
 }
@@ -746,116 +1068,6 @@ export async function toggleGroupCheckInReactionAction(input: {
     });
     if (error) throw migrationHint(error.message, "037_group_personal_goals_and_reactions.sql");
   }
-  revalidatePath("/groups");
-  return { ok: true as const };
-}
-
-export async function checkInSharedHabitAction(input: { groupId: string; goalId: string }) {
-  const { supabase, userId } = await requireUserId();
-  const share = await supabase
-    .from("member_goal_group_shares")
-    .select("id")
-    .eq("goal_id", input.goalId)
-    .eq("group_id", input.groupId)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (share.error) throw sharedCommitmentSchemaError(share.error.message);
-  if (!share.data) throw new Error("Share this habit with the group before checking in.");
-
-  const today = todayDateKey();
-  const existing = await supabase
-    .from("goal_completions")
-    .select("goal_id")
-    .eq("goal_id", input.goalId)
-    .eq("user_id", userId)
-    .eq("completion_date", today)
-    .maybeSingle();
-  if (existing.error) throw new Error(existing.error.message);
-
-  if (!existing.data) {
-    await toggleGoalAction(input.goalId);
-  }
-
-  revalidatePath("/groups");
-  revalidatePath("/progress");
-  revalidatePath("/");
-  return { ok: true as const };
-}
-
-export async function celebrateSharedCommitmentAction(input: {
-  groupId: string;
-  shareId: string;
-}) {
-  const { supabase, userId } = await requireUserId();
-  const share = await supabase
-    .from("member_goal_group_shares")
-    .select("id, goal_id, user_id, group_id")
-    .eq("id", input.shareId)
-    .eq("group_id", input.groupId)
-    .maybeSingle();
-  if (share.error) throw sharedCommitmentSchemaError(share.error.message);
-  if (!share.data) throw new Error("That shared habit is no longer available.");
-  if (share.data.user_id === userId) throw new Error("Celebrate a group member's habit.");
-
-  const habit = await supabase
-    .from("member_goals")
-    .select("title")
-    .eq("id", share.data.goal_id)
-    .maybeSingle();
-
-  const { error } = await supabase.from("member_goal_celebrations").insert({
-    share_id: share.data.id,
-    group_id: input.groupId,
-    goal_id: share.data.goal_id,
-    from_user_id: userId,
-    to_user_id: share.data.user_id,
-    week_start: currentWeekStartKey(),
-  });
-  if (error && !/duplicate|unique/i.test(error.message)) {
-    throw sharedCommitmentSchemaError(error.message);
-  }
-  if (!error) {
-    await notifySharedHabitCelebration(supabase, {
-      fromUserId: userId,
-      toUserId: share.data.user_id,
-      habitTitle: habit.data?.title ?? "habit",
-    });
-  }
-
-  revalidatePath("/groups");
-  return { ok: true as const };
-}
-
-export async function saveSharedCommitmentReflectionAction(input: {
-  groupId: string;
-  body: string;
-}) {
-  const { supabase, userId } = await requireUserId();
-  const body = input.body.trim().slice(0, 500);
-  const weekStart = currentWeekStartKey();
-
-  if (!body) {
-    const { error } = await supabase
-      .from("member_goal_weekly_reflections")
-      .delete()
-      .eq("group_id", input.groupId)
-      .eq("user_id", userId)
-      .eq("week_start", weekStart);
-    if (error) throw sharedCommitmentSchemaError(error.message);
-  } else {
-    const { error } = await supabase.from("member_goal_weekly_reflections").upsert(
-      {
-        group_id: input.groupId,
-        user_id: userId,
-        week_start: weekStart,
-        body,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "group_id,user_id,week_start" },
-    );
-    if (error) throw sharedCommitmentSchemaError(error.message);
-  }
-
   revalidatePath("/groups");
   return { ok: true as const };
 }

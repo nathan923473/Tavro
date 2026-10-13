@@ -112,18 +112,12 @@ export async function AccountExperience() {
           </p>
         ) : (
           <Link
-            href="/creators"
+            href="/become-creator"
             className="flex min-h-11 items-center justify-center rounded-xl border border-border text-sm font-semibold"
           >
             Become a creator
           </Link>
         )}
-        <Link
-          href="/challenges/create"
-          className="flex min-h-11 items-center justify-center rounded-xl border border-border text-sm font-semibold"
-        >
-          Create private challenge
-        </Link>
         <form action="/auth/signout" method="post">
           <Button type="submit" variant="ghost" fullWidth className="text-red-600">
             Sign out
