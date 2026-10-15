@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  saveGroupPersonalGoalAction,
-  submitGroupDailyCheckInAction,
-} from "@/app/(app)/groups/actions";
+import { submitGroupDailyCheckInAction } from "@/app/(app)/groups/actions";
 import { GroupCheckInReactions } from "@/components/groups/group-check-in-reactions";
 import { GroupHubSettingsModal } from "@/components/groups/group-hub-settings";
 import { GroupInviteModal } from "@/components/groups/group-invite-modal";
@@ -13,12 +10,7 @@ import { Card } from "@/components/ui/card";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { computeTodayAccountabilityStats } from "@/lib/groups/check-in-board-stats";
 import { groupFocusLabel } from "@/lib/groups/focus-labels";
-import { PERSONAL_SCHEDULE_OPTIONS } from "@/lib/groups/goal-schedule";
-import type {
-  AccountabilityGroup,
-  GroupDailyCheckInStatus,
-  GroupPersonalScheduleType,
-} from "@/types";
+import type { AccountabilityGroup, GroupDailyCheckInStatus } from "@/types";
 import { Check, Settings2, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -58,16 +50,6 @@ export function GroupTabToday({
   const [showCheckInForm, setShowCheckInForm] = useState(false);
   const [checkInNote, setCheckInNote] = useState("");
   const [checkInStatus, setCheckInStatus] = useState<GroupDailyCheckInStatus>("completed");
-  const [showGoalForm, setShowGoalForm] = useState(false);
-
-  const goal = group.viewerPersonalGoal;
-  const [goalTitle, setGoalTitle] = useState(goal?.title ?? "");
-  const [scheduleType, setScheduleType] = useState<GroupPersonalScheduleType>(
-    goal?.scheduleType ?? "daily",
-  );
-  const [timesPerWeek, setTimesPerWeek] = useState(goal?.timesPerWeek ?? 3);
-  const [scheduleInterval, setScheduleInterval] = useState(goal?.scheduleInterval ?? 2);
-  const [weekdays, setWeekdays] = useState<number[]>(goal?.scheduleWeekdays ?? [1, 3, 5]);
 
   const stats = useMemo(
     () => computeTodayAccountabilityStats(group.checkInBoard),
@@ -81,10 +63,6 @@ export function GroupTabToday({
 
   const today = new Date().toISOString().slice(0, 10);
   const recentForToday = group.recentCheckIns.filter((c) => c.checkInDate === today).slice(0, 4);
-
-  function toggleWeekday(d: number) {
-    setWeekdays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort()));
-  }
 
   return (
     <div className="space-y-4">
@@ -281,123 +259,6 @@ export function GroupTabToday({
             </div>
           ) : null}
         </div>
-      </Card>
-
-      <Card className="space-y-3 p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <h3 className="font-semibold text-[#1B2440]">My goal</h3>
-            <p className="mt-1 text-sm font-medium">{goal?.title}</p>
-            <p className="text-xs text-muted-foreground">{goal?.scheduleLabel}</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {group.viewerScheduledToday
-                ? "You're scheduled to check in today."
-                : "Not scheduled today — rest day."}
-            </p>
-          </div>
-          <Button
-            type="button"
-            variant="secondary"
-            className="min-h-9 shrink-0 text-xs"
-            onClick={() => {
-              setGoalTitle(goal?.title ?? "");
-              setScheduleType(goal?.scheduleType ?? "daily");
-              setShowGoalForm((v) => !v);
-            }}
-          >
-            Edit goal
-          </Button>
-        </div>
-        {showGoalForm ? (
-          <div className="space-y-2 border-t border-border pt-3">
-            <label className="block text-sm">
-              Personal goal
-              <input
-                className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
-                value={goalTitle}
-                onChange={(e) => setGoalTitle(e.target.value)}
-              />
-            </label>
-            <label className="block text-sm">
-              Schedule
-              <select
-                className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
-                value={scheduleType}
-                onChange={(e) => setScheduleType(e.target.value as GroupPersonalScheduleType)}
-              >
-                {PERSONAL_SCHEDULE_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {scheduleType === "every_n_days" ? (
-              <label className="block text-sm">
-                Every N days
-                <input
-                  type="number"
-                  min={2}
-                  max={14}
-                  className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
-                  value={scheduleInterval}
-                  onChange={(e) => setScheduleInterval(Number(e.target.value))}
-                />
-              </label>
-            ) : null}
-            {scheduleType === "times_per_week" ? (
-              <label className="block text-sm">
-                Times per week
-                <input
-                  type="number"
-                  min={1}
-                  max={7}
-                  className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
-                  value={timesPerWeek}
-                  onChange={(e) => setTimesPerWeek(Number(e.target.value))}
-                />
-              </label>
-            ) : null}
-            {scheduleType === "weekdays" ? (
-              <div className="flex flex-wrap gap-2">
-                {["S", "M", "T", "W", "T", "F", "S"].map((label, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    className={
-                      weekdays.includes(i)
-                        ? "min-h-9 min-w-9 rounded-full bg-[#3156E8] text-xs font-semibold text-white"
-                        : "min-h-9 min-w-9 rounded-full border border-border text-xs"
-                    }
-                    onClick={() => toggleWeekday(i)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-            <Button
-              type="button"
-              fullWidth
-              disabled={pending || goalTitle.trim().length < 2}
-              onClick={() =>
-                run(async () => {
-                  await saveGroupPersonalGoalAction({
-                    groupId: group.id,
-                    title: goalTitle,
-                    scheduleType,
-                    scheduleInterval,
-                    scheduleWeekdays: weekdays,
-                    timesPerWeek,
-                  });
-                  setShowGoalForm(false);
-                })
-              }
-            >
-              Save personal goal
-            </Button>
-          </div>
-        ) : null}
       </Card>
 
       <Card className="p-4">
