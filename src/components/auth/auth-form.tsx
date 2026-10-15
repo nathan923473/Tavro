@@ -127,7 +127,7 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
 
   return (
     <Card className="mx-auto max-w-md">
-      <BrandWordmark size="sm" className="mb-4" />
+      <BrandWordmark size="md" className="mb-4 justify-center" />
       <h1 className="text-xl font-bold">
         {mode === "signup" ? "Create your account" : "Welcome back"}
       </h1>

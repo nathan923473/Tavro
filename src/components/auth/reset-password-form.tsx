@@ -93,7 +93,7 @@ export function ResetPasswordForm() {
   if (!hasSession) {
     return (
       <Card className="mx-auto max-w-md">
-        <BrandWordmark size="sm" className="mb-4" />
+        <BrandWordmark size="md" className="mb-4 justify-center" />
         <h1 className="text-xl font-bold">Reset link needed</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Open the link from your email on this device, or request a new one.
@@ -125,7 +125,7 @@ export function ResetPasswordForm() {
 
   return (
     <Card className="mx-auto max-w-md">
-      <BrandWordmark size="sm" className="mb-4" />
+      <BrandWordmark size="md" className="mb-4 justify-center" />
       <h1 className="text-xl font-bold">Choose a new password</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Must be at least 8 characters. You&apos;ll stay signed in after saving.

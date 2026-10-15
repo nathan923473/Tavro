@@ -56,7 +56,7 @@ export function ForgotPasswordForm() {
 
   return (
     <Card className="mx-auto max-w-md">
-      <BrandWordmark size="sm" className="mb-4" />
+      <BrandWordmark size="md" className="mb-4 justify-center" />
       <h1 className="text-xl font-bold">Forgot your password?</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Enter the email you use for {APP_NAME}. We&apos;ll send a secure link to
