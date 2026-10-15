@@ -35,6 +35,7 @@ export function GroupTabProgress({
   run: (action: () => Promise<unknown>) => void;
 }) {
   const [commitTitle, setCommitTitle] = useState("");
+  const [shareDailyCheckOffs, setShareDailyCheckOffs] = useState(false);
   /** String so users can clear the field and type a new number (avoids "13" when replacing "1"). */
   const [commitTargetInput, setCommitTargetInput] = useState("3");
 
@@ -153,10 +154,12 @@ export function GroupTabProgress({
                       disabled={pending}
                       onClick={() =>
                         run(async () => {
-                          await setHabitGroupShareAction({
-                            habitId: habit.id,
-                            groupId: group.id,
-                          });
+                          if (shareDailyCheckOffs) {
+                            await setHabitGroupShareAction({
+                              habitId: habit.id,
+                              groupId: group.id,
+                            });
+                          }
                           await saveGroupWeeklyCommitmentAction({
                             groupId: group.id,
                             title: habit.title,
@@ -174,9 +177,24 @@ export function GroupTabProgress({
                 );
               })}
             </ul>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 accent-primary"
+                checked={shareDailyCheckOffs}
+                disabled={pending}
+                onChange={(e) => setShareDailyCheckOffs(e.target.checked)}
+              />
+              <span>
+                Also share daily check-offs with this group
+                <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                  Off by default. Weekly commitments are added either way.
+                </span>
+              </span>
+            </label>
             <p className="text-xs text-muted-foreground">
-              Adds a weekly target here and shares the habit with your group for daily
-              check-offs.
+              Adds a weekly target for this group. Check the box to also share daily
+              check-offs on the shared commitments board.
             </p>
           </div>
         ) : viewerHabits.length > 0 ? (

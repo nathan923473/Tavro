@@ -95,17 +95,6 @@ export async function createHabitAction(input: {
     }
   }
 
-  if (!error) {
-    const { resolveUserGroupId } = await import("@/lib/data/resolve-user-group-id");
-    const { ensureMemberGoalsSharedWithGroup } = await import(
-      "@/lib/groups/auto-share-member-goals"
-    );
-    const groupId = await resolveUserGroupId(supabase, userId);
-    if (groupId) {
-      await ensureMemberGoalsSharedWithGroup(supabase, userId, groupId);
-    }
-  }
-
   revalidateProgressPaths();
 }
 
