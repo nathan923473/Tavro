@@ -143,7 +143,7 @@ export function OnboardingFlow({
 
       {step === "work" ? (
         <div className="animate-fade-up flex flex-1 flex-col">
-          {!compact ? <BrandWordmark size="md" className="mb-3" /> : null}
+          {!compact ? <BrandWordmark size="lg" className="mb-3 justify-center" /> : null}
           <h1 className="text-2xl font-bold tracking-tight">
             {compact ? "What are you working towards?" : `Welcome to ${APP_NAME}`}
           </h1>

@@ -1,35 +1,87 @@
 import sharp from "sharp";
-import { mkdir, writeFile } from "node:fs/promises";
+import { access, constants, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const root = path.join(process.cwd(), "public", "icons");
+const root = process.cwd();
+const sourcePath = path.join(root, "public", "branding", "tavro-logo-source.png");
+const iconsDir = path.join(root, "public", "icons");
+const brandingDir = path.join(root, "public", "branding");
+const appDir = path.join(root, "src", "app");
 
-const ROYAL = "#3156E8";
-const MINT = "#B8F4DA";
+/** Matches Tavro light surfaces; logo artwork already includes its own squircle background. */
+const ICON_BACKGROUND = { r: 255, g: 255, b: 255, alpha: 1 };
 
-const svg = (size) => {
-  const rx = Math.round(size * 0.22);
-  const fontSize = Math.round(size * 0.42);
-  return `
-<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-  <rect width="${size}" height="${size}" rx="${rx}" fill="${ROYAL}"/>
-  <circle cx="${size * 0.78}" cy="${size * 0.22}" r="${size * 0.12}" fill="${MINT}" opacity="0.9"/>
-  <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
-    font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-weight="800"
-    font-size="${fontSize}" fill="#ffffff">T</text>
-</svg>`;
-};
+async function ensureSource() {
+  try {
+    await access(sourcePath, constants.R_OK);
+  } catch {
+    console.error(
+      "Missing public/branding/tavro-logo-source.png — add the logo source PNG, then run npm run icons again.",
+    );
+    process.exit(1);
+  }
+}
 
-await mkdir(root, { recursive: true });
+function renderSquare(size) {
+  return sharp(sourcePath)
+    .resize(size, size, {
+      fit: "contain",
+      background: ICON_BACKGROUND,
+      kernel: sharp.kernel.lanczos3,
+    })
+    .png({ compressionLevel: 9, adaptiveFiltering: true })
+    .toBuffer();
+}
 
-for (const size of [72, 96, 128, 144, 152, 192, 384, 512]) {
-  const buffer = await sharp(Buffer.from(svg(size))).png().toBuffer();
-  await writeFile(path.join(root, `icon-${size}x${size}.png`), buffer);
+/** Extra padding for Android maskable safe zone (~80% visible). */
+function renderMaskable(size) {
+  const inner = Math.round(size * 0.72);
+  return sharp(sourcePath)
+    .resize(inner, inner, {
+      fit: "contain",
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+      kernel: sharp.kernel.lanczos3,
+    })
+    .extend({
+      top: Math.floor((size - inner) / 2),
+      bottom: Math.ceil((size - inner) / 2),
+      left: Math.floor((size - inner) / 2),
+      right: Math.ceil((size - inner) / 2),
+      background: ICON_BACKGROUND,
+    })
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+}
+
+await ensureSource();
+await mkdir(iconsDir, { recursive: true });
+await mkdir(brandingDir, { recursive: true });
+await mkdir(appDir, { recursive: true });
+
+const pwaSizes = [16, 32, 72, 96, 128, 144, 152, 192, 384, 512];
+
+for (const size of pwaSizes) {
+  await writeFile(path.join(iconsDir, `icon-${size}x${size}.png`), await renderSquare(size));
 }
 
 await writeFile(
-  path.join(root, "apple-touch-icon.png"),
-  await sharp(Buffer.from(svg(180))).png().toBuffer(),
+  path.join(iconsDir, "apple-touch-icon.png"),
+  await renderSquare(180),
 );
 
-console.log("Generated Tavro PWA icons in public/icons/");
+await writeFile(
+  path.join(iconsDir, "icon-maskable-512x512.png"),
+  await renderMaskable(512),
+);
+
+for (const size of [64, 128, 256]) {
+  await writeFile(
+    path.join(brandingDir, `logo-mark-${size}.png`),
+    await renderSquare(size),
+  );
+}
+
+await writeFile(path.join(appDir, "icon.png"), await renderSquare(32));
+await writeFile(path.join(appDir, "apple-icon.png"), await renderSquare(180));
+
+console.log("Generated Tavro icons from public/branding/tavro-logo-source.png");

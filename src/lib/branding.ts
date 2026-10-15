@@ -15,3 +15,14 @@ export const BRAND_COLORS = {
 
 /** Default creator community accent when none is set. */
 export const DEFAULT_CREATOR_BRAND_COLOR = BRAND_COLORS.royalBlue;
+
+/** Swap `tavro-logo-source.png` and run `npm run icons` to refresh all derived assets. */
+export const BRAND_LOGO = {
+  sourcePath: "/branding/tavro-logo-source.png",
+  markSm: "/branding/logo-mark-64.png",
+  markMd: "/branding/logo-mark-128.png",
+  markLg: "/branding/logo-mark-256.png",
+  pwa192: "/icons/icon-192x192.png",
+  pwa512: "/icons/icon-512x512.png",
+  maskable512: "/icons/icon-maskable-512x512.png",
+} as const;
