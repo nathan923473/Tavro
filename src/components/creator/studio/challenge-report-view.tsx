@@ -3,6 +3,11 @@ import { CommunityGrowthChart } from "@/components/creator/studio/community-grow
 import { DailyEngagementChart } from "@/components/creator/studio/daily-engagement-chart";
 import { ReportMetricCard } from "@/components/creator/studio/report-metric-card";
 import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
+import {
+  acquisitionSourcesForCreatorReport,
+  coachingMetricsTracked,
+  coachingTrackingNoteForCreator,
+} from "@/lib/challenge-report/creator-visible-metrics";
 import type { AnyChallengeReportPayload, ChallengeReportPayload } from "@/types/challenge-report";
 import { isReportV2 } from "@/types/challenge-report";
 
@@ -209,34 +214,33 @@ function V2ReportView({ report }: { report: Extract<AnyChallengeReportPayload, {
         </Card>
       </section>
 
-      <section aria-labelledby="report-coaching">
-        <h2 id="report-coaching" className="mb-2 text-base font-semibold">
-          Coaching interest
-        </h2>
-        <Card padding="sm" className="space-y-2 text-sm">
-          <p>
-            Program / shop link clicks:{" "}
-            <strong>
-              {report.coaching.programLinkClicks == null
-                ? "Not tracked"
-                : report.coaching.programLinkClicks}
-            </strong>
-          </p>
-          <p>
-            Completion offer clicks:{" "}
-            <strong>
-              {report.coaching.completionOfferClicks == null
-                ? "Not tracked"
-                : report.coaching.completionOfferClicks}
-            </strong>
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Unique clickers: not tracked (privacy-preserving aggregate counts only).
-          </p>
-          <p className="text-xs text-muted-foreground">{report.coaching.trackingNote}</p>
-          <p className="text-xs text-muted-foreground">{report.coaching.disclaimer}</p>
-        </Card>
-      </section>
+      {coachingMetricsTracked(report.coaching) ? (
+        <section aria-labelledby="report-coaching">
+          <h2 id="report-coaching" className="mb-2 text-base font-semibold">
+            Coaching interest
+          </h2>
+          <Card padding="sm" className="space-y-2 text-sm">
+            {report.coaching.programLinkClicks != null ? (
+              <p>
+                Program / shop link clicks:{" "}
+                <strong>{report.coaching.programLinkClicks}</strong>
+              </p>
+            ) : null}
+            {report.coaching.completionOfferClicks != null ? (
+              <p>
+                Completion offer clicks:{" "}
+                <strong>{report.coaching.completionOfferClicks}</strong>
+              </p>
+            ) : null}
+            {coachingTrackingNoteForCreator(report.coaching.trackingNote) ? (
+              <p className="text-xs text-muted-foreground">
+                {coachingTrackingNoteForCreator(report.coaching.trackingNote)}
+              </p>
+            ) : null}
+            <p className="text-xs text-muted-foreground">{report.coaching.disclaimer}</p>
+          </Card>
+        </section>
+      ) : null}
 
       <section aria-labelledby="report-acquisition">
         <h2 id="report-acquisition" className="mb-2 text-base font-semibold">
@@ -247,7 +251,7 @@ function V2ReportView({ report }: { report: Extract<AnyChallengeReportPayload, {
             <p className="text-sm font-medium">Where participants came from</p>
             <p className="text-xs text-muted-foreground">{report.acquisition.note}</p>
             <ul className="mt-2 space-y-1 text-sm">
-              {report.acquisition.sources.map((s) => (
+              {acquisitionSourcesForCreatorReport(report.acquisition.sources).map((s) => (
                 <li key={s.key} className="flex justify-between gap-2">
                   <span>{s.label}</span>
                   <span className="font-semibold tabular-nums">{s.count}</span>
