@@ -21,8 +21,10 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 type HabitQuickAddProps = {
-  /** Show only a few preset chips (Home). Full categorized list on Progress. */
+  /** Show only a few preset chips (Home / Progress by default). */
   compact?: boolean;
+  /** When compact, allow expanding to the full categorized preset list. */
+  allowExpandAllPresets?: boolean;
   showProgressLink?: boolean;
 };
 
@@ -49,10 +51,12 @@ function PresetChip({
 
 export function HabitQuickAdd({
   compact = false,
+  allowExpandAllPresets = false,
   showProgressLink = false,
 }: HabitQuickAddProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [showAllPresets, setShowAllPresets] = useState(false);
   const [customTitle, setCustomTitle] = useState("");
   const [draftTitle, setDraftTitle] = useState("");
   const [draftTemplateKey, setDraftTemplateKey] = useState(CUSTOM_HABIT_PRESET_KEY);
@@ -101,19 +105,39 @@ export function HabitQuickAdd({
         Tap a preset or type a custom habit, then choose days and an optional
         time{compact ? " — or manage all on Progress." : "."}
       </p>
-      {compact ? (
-        <div className="flex flex-wrap gap-2">
-          {compactHabitPresets().map((preset) => (
-            <PresetChip
-              key={preset.key}
-              preset={preset}
-              pending={pending}
-              onPick={startDraft}
-            />
-          ))}
+      {compact && !(allowExpandAllPresets && showAllPresets) ? (
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-2">
+            {compactHabitPresets().map((preset) => (
+              <PresetChip
+                key={preset.key}
+                preset={preset}
+                pending={pending}
+                onPick={startDraft}
+              />
+            ))}
+          </div>
+          {allowExpandAllPresets ? (
+            <button
+              type="button"
+              className="text-xs font-semibold text-primary"
+              onClick={() => setShowAllPresets(true)}
+            >
+              Browse all habit ideas →
+            </button>
+          ) : null}
         </div>
       ) : (
         <div className="space-y-4">
+          {compact && allowExpandAllPresets ? (
+            <button
+              type="button"
+              className="text-xs font-semibold text-muted-foreground"
+              onClick={() => setShowAllPresets(false)}
+            >
+              ← Show fewer ideas
+            </button>
+          ) : null}
           {HABIT_PRESET_GROUP_ORDER.map((group) => (
             <div key={group}>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">

@@ -6,6 +6,7 @@ import {
   fetchDiscoverableGroups,
 } from "@/lib/data/group-discovery";
 import { fetchUserGroup } from "@/lib/data/groups";
+import { fetchAllMemberGoals } from "@/lib/data/member";
 
 import {
   ACCOUNTABILITY_GROUP_PLURAL,
@@ -17,9 +18,12 @@ export const metadata = { title: "Private accountability groups" };
 export default async function GroupsPage() {
   const { user } = await getCurrentUserProfile();
   const userId = user?.id ?? null;
-  const { group, feed, pendingJoin, existingGroupBlocked } = userId
-    ? await fetchUserGroup(userId)
-    : { group: null, feed: [], pendingJoin: null, existingGroupBlocked: false };
+  const [{ group, feed, pendingJoin, existingGroupBlocked }, viewerHabits] = userId
+    ? await Promise.all([fetchUserGroup(userId), fetchAllMemberGoals(userId)])
+    : [
+        { group: null, feed: [], pendingJoin: null, existingGroupBlocked: false },
+        [] as Awaited<ReturnType<typeof fetchAllMemberGoals>>,
+      ];
 
   const discoveryEligible = userId ? (await fetchDiscoveryEligibility(userId)).eligible : false;
   const discoverableGroups =
@@ -43,6 +47,7 @@ export default async function GroupsPage() {
           existingGroupBlocked={existingGroupBlocked}
           discoveryEligible={discoveryEligible}
           initialDiscoverableGroups={discoverableGroups}
+          viewerHabits={viewerHabits}
         />
       </div>
     </div>

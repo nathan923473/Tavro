@@ -4,6 +4,7 @@ import {
   saveGroupWeeklyCommitmentAction,
   sendGroupEncouragementAction,
 } from "@/app/(app)/groups/actions";
+import { setHabitGroupShareAction } from "@/app/(app)/progress/actions";
 import { GroupCheckInReactions } from "@/components/groups/group-check-in-reactions";
 import { GroupSharedCommitmentsDashboard } from "@/components/groups/group-shared-commitments-dashboard";
 import { GroupWeeklyCommitmentsBoard } from "@/components/groups/group-weekly-commitments-board";
@@ -11,19 +12,25 @@ import { GroupWeeklyReflectionCard } from "@/components/groups/group-weekly-refl
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import type { AccountabilityGroup, GroupActivity } from "@/types";
+import {
+  habitAlreadyWeeklyCommitment,
+  weeklyCommitmentTargetFromHabit,
+} from "@/lib/groups/commitment-from-habit";
+import type { AccountabilityGroup, GroupActivity, PersonalGoal } from "@/types";
 import { useMemo, useState } from "react";
 
 export function GroupTabProgress({
   group,
   feed,
   viewerUserId,
+  viewerHabits = [],
   pending,
   run,
 }: {
   group: AccountabilityGroup;
   feed: GroupActivity[];
   viewerUserId?: string | null;
+  viewerHabits?: PersonalGoal[];
   pending: boolean;
   run: (action: () => Promise<unknown>) => void;
 }) {
@@ -58,6 +65,19 @@ export function GroupTabProgress({
   }, [group.weeklyCommitments]);
 
   const scheduledThisWeek = group.checkInBoard.filter((m) => m.scheduledToday).length;
+
+  const ownWeeklyCommitments = useMemo(
+    () => group.weeklyCommitments.filter((c) => c.isOwn),
+    [group.weeklyCommitments],
+  );
+
+  const habitsForCommitmentPicker = useMemo(
+    () =>
+      viewerHabits.filter(
+        (h) => !h.paused && !habitAlreadyWeeklyCommitment(h, ownWeeklyCommitments),
+      ),
+    [viewerHabits, ownWeeklyCommitments],
+  );
 
   return (
     <div className="space-y-4">
@@ -113,9 +133,66 @@ export function GroupTabProgress({
         <div>
           <h3 className="font-semibold">Add a commitment for this week</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Visible to everyone in this group as soon as you add it.
+            Pick a habit from Progress or create a one-off target for this group.
           </p>
         </div>
+        {habitsForCommitmentPicker.length > 0 ? (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              From your Progress habits
+            </p>
+            <ul className="flex flex-wrap gap-2">
+              {habitsForCommitmentPicker.map((habit) => {
+                const target = weeklyCommitmentTargetFromHabit(habit);
+                return (
+                  <li key={habit.id}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-10 max-w-full text-left text-xs font-medium"
+                      disabled={pending}
+                      onClick={() =>
+                        run(async () => {
+                          await setHabitGroupShareAction({
+                            habitId: habit.id,
+                            groupId: group.id,
+                          });
+                          await saveGroupWeeklyCommitmentAction({
+                            groupId: group.id,
+                            title: habit.title,
+                            targetCount: target,
+                          });
+                        })
+                      }
+                    >
+                      + {habit.title}
+                      <span className="ml-1 font-normal text-muted-foreground">
+                        ({target}× this week)
+                      </span>
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="text-xs text-muted-foreground">
+              Adds a weekly target here and shares the habit with your group for daily
+              check-offs.
+            </p>
+          </div>
+        ) : viewerHabits.length > 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Your Progress habits are already on this week&apos;s board — or add a custom
+            commitment below.
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No habits on Progress yet — add habits there or create a custom commitment
+            below.
+          </p>
+        )}
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Or create your own
+        </p>
         <label className="block text-sm font-medium">
           What do you want to do?
           <input

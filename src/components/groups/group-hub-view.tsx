@@ -4,7 +4,7 @@ import { GroupOwnerPendingCard } from "@/components/groups/group-owner-pending-c
 import { GroupTabChat } from "@/components/groups/group-tab-chat";
 import { GroupTabProgress } from "@/components/groups/group-tab-progress";
 import { GroupTabToday } from "@/components/groups/group-tab-today";
-import type { AccountabilityGroup, GroupActivity } from "@/types";
+import type { AccountabilityGroup, GroupActivity, PersonalGoal } from "@/types";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -20,11 +20,13 @@ export function GroupHubView({
   group,
   feed,
   viewerUserId = null,
+  viewerHabits = [],
   discoveryOwnerEligible = false,
 }: {
   group: AccountabilityGroup;
   feed: GroupActivity[];
   viewerUserId?: string | null;
+  viewerHabits?: PersonalGoal[];
   discoveryOwnerEligible?: boolean;
 }) {
   const router = useRouter();
@@ -90,6 +92,7 @@ export function GroupHubView({
           group={group}
           feed={feed}
           viewerUserId={viewerUserId}
+          viewerHabits={viewerHabits}
           pending={pending}
           run={run}
         />

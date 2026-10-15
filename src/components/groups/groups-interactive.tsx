@@ -26,7 +26,7 @@ import {
   ACCOUNTABILITY_GROUP_SIZE_LABEL,
   ACCOUNTABILITY_GROUP_SIZE_RECOMMENDATION,
 } from "@/lib/copy/accountability-groups";
-import type { AccountabilityGroup, GroupActivity, GroupFocusType } from "@/types";
+import type { AccountabilityGroup, GroupActivity, GroupFocusType, PersonalGoal } from "@/types";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 
@@ -39,6 +39,7 @@ export function GroupsInteractive({
   existingGroupBlocked = false,
   discoveryEligible = false,
   initialDiscoverableGroups = [],
+  viewerHabits = [],
 }: {
   group: AccountabilityGroup | null;
   feed: GroupActivity[];
@@ -48,6 +49,7 @@ export function GroupsInteractive({
   existingGroupBlocked?: boolean;
   discoveryEligible?: boolean;
   initialDiscoverableGroups?: DiscoverableGroupCard[];
+  viewerHabits?: PersonalGoal[];
 }) {
   const router = useRouter();
   const createFormRef = useRef<HTMLDivElement>(null);
@@ -346,6 +348,7 @@ export function GroupsInteractive({
       group={group}
       feed={feed}
       viewerUserId={viewerUserId}
+      viewerHabits={viewerHabits}
       discoveryOwnerEligible={discoveryEligible}
     />
   );
