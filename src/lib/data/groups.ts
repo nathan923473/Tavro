@@ -9,7 +9,6 @@ import {
   scheduleLabel,
 } from "@/lib/groups/goal-schedule";
 import { fetchGroupSharedCommitments } from "@/lib/data/group-shared-commitments";
-import { ensureMemberGoalsSharedWithGroup } from "@/lib/groups/auto-share-member-goals";
 import type {
   AccountabilityGroup,
   GroupActivity,
@@ -659,8 +658,6 @@ async function loadGroupHub(
   ) as GroupFocusType;
   const focusCustomLabel =
     typeof groupRow.focus_custom_label === "string" ? groupRow.focus_custom_label : "";
-
-  await ensureMemberGoalsSharedWithGroup(supabase, userId, groupId);
 
   const [sharedCommitments, weeklyReflections] = await Promise.all([
     fetchGroupSharedCommitments(supabase, groupId, userId),

@@ -73,8 +73,8 @@ export function GroupSharedCommitmentsDashboard({
       <Card className="space-y-2">
         <h3 className="font-semibold">Shared commitments</h3>
         <p className="text-sm text-muted-foreground">
-          Daily habits from Progress appear here for group members automatically. Add weekly
-          targets in the section below.
+          When you choose to share a Progress habit with this group (Progress page or optional
+          checkbox below), daily check-offs appear here. Weekly targets are added separately.
         </p>
       </Card>
     );

@@ -45,8 +45,8 @@ export function GroupWeeklyCommitmentsBoard({
       <div>
         <h3 className="font-semibold">This week&apos;s group commitments</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Anything you add here is visible to everyone in this private group. Progress habits
-          from Home also appear above when you&apos;re in the group.
+          Anything you add here is visible to everyone in this private group — pick a Progress
+          habit below or create your own.
         </p>
       </div>
 

@@ -4,7 +4,6 @@ import {
   saveGroupWeeklyCommitmentAction,
   sendGroupEncouragementAction,
 } from "@/app/(app)/groups/actions";
-import { setHabitGroupShareAction } from "@/app/(app)/progress/actions";
 import { GroupCheckInReactions } from "@/components/groups/group-check-in-reactions";
 import { GroupSharedCommitmentsDashboard } from "@/components/groups/group-shared-commitments-dashboard";
 import { GroupWeeklyCommitmentsBoard } from "@/components/groups/group-weekly-commitments-board";
@@ -37,6 +36,7 @@ export function GroupTabProgress({
   const [commitTitle, setCommitTitle] = useState("");
   /** String so users can clear the field and type a new number (avoids "13" when replacing "1"). */
   const [commitTargetInput, setCommitTargetInput] = useState("3");
+  const [shareDailyWhenAddingHabit, setShareDailyWhenAddingHabit] = useState(false);
 
   function parsedCommitTarget(): number {
     const n = Number.parseInt(commitTargetInput.trim(), 10);
@@ -153,10 +153,15 @@ export function GroupTabProgress({
                       disabled={pending}
                       onClick={() =>
                         run(async () => {
-                          await setHabitGroupShareAction({
-                            habitId: habit.id,
-                            groupId: group.id,
-                          });
+                          if (shareDailyWhenAddingHabit) {
+                            const { setHabitGroupShareAction } = await import(
+                              "@/app/(app)/progress/actions"
+                            );
+                            await setHabitGroupShareAction({
+                              habitId: habit.id,
+                              groupId: group.id,
+                            });
+                          }
                           await saveGroupWeeklyCommitmentAction({
                             groupId: group.id,
                             title: habit.title,
@@ -174,10 +179,18 @@ export function GroupTabProgress({
                 );
               })}
             </ul>
-            <p className="text-xs text-muted-foreground">
-              Adds a weekly target here and shares the habit with your group for daily
-              check-offs.
-            </p>
+            <label className="flex items-start gap-2 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={shareDailyWhenAddingHabit}
+                onChange={(e) => setShareDailyWhenAddingHabit(e.target.checked)}
+              />
+              <span>
+                Also share daily Progress check-offs for habits you add (optional — otherwise
+                only the weekly target shows here)
+              </span>
+            </label>
           </div>
         ) : viewerHabits.length > 0 ? (
           <p className="text-sm text-muted-foreground">

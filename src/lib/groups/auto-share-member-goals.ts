@@ -2,7 +2,7 @@ import type { createClient } from "@/lib/supabase/server";
 
 type ServerSupabase = Awaited<ReturnType<typeof createClient>>;
 
-/** Share active Progress habits with the member's accountability group (private group visibility). */
+/** Optional bulk share — not called automatically; users opt in per habit or from group Commitments. */
 export async function ensureMemberGoalsSharedWithGroup(
   supabase: ServerSupabase,
   userId: string,
