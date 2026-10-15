@@ -40,6 +40,7 @@ export function HabitManager({
   );
   const [editMask, setEditMask] = useState(127);
   const [editTime, setEditTime] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   function openScheduleEdit(habit: PersonalGoal) {
     setEditingScheduleId(habit.id);
@@ -57,7 +58,7 @@ export function HabitManager({
           Small, sustainable habits beat perfect streaks. Choose 3–5 to start; pause
           anytime and pick up after a missed day — no calorie counting or medical targets.
         </p>
-        <HabitQuickAdd />
+        <HabitQuickAdd compact allowExpandAllPresets />
       </Card>
 
       <ul className="mt-3 space-y-2">
@@ -83,20 +84,47 @@ export function HabitManager({
                     {habit.paused ? " · paused" : ""}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  disabled={pending}
-                  className="text-muted-foreground"
-                  aria-label="Remove habit"
-                  onClick={() =>
-                    startTransition(async () => {
-                      await deleteHabitAction(habit.id);
-                      router.refresh();
-                    })
-                  }
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {confirmDeleteId === habit.id ? (
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <p className="text-xs font-medium text-red-600">Delete this habit?</p>
+                    <div className="flex gap-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="min-h-8 px-2 text-xs"
+                        disabled={pending}
+                        onClick={() => setConfirmDeleteId(null)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="min-h-8 px-2 text-xs text-red-600"
+                        disabled={pending}
+                        onClick={() =>
+                          startTransition(async () => {
+                            await deleteHabitAction(habit.id);
+                            setConfirmDeleteId(null);
+                            router.refresh();
+                          })
+                        }
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={pending}
+                    className="shrink-0 text-muted-foreground"
+                    aria-label="Remove habit"
+                    onClick={() => setConfirmDeleteId(habit.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button
