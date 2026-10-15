@@ -10,6 +10,7 @@ import {
   buildInsightsV2,
   buildRecommendationsV2,
 } from "@/lib/challenge-report/insights";
+import { acquisitionSourcesForCreatorReport } from "@/lib/challenge-report/creator-visible-metrics";
 import type {
   AnyChallengeReportPayload,
   ChallengeReportAcquisitionSource,
@@ -333,13 +334,13 @@ export async function computeChallengeReport(
     acquisitionCounts[classifyAcquisition(p)] += 1;
   }
   const classifiedParticipants = totalJoined;
-  const sources: ChallengeReportAcquisitionSource[] = (
-    Object.keys(acquisitionCounts) as ChallengeReportAcquisitionSource["key"][]
-  ).map((key) => ({
-    key,
-    label: SOURCE_LABELS[key],
-    count: acquisitionCounts[key],
-  }));
+  const sources: ChallengeReportAcquisitionSource[] = acquisitionSourcesForCreatorReport(
+    (Object.keys(acquisitionCounts) as ChallengeReportAcquisitionSource["key"][]).map((key) => ({
+      key,
+      label: SOURCE_LABELS[key],
+      count: acquisitionCounts[key],
+    })),
+  );
 
   const referralAttributedJoins = participantRows.filter((p) => p.referrer_user_id).length;
   const newPlatformAccountsAtJoin = participantRows.filter(
@@ -433,7 +434,7 @@ export async function computeChallengeReport(
     challengeId,
     generatedAt: new Date().toISOString(),
     snapshotNote:
-      "Final snapshot at generation time. Live Studio analytics may differ. Metrics marked “Not tracked” were never measured for this challenge.",
+      "Final snapshot at generation time. Live Studio analytics may differ. Only measured metrics are shown.",
     overview: {
       challengeTitle: row.title,
       creatorName,

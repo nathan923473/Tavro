@@ -88,13 +88,12 @@ export function buildDemoChallengeReport(creatorName: string): ChallengeReportPa
     },
     acquisition: {
       classifiedParticipants: totalJoined,
-      unclassifiedCount: 4,
+      unclassifiedCount: 0,
       sources: [
         { key: "challenge_page", label: "Challenge page", count: 22 },
         { key: "creator_page", label: "Creator page", count: 8 },
         { key: "in_app_discovery", label: "In-app discovery", count: 7 },
         { key: "participant_referral", label: "Participant referral", count: 6 },
-        { key: "unknown", label: "Unknown / not recorded", count: 4 },
       ],
       note: "Each participant counted once.",
     },
