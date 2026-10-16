@@ -1,5 +1,6 @@
 import { ChallengeParticipantOnboarding } from "@/components/challenges/challenge-participant-onboarding";
 import { StandalonePageHeader } from "@/components/layout/standalone-page-header";
+import { completeChallengeParticipantOnboardingAction } from "@/app/(app)/member/actions";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchChallengeLandingByInviteSlug } from "@/lib/data/challenge-landing";
 import { challengeTotalDays } from "@/lib/challenge-day";
@@ -22,8 +23,16 @@ export default async function ChallengeParticipantStartPage({ params }: Props) {
     redirect(`/challenges/${data.challenge.id}`);
   }
 
-  const today = new Date().toISOString().slice(0, 10);
-  const notStarted = data.challenge.startDate > today;
+  const now = new Date();
+  const notStarted =
+    data.challenge.startAt != null
+      ? new Date(data.challenge.startAt).getTime() > now.getTime()
+      : data.challenge.startDate > now.toISOString().slice(0, 10);
+
+  if (notStarted) {
+    await completeChallengeParticipantOnboardingAction(data.challenge.id);
+    redirect(`/challenges/${data.challenge.id}`);
+  }
 
   return (
     <div className="mx-auto min-h-dvh max-w-lg bg-background px-4 py-6">
@@ -38,7 +47,7 @@ export default async function ChallengeParticipantStartPage({ params }: Props) {
         totalDays={challengeTotalDays(data.challenge.startDate, data.challenge.endDate)}
         goalDescription={data.goalDescription}
         shortDescription={data.shortDescription}
-        notStarted={notStarted}
+        notStarted={false}
       />
     </div>
   );

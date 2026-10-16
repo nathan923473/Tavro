@@ -247,7 +247,10 @@ export async function fetchChallengeParticipantHub(
       : 0;
 
   const effectiveDayIndex = phase === "upcoming" ? 1 : dayIndex;
-  const scheduleItem = phase === "active" ? scheduleItemForDay(schedule, effectiveDayIndex) : null;
+  const scheduleItem =
+    phase === "active" || phase === "upcoming"
+      ? scheduleItemForDay(schedule, effectiveDayIndex)
+      : null;
 
   const { data: completionRows } = await supabase
     .from("challenge_schedule_completions")

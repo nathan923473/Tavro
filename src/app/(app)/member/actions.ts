@@ -513,7 +513,26 @@ export async function joinChallengeAndContinueAction(
   revalidatePath("/");
   revalidatePath("/join");
 
-  if (row?.onboarding_completed_at) {
+  const { resolveChallengeStartAt } = await import("@/lib/timezone/challenge-fields");
+  const startAt = resolveChallengeStartAt({
+    start_date: ch.start_date,
+    start_at: ch.start_at ?? null,
+    challenge_timezone: ch.challenge_timezone ?? null,
+  });
+  const upcoming = startAt.getTime() > new Date().getTime();
+
+  if (upcoming && !row?.onboarding_completed_at) {
+    const { error } = await supabase
+      .from("challenge_participants")
+      .update({ onboarding_completed_at: new Date().toISOString() })
+      .eq("challenge_id", challengeId)
+      .eq("user_id", userId);
+    if (error && !/onboarding_completed_at|schema cache/i.test(error.message)) {
+      throw new Error(error.message);
+    }
+  }
+
+  if (row?.onboarding_completed_at || upcoming) {
     return `/challenges/${challengeId}`;
   }
   return onboardingPath;

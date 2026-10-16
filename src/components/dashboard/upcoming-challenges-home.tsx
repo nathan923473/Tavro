@@ -51,7 +51,7 @@ export function UpcomingChallengesHome({ challenges }: { challenges: Challenge[]
                 href={`/challenges/${c.id}`}
                 className="flex min-h-10 items-center justify-center rounded-xl border border-border text-sm font-semibold"
               >
-                View preparation
+                Open challenge
               </Link>
             </Card>
           </li>

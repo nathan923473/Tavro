@@ -202,17 +202,13 @@ function ChallengeLandingBody({
                 ) : null}
                 <Link
                   href={
-                    data.onboardingCompleted
+                    notStarted || data.onboardingCompleted
                       ? `/challenges/${challenge.id}`
                       : joinContinuePath
                   }
                   className="flex min-h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
                 >
-                  {notStarted
-                    ? "View preparation"
-                    : data.onboardingCompleted
-                      ? "Open challenge"
-                      : "Finish setup"}
+                  {notStarted || data.onboardingCompleted ? "Open challenge" : "Finish setup"}
                 </Link>
                 {!ended && data.joined && !data.isOwner ? (
                   <LeaveChallengeButton

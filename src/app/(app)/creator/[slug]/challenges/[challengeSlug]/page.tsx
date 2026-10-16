@@ -44,10 +44,15 @@ export default async function CreatorChallengePublicPage({ params }: Props) {
   }
 
   if (user && data.joined) {
-    if (!data.onboardingCompleted) {
-      redirect(`/join/${challengeSlug}/start`);
+    const now = new Date();
+    const startsLater =
+      data.challenge.startAt != null
+        ? new Date(data.challenge.startAt).getTime() > now.getTime()
+        : data.challenge.startDate > now.toISOString().slice(0, 10);
+    if (startsLater || data.onboardingCompleted) {
+      redirect(`/challenges/${data.challenge.id}`);
     }
-    redirect(`/challenges/${data.challenge.id}`);
+    redirect(`/join/${challengeSlug}/start`);
   }
 
   const canonicalPath = landingCanonicalPath(data);
