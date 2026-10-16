@@ -45,8 +45,8 @@ export function GroupWeeklyCommitmentsBoard({
       <div>
         <h3 className="font-semibold">This week&apos;s group commitments</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Anything you add here is visible to everyone in this private group — pick a Progress
-          habit below or create your own.
+          Weekly targets everyone in the group can see — log your own with &quot;Log one time&quot;.
+          Not the same as daily linked Progress habits (see Shared commitments).
         </p>
       </div>
 
@@ -72,8 +72,8 @@ export function GroupWeeklyCommitmentsBoard({
                     >
                       <p className="text-sm font-medium">{c.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        {Math.min(c.progressCount, c.targetCount)} of {c.targetCount} times this
-                        week
+                        Group weekly · {Math.min(c.progressCount, c.targetCount)} of{" "}
+                        {c.targetCount} times this week
                       </p>
                       {c.isOwn ? (
                         <div className="mt-2 flex flex-wrap gap-2">

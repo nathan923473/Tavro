@@ -73,8 +73,9 @@ export function GroupSharedCommitmentsDashboard({
       <Card className="space-y-2">
         <h3 className="font-semibold">Shared commitments</h3>
         <p className="text-sm text-muted-foreground">
-          When you choose to share a Progress habit with this group (Progress page or optional
-          checkbox below), daily check-offs appear here. Weekly targets are added separately.
+          Link a Progress habit in <strong className="font-medium text-foreground">Link Progress habits</strong>{" "}
+          below (or on Progress → habit settings). Daily check-offs appear here. Weekly group
+          targets are separate.
         </p>
       </Card>
     );

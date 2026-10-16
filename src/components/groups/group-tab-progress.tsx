@@ -5,6 +5,7 @@ import {
   sendGroupEncouragementAction,
 } from "@/app/(app)/groups/actions";
 import { GroupCheckInReactions } from "@/components/groups/group-check-in-reactions";
+import { GroupHabitLinksPanel } from "@/components/groups/group-habit-links-panel";
 import { GroupSharedCommitmentsDashboard } from "@/components/groups/group-shared-commitments-dashboard";
 import { GroupWeeklyCommitmentsBoard } from "@/components/groups/group-weekly-commitments-board";
 import { GroupWeeklyReflectionCard } from "@/components/groups/group-weekly-reflection-card";
@@ -36,8 +37,6 @@ export function GroupTabProgress({
   const [commitTitle, setCommitTitle] = useState("");
   /** String so users can clear the field and type a new number (avoids "13" when replacing "1"). */
   const [commitTargetInput, setCommitTargetInput] = useState("3");
-  const [shareDailyWhenAddingHabit, setShareDailyWhenAddingHabit] = useState(false);
-
   function parsedCommitTarget(): number {
     const n = Number.parseInt(commitTargetInput.trim(), 10);
     if (!Number.isFinite(n)) return 3;
@@ -127,19 +126,34 @@ export function GroupTabProgress({
         ) : null}
       </Card>
 
+      <GroupHabitLinksPanel
+        groupId={group.id}
+        groupName={group.name}
+        habits={viewerHabits}
+        pending={pending}
+        run={run}
+      />
+
       <GroupWeeklyCommitmentsBoard group={group} pending={pending} run={run} />
 
-      <Card className="space-y-3">
+      <Card className="space-y-3 border-[#3156E8]/15 bg-[#3156E8]/[0.03]">
         <div>
-          <h3 className="font-semibold">Add a commitment for this week</h3>
+          <h3 className="font-semibold">Add a weekly group commitment</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Pick a habit from Progress or create a one-off target for this group.
+            <span className="font-medium text-foreground">Group commitment</span> — everyone in
+            this private group sees it on the weekly board below. You log progress with &quot;Log one
+            time&quot; (Mon–Sun). This is separate from linking daily Progress habits.
           </p>
         </div>
         {habitsForCommitmentPicker.length > 0 ? (
-          <div className="space-y-2">
+          <div className="space-y-2 rounded-xl border border-border bg-surface/80 p-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              From your Progress habits
+              From Progress (weekly target only)
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Copies the habit name and a weekly count — does not link daily check-offs. Use{" "}
+              <span className="font-medium text-foreground">Link Progress habits</span> above for
+              that.
             </p>
             <ul className="flex flex-wrap gap-2">
               {habitsForCommitmentPicker.map((habit) => {
@@ -152,22 +166,13 @@ export function GroupTabProgress({
                       className="min-h-10 max-w-full text-left text-xs font-medium"
                       disabled={pending}
                       onClick={() =>
-                        run(async () => {
-                          if (shareDailyWhenAddingHabit) {
-                            const { setHabitGroupShareAction } = await import(
-                              "@/app/(app)/progress/actions"
-                            );
-                            await setHabitGroupShareAction({
-                              habitId: habit.id,
-                              groupId: group.id,
-                            });
-                          }
-                          await saveGroupWeeklyCommitmentAction({
+                        run(() =>
+                          saveGroupWeeklyCommitmentAction({
                             groupId: group.id,
                             title: habit.title,
                             targetCount: target,
-                          });
-                        })
+                          }),
+                        )
                       }
                     >
                       + {habit.title}
@@ -179,33 +184,21 @@ export function GroupTabProgress({
                 );
               })}
             </ul>
-            <label className="flex items-start gap-2 text-xs text-muted-foreground">
-              <input
-                type="checkbox"
-                className="mt-0.5"
-                checked={shareDailyWhenAddingHabit}
-                onChange={(e) => setShareDailyWhenAddingHabit(e.target.checked)}
-              />
-              <span>
-                Also share daily Progress check-offs for habits you add (optional — otherwise
-                only the weekly target shows here)
-              </span>
-            </label>
           </div>
         ) : viewerHabits.length > 0 ? (
           <p className="text-sm text-muted-foreground">
-            Your Progress habits are already on this week&apos;s board — or add a custom
-            commitment below.
+            Your Progress habits are already on this week&apos;s group board — or add a custom
+            target below.
           </p>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            No habits on Progress yet — add habits there or create a custom commitment
-            below.
+        ) : null}
+        <div className="rounded-xl border border-dashed border-border bg-surface/80 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Your custom group target
           </p>
-        )}
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Or create your own
-        </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            A one-off weekly goal for this group only — not tied to Progress (e.g. &quot;Morning
+            walk&quot; 3×).
+          </p>
         <label className="block text-sm font-medium">
           What do you want to do?
           <input
@@ -283,8 +276,9 @@ export function GroupTabProgress({
             })
           }
         >
-          Add commitment
+          Add group commitment
         </Button>
+        </div>
       </Card>
 
       <Card>
