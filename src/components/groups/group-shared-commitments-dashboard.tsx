@@ -74,8 +74,7 @@ export function GroupSharedCommitmentsDashboard({
         <h3 className="font-semibold">Shared commitments</h3>
         <p className="text-sm text-muted-foreground">
           Link a Progress habit in <strong className="font-medium text-foreground">Link Progress habits</strong>{" "}
-          below (or on Progress → habit settings). Daily check-offs appear here. Weekly group
-          targets are separate.
+          below (or on Progress → habit settings). Daily check-offs appear here.
         </p>
       </Card>
     );
