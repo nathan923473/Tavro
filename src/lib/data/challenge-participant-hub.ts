@@ -247,7 +247,14 @@ export async function fetchChallengeParticipantHub(
       : 0;
 
   const effectiveDayIndex = phase === "upcoming" ? 1 : dayIndex;
-  const scheduleItem = phase === "active" ? scheduleItemForDay(schedule, effectiveDayIndex) : null;
+  const scheduleItem =
+    phase === "completed"
+      ? null
+      : scheduleItemForDay(schedule, phase === "active" ? dayIndex : effectiveDayIndex);
+  const activityDateKey =
+    phase === "upcoming"
+      ? challengeDateKeyForDay(startDate, effectiveDayIndex)
+      : today;
 
   const { data: completionRows } = await supabase
     .from("challenge_schedule_completions")
@@ -278,7 +285,7 @@ export async function fetchChallengeParticipantHub(
     const row = (completionRows ?? []).find(
       (c) =>
         c.schedule_item_id === scheduleItem?.id &&
-        c.completed_on === today &&
+        c.completed_on === activityDateKey &&
         (c.activity_key ?? "primary") === a.key,
     );
     return {
@@ -443,12 +450,18 @@ export async function fetchChallengeParticipantHub(
     streakDays,
     phase,
     daysUntilStart,
-    todayKey: today,
+    todayKey: activityDateKey,
     todayActivities,
-    todayLabel: new Date(`${today}T12:00:00Z`).toLocaleDateString(undefined, {
-      month: "long",
-      day: "numeric",
-    }).toUpperCase(),
+    todayLabel:
+      phase === "upcoming"
+        ? `DAY 1 PREVIEW · ${new Date(`${activityDateKey}T12:00:00Z`).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+          })}`
+        : new Date(`${today}T12:00:00Z`).toLocaleDateString(undefined, {
+            month: "long",
+            day: "numeric",
+          }).toUpperCase(),
     scheduleItemId: scheduleItem?.id ?? null,
     isRestDay: scheduleItem?.isRest ?? false,
     creatorMessage,

@@ -25,7 +25,7 @@ export function ChallengeAtAGlance({
     }
   }, [storageId]);
 
-  if (!visible || hub.phase !== "active") return null;
+  if (!visible || hub.phase === "completed") return null;
 
   const goal =
     hub.goalDescription?.trim() ||

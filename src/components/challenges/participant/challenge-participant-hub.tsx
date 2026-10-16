@@ -86,70 +86,6 @@ export function ChallengeParticipantHub({
     router.replace(`/challenges/${hub.challengeId}?tab=${next}`, { scroll: false });
   }
 
-  if (localHub.phase === "upcoming") {
-    return (
-      <div className="space-y-4">
-        <HubHeader hub={localHub} shareOpen={shareOpen} setShareOpen={setShareOpen} />
-        <Card className="space-y-3 text-center">
-          <p className="text-lg font-semibold">You&apos;re in!</p>
-          <p className="text-xl font-semibold">{localHub.title}</p>
-          {localHub.goalDescription || localHub.shortDescription ? (
-            <p className="text-left text-sm text-muted-foreground">
-              {localHub.goalDescription ?? localHub.shortDescription}
-            </p>
-          ) : null}
-          <ChallengeStartCountdown
-            startAt={localHub.startAt}
-            startDate={localHub.startDate}
-            challengeTimezone={localHub.challengeTimezone}
-            participantTimezone={localHub.participantTimezone}
-            variant="hero"
-            showCreatorStart
-          />
-          <p className="text-sm text-muted-foreground">
-            Your first activities will appear when the countdown ends.
-          </p>
-          <div className="flex flex-col gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setTab("plan")}>
-              View plan
-            </Button>
-            <Button type="button" variant="outline" onClick={() => setTab("about")}>
-              About this challenge
-            </Button>
-            {localHub.communitySlug ? (
-              <Link
-                href={`/creator/${localHub.communitySlug}`}
-                className="text-sm font-semibold text-primary"
-              >
-                View {localHub.creatorName}&apos;s community
-              </Link>
-            ) : null}
-          </div>
-        </Card>
-        <TabBar tab={tab} setTab={setTab} />
-        {!localHub.isOwner ? (
-          <LeaveChallengeButton
-            challengeId={localHub.challengeId}
-            redirectTo="/challenges"
-          />
-        ) : null}
-        {tab !== "today" ? (
-          <TabPanels
-            hub={localHub}
-            tab={tab}
-            viewerUserId={viewerUserId}
-            pending={pending}
-            startTransition={startTransition}
-            onMutate={(next) => {
-              setLocalHub(next);
-              router.refresh();
-            }}
-          />
-        ) : null}
-      </div>
-    );
-  }
-
   if (localHub.phase === "completed") {
     return (
       <div className="space-y-4">
@@ -196,24 +132,50 @@ export function ChallengeParticipantHub({
 
       <ChallengeAtAGlance hub={localHub} onOpenAbout={() => setTab("about")} />
 
-      <Card padding="sm">
-        <p className="text-sm text-muted-foreground">by {localHub.creatorName}</p>
-        <p className="text-xs text-muted-foreground">
-          Day {localHub.dayIndex} of {localHub.totalDays}
-        </p>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-primary transition-all duration-300"
-            style={{ width: `${progressBarPct}%` }}
+      {localHub.phase === "upcoming" ? (
+        <Card className="space-y-3 border-primary/20 bg-primary/5">
+          <Badge tone="muted">Upcoming</Badge>
+          <ChallengeStartCountdown
+            startAt={localHub.startAt}
+            startDate={localHub.startDate}
+            challengeTimezone={localHub.challengeTimezone}
+            participantTimezone={localHub.participantTimezone}
+            variant="hero"
+            showCreatorStart
           />
-        </div>
-        <p className="mt-1 text-xs text-muted-foreground">{progressBarPct}% overall</p>
-        {localHub.streakDays > 0 ? (
-          <Badge tone="success" className="mt-2">
-            🔥 {localHub.streakDays}-day consistency streak
-          </Badge>
-        ) : null}
-      </Card>
+          <p className="text-sm text-muted-foreground">
+            Browse the full challenge below — plan, members, updates, and a preview of day one.
+            Activity check-offs unlock when the countdown ends.
+          </p>
+          {localHub.communitySlug ? (
+            <Link
+              href={`/creator/${localHub.communitySlug}`}
+              className="inline-block text-sm font-semibold text-primary"
+            >
+              View {localHub.creatorName}&apos;s community →
+            </Link>
+          ) : null}
+        </Card>
+      ) : (
+        <Card padding="sm">
+          <p className="text-sm text-muted-foreground">by {localHub.creatorName}</p>
+          <p className="text-xs text-muted-foreground">
+            Day {localHub.dayIndex} of {localHub.totalDays}
+          </p>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-300"
+              style={{ width: `${progressBarPct}%` }}
+            />
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">{progressBarPct}% overall</p>
+          {localHub.streakDays > 0 ? (
+            <Badge tone="success" className="mt-2">
+              🔥 {localHub.streakDays}-day consistency streak
+            </Badge>
+          ) : null}
+        </Card>
+      )}
 
       <TabBar tab={tab} setTab={setTab} />
 
@@ -341,6 +303,35 @@ function TodayPanel({
           <p className="mt-2 text-sm text-muted-foreground">
             Rest day — recovery counts. Optional gentle movement only.
           </p>
+        ) : hub.phase === "upcoming" ? (
+          <>
+            <p className="mt-2 text-sm font-medium">Preview — day 1 activities</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              You can read what&apos;s planned; check-offs open when the challenge starts.
+            </p>
+            <ul className="mt-3 space-y-3">
+              {hub.todayActivities.length === 0 ? (
+                <li className="text-sm text-muted-foreground">
+                  Open the <strong className="font-medium text-foreground">Plan</strong> tab to see
+                  the full schedule.
+                </li>
+              ) : null}
+              {hub.todayActivities.map((act) => (
+                <li key={act.key} className="rounded-xl border border-border p-3 opacity-90">
+                  <ActivityRow
+                    challengeId={hub.challengeId}
+                    scheduleItemId={hub.scheduleItemId!}
+                    completedOn={hub.todayKey}
+                    act={act}
+                    pending={pending}
+                    editable={false}
+                    startTransition={startTransition}
+                    onActChange={() => {}}
+                  />
+                </li>
+              ))}
+            </ul>
+          </>
         ) : (
           <>
             <p className="mt-2 text-sm font-medium">Today&apos;s activities</p>
@@ -353,6 +344,7 @@ function TodayPanel({
                     completedOn={hub.todayKey}
                     act={act}
                     pending={pending}
+                    editable={hub.phase === "active"}
                     startTransition={startTransition}
                     onActChange={(patch) =>
                       onMutate(
@@ -380,6 +372,7 @@ function TodayPanel({
         </Card>
       ) : null}
 
+      {hub.phase !== "active" ? null : (
       <Card className="space-y-3">
         <h2 className="font-semibold">How did today go?</h2>
         <p className="text-xs text-muted-foreground">Private — creators don&apos;t see this.</p>
@@ -427,6 +420,7 @@ function TodayPanel({
           Save check-in
         </Button>
       </Card>
+      )}
     </>
   );
 }
