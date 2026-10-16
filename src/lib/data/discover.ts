@@ -1,8 +1,7 @@
 import { CHALLENGE_PARTICIPANTS_EMBED, unwrapOne } from "@/lib/data/relations";
 import { createClient } from "@/lib/supabase/server";
 import { resolveCreatorAvatarUrl } from "@/lib/creator-avatar";
-import { challengeTimeline } from "@/lib/data/communities";
-import { challengePhaseFromInstants } from "@/lib/timezone/challenge-calendar";
+import { challengePhaseFromSchedule } from "@/lib/timezone/challenge-fields";
 
 export type DiscoverChallenge = {
   id: string;
@@ -31,16 +30,10 @@ function timelineForChallenge(row: {
   end_at?: string | null;
   challenge_timezone?: string | null;
 }): DiscoverChallenge["timeline"] {
-  if (row.start_at && row.end_at) {
-    const phase = challengePhaseFromInstants(
-      new Date(row.start_at),
-      new Date(row.end_at),
-    );
-    if (phase === "upcoming") return "upcoming";
-    if (phase === "completed") return "previous";
-    return "current";
-  }
-  return challengeTimeline(row.start_date, row.end_date);
+  const phase = challengePhaseFromSchedule(row);
+  if (phase === "upcoming") return "upcoming";
+  if (phase === "completed") return "previous";
+  return "current";
 }
 
 export type DiscoverCreator = {

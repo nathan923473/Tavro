@@ -3,7 +3,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { todayDateKey } from "@/lib/dates";
 import { challengeTodayDateKey } from "@/lib/timezone/challenge-calendar";
-import { resolveChallengeEndAt, resolveChallengeStartAt } from "@/lib/timezone/challenge-fields";
+import {
+  challengePhaseFromSchedule,
+  resolveChallengeEndAt,
+  resolveChallengeStartAt,
+} from "@/lib/timezone/challenge-fields";
 import { normalizeTimezone, isValidIanaTimezone } from "@/lib/timezone/validate";
 import { DEFAULT_FALLBACK_TIMEZONE } from "@/lib/timezone/constants";
 import type { AuStateOrTerritory } from "@/lib/timezone/constants";
@@ -513,13 +517,14 @@ export async function joinChallengeAndContinueAction(
   revalidatePath("/");
   revalidatePath("/join");
 
-  const { resolveChallengeStartAt } = await import("@/lib/timezone/challenge-fields");
-  const startAt = resolveChallengeStartAt({
-    start_date: ch.start_date,
-    start_at: ch.start_at ?? null,
-    challenge_timezone: ch.challenge_timezone ?? null,
-  });
-  const upcoming = startAt.getTime() > new Date().getTime();
+  const upcoming =
+    challengePhaseFromSchedule({
+      start_date: ch.start_date,
+      end_date: ch.end_date,
+      start_at: ch.start_at ?? null,
+      end_at: ch.end_at ?? null,
+      challenge_timezone: ch.challenge_timezone ?? null,
+    }) === "upcoming";
 
   if (upcoming && !row?.onboarding_completed_at) {
     const { error } = await supabase

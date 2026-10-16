@@ -2,31 +2,14 @@ import { ChallengeDateRange } from "@/components/challenges/challenge-date-range
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { Card } from "@/components/ui/card";
 import type { ChallengeParticipantHub } from "@/lib/data/challenge-participant-hub";
-import { challengePhaseFromInstants } from "@/lib/timezone/challenge-calendar";
-import { resolveChallengeEndAt, resolveChallengeStartAt } from "@/lib/timezone/challenge-fields";
+import { challengePhaseFromChallenge } from "@/lib/timezone/challenge-fields";
 import type { WorkTowards } from "@/lib/member/preferences";
 import { workTowardsLabel } from "@/lib/member/preferences";
 import type { Challenge } from "@/types";
 import Link from "next/link";
 
 function phaseOf(c: Challenge): "upcoming" | "active" | "completed" {
-  if (!c.startAt || !c.endAt) {
-    const today = new Date().toISOString().slice(0, 10);
-    if (c.endDate < today) return "completed";
-    if (c.startDate > today) return "upcoming";
-    return "active";
-  }
-  const start = resolveChallengeStartAt({
-    start_date: c.startDate,
-    start_at: c.startAt,
-    challenge_timezone: c.challengeTimezone ?? null,
-  });
-  const end = resolveChallengeEndAt({
-    end_date: c.endDate,
-    end_at: c.endAt,
-    challenge_timezone: c.challengeTimezone ?? null,
-  });
-  return challengePhaseFromInstants(start, end);
+  return challengePhaseFromChallenge(c);
 }
 
 export function HomeChallengesSection({

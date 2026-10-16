@@ -67,7 +67,11 @@ export function ChallengeSummaryCard({
 }: ChallengeSummaryCardProps) {
   const upcoming =
     upcomingProp ??
-    isChallengeUpcoming({ startAt: startAt ?? null, startDate });
+    isChallengeUpcoming({
+      startAt: startAt ?? null,
+      startDate,
+      challengeTimezone,
+    });
 
   return (
     <Card className="overflow-hidden p-0">

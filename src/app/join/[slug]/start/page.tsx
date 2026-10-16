@@ -4,6 +4,10 @@ import { completeChallengeParticipantOnboardingAction } from "@/app/(app)/member
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchChallengeLandingByInviteSlug } from "@/lib/data/challenge-landing";
 import { challengeTotalDays } from "@/lib/challenge-day";
+import {
+  challengePhaseFromChallenge,
+  resolveChallengeStartAt,
+} from "@/lib/timezone/challenge-fields";
 import { redirect } from "next/navigation";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -23,13 +27,14 @@ export default async function ChallengeParticipantStartPage({ params }: Props) {
     redirect(`/challenges/${data.challenge.id}`);
   }
 
-  const now = new Date();
-  const notStarted =
-    data.challenge.startAt != null
-      ? new Date(data.challenge.startAt).getTime() > now.getTime()
-      : data.challenge.startDate > now.toISOString().slice(0, 10);
+  const phase = challengePhaseFromChallenge(data.challenge);
+  const startAt = resolveChallengeStartAt({
+    start_date: data.challenge.startDate,
+    start_at: data.challenge.startAt,
+    challenge_timezone: data.challenge.challengeTimezone,
+  });
 
-  if (notStarted) {
+  if (phase === "upcoming") {
     await completeChallengeParticipantOnboardingAction(data.challenge.id);
     redirect(`/challenges/${data.challenge.id}`);
   }
@@ -43,6 +48,7 @@ export default async function ChallengeParticipantStartPage({ params }: Props) {
         creatorName={data.communityName ?? data.challenge.creatorName}
         startDate={data.challenge.startDate}
         endDate={data.challenge.endDate}
+        startAt={data.challenge.startAt ?? startAt.toISOString()}
         challengeTimezone={data.challenge.challengeTimezone}
         totalDays={challengeTotalDays(data.challenge.startDate, data.challenge.endDate)}
         goalDescription={data.goalDescription}

@@ -15,8 +15,7 @@ import { fetchUserGroup } from "@/lib/data/groups";
 import { fetchHomeDashboardBundle } from "@/lib/data/member";
 import { resolveHomePrimaryAction } from "@/lib/home/primary-action";
 import { createClient } from "@/lib/supabase/server";
-import { challengePhaseFromInstants } from "@/lib/timezone/challenge-calendar";
-import { resolveChallengeEndAt, resolveChallengeStartAt } from "@/lib/timezone/challenge-fields";
+import { challengePhaseFromChallenge } from "@/lib/timezone/challenge-fields";
 import { DEFAULT_FALLBACK_TIMEZONE } from "@/lib/timezone/constants";
 
 const emptyDashboard = {
@@ -41,21 +40,7 @@ const emptyDashboard = {
 function challengeIsActive(
   c: Awaited<ReturnType<typeof fetchJoinedChallengesForHome>>[number],
 ): boolean {
-  if (!c.startAt || !c.endAt) {
-    const today = new Date().toISOString().slice(0, 10);
-    return c.startDate <= today && c.endDate >= today;
-  }
-  const start = resolveChallengeStartAt({
-    start_date: c.startDate,
-    start_at: c.startAt,
-    challenge_timezone: c.challengeTimezone ?? null,
-  });
-  const end = resolveChallengeEndAt({
-    end_date: c.endDate,
-    end_at: c.endAt,
-    challenge_timezone: c.challengeTimezone ?? null,
-  });
-  return challengePhaseFromInstants(start, end) === "active";
+  return challengePhaseFromChallenge(c) === "active";
 }
 
 export default async function HomePage() {

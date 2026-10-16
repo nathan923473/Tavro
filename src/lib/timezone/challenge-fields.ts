@@ -1,4 +1,8 @@
 import {
+  challengePhaseFromInstants,
+  type ChallengePhase,
+} from "@/lib/timezone/challenge-calendar";
+import {
   challengeStartInstantUtc,
   legacyChallengeStartMidnightUtc,
   parseTimeLocal,
@@ -48,4 +52,44 @@ export function resolveChallengeEndAt(row: {
 
 export function defaultStartTimeLocal(): string {
   return "09:00";
+}
+
+/** Same phase rule as the participant hub: start_at / end_at, or midnight in the challenge timezone. */
+export function challengePhaseFromSchedule(
+  row: {
+    start_date: string;
+    end_date: string;
+    start_at?: string | null;
+    end_at?: string | null;
+    challenge_timezone?: string | null;
+  },
+  now: Date = new Date(),
+): ChallengePhase {
+  return challengePhaseFromInstants(
+    resolveChallengeStartAt(row),
+    resolveChallengeEndAt(row),
+    now,
+  );
+}
+
+export function challengePhaseFromChallenge(
+  challenge: {
+    startDate: string;
+    endDate: string;
+    startAt?: string | null;
+    endAt?: string | null;
+    challengeTimezone?: string | null;
+  },
+  now: Date = new Date(),
+): ChallengePhase {
+  return challengePhaseFromSchedule(
+    {
+      start_date: challenge.startDate,
+      end_date: challenge.endDate,
+      start_at: challenge.startAt,
+      end_at: challenge.endAt,
+      challenge_timezone: challenge.challengeTimezone,
+    },
+    now,
+  );
 }

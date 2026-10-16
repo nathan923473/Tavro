@@ -6,6 +6,7 @@ import {
   landingCanonicalPath,
 } from "@/lib/data/challenge-landing";
 import { challengeLandingMetadata } from "@/lib/seo/challenge-open-graph";
+import { challengePhaseFromChallenge } from "@/lib/timezone/challenge-fields";
 import { notFound, redirect } from "next/navigation";
 
 type Props = {
@@ -44,12 +45,8 @@ export default async function CreatorChallengePublicPage({ params }: Props) {
   }
 
   if (user && data.joined) {
-    const now = new Date();
-    const startsLater =
-      data.challenge.startAt != null
-        ? new Date(data.challenge.startAt).getTime() > now.getTime()
-        : data.challenge.startDate > now.toISOString().slice(0, 10);
-    if (startsLater || data.onboardingCompleted) {
+    const upcoming = challengePhaseFromChallenge(data.challenge) === "upcoming";
+    if (upcoming || data.onboardingCompleted) {
       redirect(`/challenges/${data.challenge.id}`);
     }
     redirect(`/join/${challengeSlug}/start`);

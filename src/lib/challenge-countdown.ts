@@ -5,6 +5,7 @@ import {
   hasStarted,
   msUntilInstant,
 } from "@/lib/timezone/format";
+import { resolveChallengeStartAt } from "@/lib/timezone/challenge-fields";
 
 /** @deprecated Use start_at ISO + formatHumanCountdownToStart */
 export function challengeStartTimestampMs(startDateKey: string): number {
@@ -24,9 +25,14 @@ export function isChallengeUpcomingLegacy(startDateKey: string, todayKey: string
 export function isChallengeUpcoming(input: {
   startAt?: string | null;
   startDate: string;
+  challengeTimezone?: string | null;
 }): boolean {
-  if (input.startAt) return isChallengeUpcomingByStartAt(input.startAt);
-  return isChallengeUpcomingLegacy(input.startDate, new Date().toISOString().slice(0, 10));
+  const start = resolveChallengeStartAt({
+    start_date: input.startDate,
+    start_at: input.startAt,
+    challenge_timezone: input.challengeTimezone,
+  });
+  return start.getTime() > Date.now();
 }
 
 export function msUntilChallengeStartAt(startAtIso: string, nowMs = Date.now()): number {
