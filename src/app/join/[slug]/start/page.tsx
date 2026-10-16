@@ -2,6 +2,7 @@ import { ChallengeParticipantOnboarding } from "@/components/challenges/challeng
 import { StandalonePageHeader } from "@/components/layout/standalone-page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchChallengeLandingByInviteSlug } from "@/lib/data/challenge-landing";
+import { isChallengeUpcoming } from "@/lib/challenge-countdown";
 import { challengeTotalDays } from "@/lib/challenge-day";
 import { redirect } from "next/navigation";
 
@@ -22,8 +23,10 @@ export default async function ChallengeParticipantStartPage({ params }: Props) {
     redirect(`/challenges/${data.challenge.id}`);
   }
 
-  const today = new Date().toISOString().slice(0, 10);
-  const notStarted = data.challenge.startDate > today;
+  const notStarted = isChallengeUpcoming({
+    startAt: data.challenge.startAt,
+    startDate: data.challenge.startDate,
+  });
 
   return (
     <div className="mx-auto min-h-dvh max-w-lg bg-background px-4 py-6">
@@ -34,6 +37,7 @@ export default async function ChallengeParticipantStartPage({ params }: Props) {
         creatorName={data.communityName ?? data.challenge.creatorName}
         startDate={data.challenge.startDate}
         endDate={data.challenge.endDate}
+        startAt={data.challenge.startAt}
         challengeTimezone={data.challenge.challengeTimezone}
         totalDays={challengeTotalDays(data.challenge.startDate, data.challenge.endDate)}
         goalDescription={data.goalDescription}

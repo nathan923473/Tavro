@@ -14,6 +14,7 @@ export function ChallengeParticipantOnboarding({
   creatorName,
   startDate,
   endDate,
+  startAt,
   challengeTimezone,
   totalDays,
   goalDescription,
@@ -25,6 +26,7 @@ export function ChallengeParticipantOnboarding({
   creatorName: string;
   startDate: string;
   endDate: string;
+  startAt?: string | null;
   challengeTimezone?: string | null;
   totalDays: number;
   goalDescription?: string | null;
@@ -67,9 +69,12 @@ export function ChallengeParticipantOnboarding({
       {notStarted ? (
         <div className="space-y-3">
           <ChallengeStartCountdown
+            startAt={startAt}
             startDate={startDate}
+            challengeTimezone={challengeTimezone}
             variant="hero"
             label="Starts in"
+            showCreatorStart
           />
           <p className="text-sm leading-relaxed text-muted-foreground">
             Activities unlock when the countdown ends. You can explore Home and set up habits while
