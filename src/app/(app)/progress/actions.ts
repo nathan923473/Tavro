@@ -230,6 +230,21 @@ export async function setHabitGroupShareAction(input: {
   revalidateProgressPaths();
 }
 
+/** Stop sharing a habit's daily check-offs with one group (Progress habit stays private). */
+export async function unlinkHabitFromGroupAction(habitId: string, groupId: string) {
+  const { supabase, userId } = await requireUserId();
+  const { error } = await supabase
+    .from("member_goal_group_shares")
+    .delete()
+    .eq("member_goal_id", habitId)
+    .eq("group_id", groupId)
+    .eq("user_id", userId);
+  if (error && !/member_goal_group_shares|schema cache/i.test(error.message)) {
+    throw new Error(error.message);
+  }
+  revalidateProgressPaths();
+}
+
 export async function linkHabitToChallengeAction(
   habitId: string,
   challengeId: string | null,

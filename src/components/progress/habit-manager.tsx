@@ -204,8 +204,8 @@ export function HabitManager({
               {accountabilityGroups.length > 0 ? (
                 <label className="block text-xs">
                   <span className="text-muted-foreground">
-                    Accountability group visibility (shown to your group; choose Keep private to
-                    hide)
+                    Link daily check-offs to a group (Shared commitments tab) — or manage links on
+                    Groups → Commitments
                   </span>
                   <select
                     className="mt-1 w-full rounded-xl border border-border px-2 py-2 text-sm"
