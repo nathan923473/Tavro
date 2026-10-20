@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import type { CreatorCommunityChallenge } from "@/types/creator-community";
 import { CalendarRange, Users } from "lucide-react";
+import { OpenChallengeButton } from "@/components/challenges/open-challenge-button";
 import Link from "next/link";
 
 type CreatorChallengeCardProps = {
@@ -99,12 +100,21 @@ export function CreatorChallengeCard({
         </div>
 
         <div className="flex gap-2 pt-1">
-          <Link
-            href={openHref}
-            className="inline-flex min-h-10 flex-1 items-center justify-center rounded-xl bg-primary px-3 text-sm font-semibold text-primary-foreground"
-          >
-            {isOwner ? "Open challenge" : isPast ? "View recap" : "View challenge"}
-          </Link>
+          {isOwner ? (
+            <OpenChallengeButton
+              challengeId={challenge.id}
+              className="inline-flex min-h-10 flex-1 px-3"
+            >
+              Open challenge
+            </OpenChallengeButton>
+          ) : (
+            <Link
+              href={openHref}
+              className="inline-flex min-h-10 flex-1 items-center justify-center rounded-xl bg-primary px-3 text-sm font-semibold text-primary-foreground"
+            >
+              {isPast ? "View recap" : "View challenge"}
+            </Link>
+          )}
           {showJoin && !isPast && !isOwner ? (
             <Link
               href={`/join/${challenge.inviteSlug}`}

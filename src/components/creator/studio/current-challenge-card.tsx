@@ -4,6 +4,7 @@ import { ChallengeStartCountdown } from "@/components/challenges/challenge-start
 import { Card } from "@/components/ui/card";
 import { creatorChallengePath } from "@/lib/data/creator-studio";
 import type { CreatorStudioChallenge } from "@/types/creator-studio";
+import { OpenChallengeButton } from "@/components/challenges/open-challenge-button";
 import Link from "next/link";
 
 export function CurrentChallengeCard({
@@ -47,12 +48,9 @@ export function CurrentChallengeCard({
       ) : null}
       <div className="mt-3 grid gap-2">
         {challenge.publishStatus !== "draft" ? (
-          <Link
-            href={`/challenges/${challenge.id}`}
-            className="flex min-h-10 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
-          >
+          <OpenChallengeButton challengeId={challenge.id}>
             Open challenge
-          </Link>
+          </OpenChallengeButton>
         ) : null}
         <Link
           href={manageHref}

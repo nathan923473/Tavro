@@ -185,7 +185,10 @@ export async function fetchChallengeParticipantHub(
       participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count )
     `;
   const first = await supabase.from("challenges").select(fullSelect).eq("id", challengeId).maybeSingle();
-  if (first.error && /start_at|challenge_timezone|schema cache/i.test(first.error.message)) {
+  if (
+    first.error &&
+    /start_at|challenge_timezone|schedule_mode|schema cache/i.test(first.error.message)
+  ) {
     const legacy = await supabase.from("challenges").select(legacySelect).eq("id", challengeId).maybeSingle();
     ch = legacy.data as HubChallengeRow | null;
   } else {
@@ -193,7 +196,6 @@ export async function fetchChallengeParticipantHub(
     ch = first.data as HubChallengeRow | null;
   }
   if (!ch) return null;
-  if ((ch as { visibility?: string }).visibility === "private") return null;
 
   const startDate = ch.start_date;
   const endDate = ch.end_date;
@@ -233,6 +235,9 @@ export async function fetchChallengeParticipantHub(
     .eq("challenge_id", challengeId)
     .eq("user_id", userId)
     .maybeSingle();
+  if ((ch as { visibility?: string }).visibility === "private" && !membership && !isOwner) {
+    return null;
+  }
   if (!membership && !isOwner) return null;
 
   const schedule = await fetchChallengeSchedule(challengeId);

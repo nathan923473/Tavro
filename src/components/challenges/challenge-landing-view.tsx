@@ -18,6 +18,7 @@ import { ChallengeCoverImage } from "@/components/challenges/challenge-cover-ima
 import { ChallengeCoachCta } from "@/components/challenges/challenge-coach-cta";
 import { CalendarRange, Gift, Users } from "lucide-react";
 import Image from "next/image";
+import { OpenChallengeButton } from "@/components/challenges/open-challenge-button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -200,20 +201,18 @@ function ChallengeLandingBody({
                     </p>
                   </div>
                 ) : null}
-                <Link
-                  href={
-                    data.onboardingCompleted
-                      ? `/challenges/${challenge.id}`
-                      : joinContinuePath
-                  }
-                  className="flex min-h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
-                >
-                  {notStarted
-                    ? "View preparation"
-                    : data.onboardingCompleted
-                      ? "Open challenge"
-                      : "Finish setup"}
-                </Link>
+                {data.onboardingCompleted ? (
+                  <OpenChallengeButton challengeId={challenge.id} className="min-h-11">
+                    {notStarted ? "View preparation" : "Open challenge"}
+                  </OpenChallengeButton>
+                ) : (
+                  <Link
+                    href={joinContinuePath}
+                    className="flex min-h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+                  >
+                    {notStarted ? "View preparation" : "Finish setup"}
+                  </Link>
+                )}
                 {!ended && data.joined && !data.isOwner ? (
                   <LeaveChallengeButton
                     challengeId={challenge.id}
