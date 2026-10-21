@@ -1,13 +1,9 @@
 import { ChallengeParticipantOnboarding } from "@/components/challenges/challenge-participant-onboarding";
 import { StandalonePageHeader } from "@/components/layout/standalone-page-header";
-import { completeChallengeParticipantOnboardingAction } from "@/app/(app)/member/actions";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchChallengeLandingByInviteSlug } from "@/lib/data/challenge-landing";
+import { isChallengeUpcoming } from "@/lib/challenge-countdown";
 import { challengeTotalDays } from "@/lib/challenge-day";
-import {
-  challengePhaseFromChallenge,
-  resolveChallengeStartAt,
-} from "@/lib/timezone/challenge-fields";
 import { redirect } from "next/navigation";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -27,17 +23,10 @@ export default async function ChallengeParticipantStartPage({ params }: Props) {
     redirect(`/challenges/${data.challenge.id}`);
   }
 
-  const phase = challengePhaseFromChallenge(data.challenge);
-  const startAt = resolveChallengeStartAt({
-    start_date: data.challenge.startDate,
-    start_at: data.challenge.startAt,
-    challenge_timezone: data.challenge.challengeTimezone,
+  const notStarted = isChallengeUpcoming({
+    startAt: data.challenge.startAt,
+    startDate: data.challenge.startDate,
   });
-
-  if (phase === "upcoming") {
-    await completeChallengeParticipantOnboardingAction(data.challenge.id);
-    redirect(`/challenges/${data.challenge.id}`);
-  }
 
   return (
     <div className="mx-auto min-h-dvh max-w-lg bg-background px-4 py-6">
@@ -48,12 +37,12 @@ export default async function ChallengeParticipantStartPage({ params }: Props) {
         creatorName={data.communityName ?? data.challenge.creatorName}
         startDate={data.challenge.startDate}
         endDate={data.challenge.endDate}
-        startAt={data.challenge.startAt ?? startAt.toISOString()}
+        startAt={data.challenge.startAt}
         challengeTimezone={data.challenge.challengeTimezone}
         totalDays={challengeTotalDays(data.challenge.startDate, data.challenge.endDate)}
         goalDescription={data.goalDescription}
         shortDescription={data.shortDescription}
-        notStarted={false}
+        notStarted={notStarted}
       />
     </div>
   );

@@ -9,8 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { isChallengeUpcoming } from "@/lib/challenge-countdown";
 import { CalendarRange, Gift, Users } from "lucide-react";
+import { OpenChallengeButton } from "@/components/challenges/open-challenge-button";
 import Link from "next/link";
 import type { ReactNode } from "react";
+
+function hubChallengeIdFromHref(href: string): string | null {
+  const m = href.match(/^\/challenges\/([^/?#]+)$/);
+  return m?.[1] ?? null;
+}
 
 export type ChallengeSummaryCardProps = {
   title: string;
@@ -67,11 +73,7 @@ export function ChallengeSummaryCard({
 }: ChallengeSummaryCardProps) {
   const upcoming =
     upcomingProp ??
-    isChallengeUpcoming({
-      startAt: startAt ?? null,
-      startDate,
-      challengeTimezone,
-    });
+    isChallengeUpcoming({ startAt: startAt ?? null, startDate });
 
   return (
     <Card className="overflow-hidden p-0">
@@ -140,12 +142,20 @@ export function ChallengeSummaryCard({
           </span>
         </p>
 
-        <Link
-          href={href}
-          className="flex min-h-10 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
-        >
-          {ctaLabel}
-        </Link>
+        {(() => {
+          const hubId = hubChallengeIdFromHref(href);
+          if (hubId) {
+            return <OpenChallengeButton challengeId={hubId}>{ctaLabel}</OpenChallengeButton>;
+          }
+          return (
+            <Link
+              href={href}
+              className="flex min-h-10 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+            >
+              {ctaLabel}
+            </Link>
+          );
+        })()}
 
         {joined && leaveChallengeId ? (
           <LeaveChallengeButton

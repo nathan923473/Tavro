@@ -25,7 +25,7 @@ export function ChallengeAtAGlance({
     }
   }, [storageId]);
 
-  if (!visible || (hub.phase !== "active" && hub.phase !== "upcoming")) return null;
+  if (!visible || hub.phase === "completed") return null;
 
   const goal =
     hub.goalDescription?.trim() ||
@@ -59,8 +59,7 @@ export function ChallengeAtAGlance({
           challengeTimezone={hub.challengeTimezone}
         />
         {" · "}
-        {hub.totalDays} days
-        {hub.phase === "upcoming" ? " · starts soon" : ` · Today is day ${hub.dayIndex}`}
+        {hub.totalDays} days · Today is day {hub.dayIndex}
       </p>
       <ul className="text-xs text-muted-foreground">
         <li>• Open <strong className="font-medium text-foreground">Today</strong> for activities (rest days included).</li>

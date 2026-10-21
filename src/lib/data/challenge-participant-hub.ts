@@ -185,7 +185,10 @@ export async function fetchChallengeParticipantHub(
       participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count )
     `;
   const first = await supabase.from("challenges").select(fullSelect).eq("id", challengeId).maybeSingle();
-  if (first.error && /start_at|challenge_timezone|schema cache/i.test(first.error.message)) {
+  if (
+    first.error &&
+    /start_at|challenge_timezone|schedule_mode|schema cache/i.test(first.error.message)
+  ) {
     const legacy = await supabase.from("challenges").select(legacySelect).eq("id", challengeId).maybeSingle();
     ch = legacy.data as HubChallengeRow | null;
   } else {
@@ -193,7 +196,6 @@ export async function fetchChallengeParticipantHub(
     ch = first.data as HubChallengeRow | null;
   }
   if (!ch) return null;
-  if ((ch as { visibility?: string }).visibility === "private") return null;
 
   const startDate = ch.start_date;
   const endDate = ch.end_date;
@@ -233,6 +235,9 @@ export async function fetchChallengeParticipantHub(
     .eq("challenge_id", challengeId)
     .eq("user_id", userId)
     .maybeSingle();
+  if ((ch as { visibility?: string }).visibility === "private" && !membership && !isOwner) {
+    return null;
+  }
   if (!membership && !isOwner) return null;
 
   const schedule = await fetchChallengeSchedule(challengeId);
@@ -248,9 +253,13 @@ export async function fetchChallengeParticipantHub(
 
   const effectiveDayIndex = phase === "upcoming" ? 1 : dayIndex;
   const scheduleItem =
-    phase === "active" || phase === "upcoming"
-      ? scheduleItemForDay(schedule, effectiveDayIndex)
-      : null;
+    phase === "completed"
+      ? null
+      : scheduleItemForDay(schedule, phase === "active" ? dayIndex : effectiveDayIndex);
+  const activityDateKey =
+    phase === "upcoming"
+      ? challengeDateKeyForDay(startDate, effectiveDayIndex)
+      : today;
 
   const { data: completionRows } = await supabase
     .from("challenge_schedule_completions")
@@ -281,7 +290,7 @@ export async function fetchChallengeParticipantHub(
     const row = (completionRows ?? []).find(
       (c) =>
         c.schedule_item_id === scheduleItem?.id &&
-        c.completed_on === today &&
+        c.completed_on === activityDateKey &&
         (c.activity_key ?? "primary") === a.key,
     );
     return {
@@ -446,12 +455,18 @@ export async function fetchChallengeParticipantHub(
     streakDays,
     phase,
     daysUntilStart,
-    todayKey: today,
+    todayKey: activityDateKey,
     todayActivities,
-    todayLabel: new Date(`${today}T12:00:00Z`).toLocaleDateString(undefined, {
-      month: "long",
-      day: "numeric",
-    }).toUpperCase(),
+    todayLabel:
+      phase === "upcoming"
+        ? `DAY 1 PREVIEW · ${new Date(`${activityDateKey}T12:00:00Z`).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+          })}`
+        : new Date(`${today}T12:00:00Z`).toLocaleDateString(undefined, {
+            month: "long",
+            day: "numeric",
+          }).toUpperCase(),
     scheduleItemId: scheduleItem?.id ?? null,
     isRestDay: scheduleItem?.isRest ?? false,
     creatorMessage,

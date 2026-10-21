@@ -76,7 +76,6 @@ export function ChallengeParticipantHub({
 
   const progressBarPct = useMemo(() => {
     if (localHub.phase === "completed") return 100;
-    if (localHub.phase === "upcoming") return localHub.progressPercent;
     return Math.max(
       localHub.progressPercent,
       Math.round((localHub.dayIndex / localHub.totalDays) * 100),
@@ -131,39 +130,52 @@ export function ChallengeParticipantHub({
     <div className="space-y-4">
       <HubHeader hub={localHub} shareOpen={shareOpen} setShareOpen={setShareOpen} />
 
-      {localHub.phase === "upcoming" ? (
-        <ChallengeStartCountdown
-          startAt={localHub.startAt}
-          startDate={localHub.startDate}
-          challengeTimezone={localHub.challengeTimezone}
-          participantTimezone={localHub.participantTimezone}
-          variant="banner"
-          showCreatorStart
-        />
-      ) : null}
-
       <ChallengeAtAGlance hub={localHub} onOpenAbout={() => setTab("about")} />
 
-      <Card padding="sm">
-        <p className="text-sm text-muted-foreground">by {localHub.creatorName}</p>
-        <p className="text-xs text-muted-foreground">
-          {localHub.phase === "upcoming"
-            ? `${localHub.totalDays} days · check-offs open at the start`
-            : `Day ${localHub.dayIndex} of ${localHub.totalDays}`}
-        </p>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-primary transition-all duration-300"
-            style={{ width: `${progressBarPct}%` }}
+      {localHub.phase === "upcoming" ? (
+        <Card className="space-y-3 border-primary/20 bg-primary/5">
+          <Badge tone="muted">Upcoming</Badge>
+          <ChallengeStartCountdown
+            startAt={localHub.startAt}
+            startDate={localHub.startDate}
+            challengeTimezone={localHub.challengeTimezone}
+            participantTimezone={localHub.participantTimezone}
+            variant="hero"
+            showCreatorStart
           />
-        </div>
-        <p className="mt-1 text-xs text-muted-foreground">{progressBarPct}% overall</p>
-        {localHub.streakDays > 0 ? (
-          <Badge tone="success" className="mt-2">
-            🔥 {localHub.streakDays}-day consistency streak
-          </Badge>
-        ) : null}
-      </Card>
+          <p className="text-sm text-muted-foreground">
+            Browse the full challenge below — plan, members, updates, and a preview of day one.
+            Activity check-offs unlock when the countdown ends.
+          </p>
+          {localHub.communitySlug ? (
+            <Link
+              href={`/creator/${localHub.communitySlug}`}
+              className="inline-block text-sm font-semibold text-primary"
+            >
+              View {localHub.creatorName}&apos;s community →
+            </Link>
+          ) : null}
+        </Card>
+      ) : (
+        <Card padding="sm">
+          <p className="text-sm text-muted-foreground">by {localHub.creatorName}</p>
+          <p className="text-xs text-muted-foreground">
+            Day {localHub.dayIndex} of {localHub.totalDays}
+          </p>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-300"
+              style={{ width: `${progressBarPct}%` }}
+            />
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">{progressBarPct}% overall</p>
+          {localHub.streakDays > 0 ? (
+            <Badge tone="success" className="mt-2">
+              🔥 {localHub.streakDays}-day consistency streak
+            </Badge>
+          ) : null}
+        </Card>
+      )}
 
       <TabBar tab={tab} setTab={setTab} />
 
@@ -285,59 +297,67 @@ function TodayPanel({
     <>
       <Card>
         <p className="text-xs font-semibold tracking-wide text-muted-foreground">
-          {hub.phase === "upcoming" ? "DAY 1" : `TODAY — ${hub.todayLabel}`}
+          TODAY — {hub.todayLabel}
         </p>
-        {hub.phase === "upcoming" ? (
-          <p className="mt-1 text-sm text-muted-foreground">
-            Full day-one plan. Check-offs open when the challenge starts.
-          </p>
-        ) : null}
         {hub.isRestDay ? (
           <p className="mt-2 text-sm text-muted-foreground">
             Rest day — recovery counts. Optional gentle movement only.
           </p>
+        ) : hub.phase === "upcoming" ? (
+          <>
+            <p className="mt-2 text-sm font-medium">Preview — day 1 activities</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              You can read what&apos;s planned; check-offs open when the challenge starts.
+            </p>
+            <ul className="mt-3 space-y-3">
+              {hub.todayActivities.length === 0 ? (
+                <li className="text-sm text-muted-foreground">
+                  Open the <strong className="font-medium text-foreground">Plan</strong> tab to see
+                  the full schedule.
+                </li>
+              ) : null}
+              {hub.todayActivities.map((act) => (
+                <li key={act.key} className="rounded-xl border border-border p-3 opacity-90">
+                  <ActivityRow
+                    challengeId={hub.challengeId}
+                    scheduleItemId={hub.scheduleItemId!}
+                    completedOn={hub.todayKey}
+                    act={act}
+                    pending={pending}
+                    editable={false}
+                    startTransition={startTransition}
+                    onActChange={() => {}}
+                  />
+                </li>
+              ))}
+            </ul>
+          </>
         ) : (
           <>
-            <p className="mt-2 text-sm font-medium">
-              {hub.phase === "upcoming" ? "Day 1 activities" : "Today's activities"}
-            </p>
-            {hub.todayActivities.length === 0 ? (
-              <p className="mt-3 text-sm text-muted-foreground">
-                No activities published for this day yet. Check the Plan tab for the schedule.
-              </p>
-            ) : (
+            <p className="mt-2 text-sm font-medium">Today&apos;s activities</p>
             <ul className="mt-3 space-y-3">
               {hub.todayActivities.map((act) => (
                 <li key={act.key} className="rounded-xl border border-border p-3">
                   <ActivityRow
                     challengeId={hub.challengeId}
                     scheduleItemId={hub.scheduleItemId!}
-                    completedOn={hub.phase === "upcoming" ? hub.startDate : hub.todayKey}
+                    completedOn={hub.todayKey}
                     act={act}
                     pending={pending}
-                    startTransition={startTransition}
                     editable={hub.phase === "active"}
+                    startTransition={startTransition}
                     onActChange={(patch) =>
                       onMutate(
-                        patchHubActivity(
-                          hub,
-                          hub.scheduleItemId!,
-                          hub.phase === "upcoming" ? hub.startDate : hub.todayKey,
-                          act.key,
-                          patch,
-                        ),
+                        patchHubActivity(hub, hub.scheduleItemId!, hub.todayKey, act.key, patch),
                       )
                     }
                   />
                 </li>
               ))}
             </ul>
-            )}
-            {hub.phase !== "upcoming" ? (
-              <p className="mt-3 text-xs text-muted-foreground">
-                {completedToday} of {Math.max(totalToday, 1)} completed
-              </p>
-            ) : null}
+            <p className="mt-3 text-xs text-muted-foreground">
+              {completedToday} of {Math.max(totalToday, 1)} completed
+            </p>
           </>
         )}
       </Card>
@@ -352,7 +372,7 @@ function TodayPanel({
         </Card>
       ) : null}
 
-      {hub.phase === "active" ? (
+      {hub.phase !== "active" ? null : (
       <Card className="space-y-3">
         <h2 className="font-semibold">How did today go?</h2>
         <p className="text-xs text-muted-foreground">Private — creators don&apos;t see this.</p>
@@ -400,7 +420,7 @@ function TodayPanel({
           Save check-in
         </Button>
       </Card>
-      ) : null}
+      )}
     </>
   );
 }
@@ -446,7 +466,7 @@ function ActivityRow({
           min={0}
           placeholder="Enter steps manually"
           value={steps}
-          disabled={pending || !editable}
+          disabled={pending}
           onChange={(e) => setSteps(e.target.value)}
           className="mt-2 w-full rounded-xl border border-border px-3 py-2 text-sm"
         />
@@ -547,17 +567,14 @@ function TabPanels({
         <div>
           <h2 className="font-semibold">Your progress</h2>
           <p className="text-sm text-muted-foreground">
-            {hub.phase === "upcoming"
-              ? `Full ${hub.totalDays}-day plan. Check-offs open when the challenge starts.`
-              : `Day ${hub.dayIndex} of ${hub.totalDays} · ${habitsDone} of ${habitsTotal} habits checked off (through today)`}
+            Day {hub.dayIndex} of {hub.totalDays} · {habitsDone} of {habitsTotal} habits checked
+            off (through today)
           </p>
           {hub.streakDays > 0 ? (
             <p className="mt-1 text-sm">🔥 {hub.streakDays}-day consistency streak</p>
           ) : null}
           <p className="mt-2 text-xs text-muted-foreground">
-            {hub.phase === "upcoming"
-              ? "You can read every day now. Check-offs open when the challenge starts."
-              : "Tap each habit to mark it done. Use Today for a focused view of what's due now."}
+            Tap each habit to mark it done. Use Today for a focused view of what&apos;s due now.
           </p>
         </div>
         <div className="max-h-[min(520px,55vh)] space-y-2 overflow-y-auto pr-1">
@@ -568,7 +585,7 @@ function TabPanels({
             return (
               <details
                 key={day.dayIndex}
-                open={isToday || day.allComplete || (hub.phase === "upcoming" && day.dayIndex === 1)}
+                open={isToday || day.allComplete}
                 className={`rounded-xl border px-3 py-2 ${
                   day.allComplete ? "border-primary/30 bg-primary/5" : "border-border"
                 }`}

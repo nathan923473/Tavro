@@ -46,7 +46,8 @@ export function GroupHabitLinksPanel({
           <h3 className="font-semibold">Link Progress habits to this group</h3>
           <p className="mt-1 text-sm text-muted-foreground">
             Daily check-offs from Progress show in <strong className="font-medium text-foreground">Shared commitments</strong>{" "}
-            above.
+            above. Linking here does <strong className="font-medium text-foreground">not</strong> add a weekly
+            target — use the section below for that.
           </p>
         </div>
       </div>

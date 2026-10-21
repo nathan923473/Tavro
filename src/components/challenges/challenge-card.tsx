@@ -21,6 +21,7 @@ import { ChallengeStartCountdown } from "@/components/challenges/challenge-start
 import { isChallengeUpcoming } from "@/lib/challenge-countdown";
 import { CalendarRange, Gift, Users } from "lucide-react";
 import Image from "next/image";
+import { OpenChallengeButton } from "@/components/challenges/open-challenge-button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -189,12 +190,9 @@ export function ChallengeCard({
               fullWidth
             />
           ) : null}
-          <Link
-            href={`/challenges/${challenge.id}`}
-            className="flex min-h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
-          >
+          <OpenChallengeButton challengeId={challenge.id} className="min-h-11">
             Open challenge
-          </Link>
+          </OpenChallengeButton>
           <Button
             variant="secondary"
             fullWidth

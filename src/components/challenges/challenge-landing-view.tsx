@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { ChallengeLandingData } from "@/lib/data/challenge-landing";
-import { challengePhaseFromChallenge } from "@/lib/timezone/challenge-fields";
 import { publicChallengePath } from "@/lib/site-url";
 import { ChallengeCreatorLine } from "@/components/challenges/challenge-creator-line";
 import { challengeCreatorSubtitle } from "@/lib/creator-display-name";
@@ -19,6 +18,7 @@ import { ChallengeCoverImage } from "@/components/challenges/challenge-cover-ima
 import { ChallengeCoachCta } from "@/components/challenges/challenge-coach-cta";
 import { CalendarRange, Gift, Users } from "lucide-react";
 import Image from "next/image";
+import { OpenChallengeButton } from "@/components/challenges/open-challenge-button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -75,9 +75,14 @@ function ChallengeLandingBody({
   const [pending, startTransition] = useTransition();
   const [status, setStatus] = useState<string | null>(null);
   const { challenge } = data;
-  const phase = challengePhaseFromChallenge(challenge);
-  const notStarted = phase === "upcoming";
-  const ended = phase === "completed";
+  const notStarted =
+    challenge.startAt != null
+      ? new Date(challenge.startAt).getTime() > Date.now()
+      : challenge.startDate > new Date().toISOString().slice(0, 10);
+  const ended =
+    challenge.endAt != null
+      ? new Date(challenge.endAt).getTime() <= Date.now()
+      : challenge.endDate < new Date().toISOString().slice(0, 10);
 
   function handleJoin() {
     if (!loggedIn) {
@@ -196,16 +201,18 @@ function ChallengeLandingBody({
                     </p>
                   </div>
                 ) : null}
-                <Link
-                  href={
-                    notStarted || data.onboardingCompleted
-                      ? `/challenges/${challenge.id}`
-                      : joinContinuePath
-                  }
-                  className="flex min-h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
-                >
-                  {notStarted || data.onboardingCompleted ? "Open challenge" : "Finish setup"}
-                </Link>
+                {data.onboardingCompleted ? (
+                  <OpenChallengeButton challengeId={challenge.id} className="min-h-11">
+                    {notStarted ? "View preparation" : "Open challenge"}
+                  </OpenChallengeButton>
+                ) : (
+                  <Link
+                    href={joinContinuePath}
+                    className="flex min-h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+                  >
+                    {notStarted ? "View preparation" : "Finish setup"}
+                  </Link>
+                )}
                 {!ended && data.joined && !data.isOwner ? (
                   <LeaveChallengeButton
                     challengeId={challenge.id}

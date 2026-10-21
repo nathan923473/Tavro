@@ -3,14 +3,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { todayDateKey } from "@/lib/dates";
 import { challengeTodayDateKey } from "@/lib/timezone/challenge-calendar";
-import {
-  challengePhaseFromSchedule,
-  resolveChallengeEndAt,
-  resolveChallengeStartAt,
-} from "@/lib/timezone/challenge-fields";
+import { resolveChallengeEndAt, resolveChallengeStartAt } from "@/lib/timezone/challenge-fields";
 import { normalizeTimezone, isValidIanaTimezone } from "@/lib/timezone/validate";
 import { DEFAULT_FALLBACK_TIMEZONE } from "@/lib/timezone/constants";
 import type { AuStateOrTerritory } from "@/lib/timezone/constants";
+import { unwrapOne } from "@/lib/data/relations";
 import { revalidatePath } from "next/cache";
 import { randomBytes, randomUUID } from "node:crypto";
 
@@ -517,30 +514,65 @@ export async function joinChallengeAndContinueAction(
   revalidatePath("/");
   revalidatePath("/join");
 
-  const upcoming =
-    challengePhaseFromSchedule({
-      start_date: ch.start_date,
-      end_date: ch.end_date,
-      start_at: ch.start_at ?? null,
-      end_at: ch.end_at ?? null,
-      challenge_timezone: ch.challenge_timezone ?? null,
-    }) === "upcoming";
-
-  if (upcoming && !row?.onboarding_completed_at) {
-    const { error } = await supabase
-      .from("challenge_participants")
-      .update({ onboarding_completed_at: new Date().toISOString() })
-      .eq("challenge_id", challengeId)
-      .eq("user_id", userId);
-    if (error && !/onboarding_completed_at|schema cache/i.test(error.message)) {
-      throw new Error(error.message);
-    }
-  }
-
-  if (row?.onboarding_completed_at || upcoming) {
+  if (row?.onboarding_completed_at) {
     return `/challenges/${challengeId}`;
   }
   return onboardingPath;
+}
+
+/** Ensures creators/hosts have a participant row so the hub and RLS stay consistent. */
+export async function ensureChallengeHubAccessAction(challengeId: string) {
+  const { supabase, userId } = await requireUserId();
+
+  const { data: row } = await supabase
+    .from("challenges")
+    .select(
+      "created_by, visibility, invite_slug, community:creator_communities ( owner_id )",
+    )
+    .eq("id", challengeId)
+    .maybeSingle();
+
+  if (!row) {
+    return { ok: false as const, reason: "not_found" as const, inviteSlug: null as string | null };
+  }
+
+  const community = unwrapOne(row.community);
+  const isOwner =
+    row.created_by === userId ||
+    (community?.owner_id != null && community.owner_id === userId);
+
+  const { data: membership } = await supabase
+    .from("challenge_participants")
+    .select("user_id")
+    .eq("challenge_id", challengeId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (membership) {
+    return { ok: true as const, reason: "member" as const, inviteSlug: row.invite_slug as string };
+  }
+
+  if (row.visibility === "private" && !isOwner) {
+    return { ok: false as const, reason: "private" as const, inviteSlug: null as string | null };
+  }
+
+  if (!isOwner) {
+    return {
+      ok: false as const,
+      reason: "not_joined" as const,
+      inviteSlug: row.invite_slug as string,
+    };
+  }
+
+  await upsertChallengeParticipantJoin(
+    supabase,
+    userId,
+    challengeId,
+    row.created_by as string,
+  );
+  revalidatePath(`/challenges/${challengeId}`);
+  revalidatePath("/challenges");
+  return { ok: true as const, reason: "host" as const, inviteSlug: row.invite_slug as string };
 }
 
 export async function completeChallengeParticipantOnboardingAction(challengeId: string) {
