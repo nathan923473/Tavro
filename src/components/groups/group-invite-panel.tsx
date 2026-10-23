@@ -124,7 +124,7 @@ export function GroupInvitePanel({
     <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
       <div className="space-y-3 px-4 pb-4 pt-4">
         <div>
-          <h3 className="text-base font-semibold text-[#1B2440]">Invite your friends</h3>
+          <h3 className="text-base font-semibold text-foreground">Invite your friends</h3>
           <p className="mt-1 text-sm text-muted-foreground">
             {spotsLeft > 0
               ? `Share your group with up to ${spotsLeft} ${friendWord}.`
@@ -132,12 +132,12 @@ export function GroupInvitePanel({
           </p>
         </div>
 
-        <div className="rounded-xl bg-[#B8F4DA]/35 px-3 py-4 text-center">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#1B2440]/70">
+        <div className="rounded-xl bg-mint-subtle/35 px-3 py-4 text-center">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/70">
             Your group code
           </p>
           <p
-            className="mt-2 font-mono text-2xl font-bold tracking-[0.35em] text-[#1B2440] sm:text-3xl"
+            className="mt-2 font-mono text-2xl font-bold tracking-[0.35em] text-foreground sm:text-3xl"
             aria-label={`Group invite code ${displayCode}`}
           >
             {displayCode}
@@ -156,7 +156,7 @@ export function GroupInvitePanel({
           </Button>
           <Button
             type="button"
-            className="min-h-10 flex-1 bg-[#3156E8] text-sm text-white hover:bg-[#2442C4]"
+            className="min-h-10 flex-1 bg-primary text-sm text-white hover:bg-primary-dark"
             onClick={() => void shareInvite()}
             disabled={!invitesEnabled || spotsLeft === 0}
           >
@@ -181,7 +181,7 @@ export function GroupInvitePanel({
       {isOwner ? (
         <button
           type="button"
-          className="flex w-full items-center justify-between border-t border-border bg-muted/20 px-4 py-3 text-left text-sm font-medium text-[#3156E8]"
+          className="flex w-full items-center justify-between border-t border-border bg-muted/20 px-4 py-3 text-left text-sm font-medium text-primary"
           onClick={() => setShowSettings(true)}
         >
           <span>

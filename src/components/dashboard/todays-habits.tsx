@@ -9,7 +9,8 @@ import { habitsCompletedToday } from "@/lib/progress/consistency";
 import type { PersonalGoal } from "@/types";
 import { Check, Circle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { cn } from "@/lib/cn";
+import { useState, useTransition } from "react";
 
 export function TodaysHabits({
   goals,
@@ -20,6 +21,7 @@ export function TodaysHabits({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [pulseGoalId, setPulseGoalId] = useState<string | null>(null);
 
   if (!loggedIn) {
     return (
@@ -80,7 +82,7 @@ export function TodaysHabits({
       <p className="mb-2 px-1">
         <Link
           href="/progress#habits-manage-heading"
-          className="text-sm font-medium text-[#3156E8]"
+          className="text-sm font-medium text-primary"
         >
           Manage habits
         </Link>
@@ -98,29 +100,39 @@ export function TodaysHabits({
               <Card
                 padding="sm"
                 className={
-                  goal.completedToday ? "border-[#B8F4DA] bg-[#B8F4DA]/20" : undefined
+                  goal.completedToday || pulseGoalId === goal.id
+                    ? cn(
+                        "border-accent bg-mint-subtle/20",
+                        pulseGoalId === goal.id && "animate-success-pulse",
+                      )
+                    : undefined
                 }
               >
                 <button
                   type="button"
                   disabled={pending}
-                  className="flex w-full items-center gap-3 text-left"
+                  className="focus-ring flex min-h-11 w-full items-center gap-3 rounded-xl text-left"
                   onClick={() =>
                     startTransition(async () => {
+                      const wasDone = goal.completedToday;
                       await toggleGoalAction(goal.id);
+                      if (!wasDone) {
+                        setPulseGoalId(goal.id);
+                        window.setTimeout(() => setPulseGoalId(null), 600);
+                      }
                       router.refresh();
                     })
                   }
                 >
                   {goal.completedToday ? (
-                    <Check className="h-5 w-5 shrink-0 text-[#1B2440]" aria-hidden />
+                    <Check className="h-5 w-5 shrink-0 text-foreground" aria-hidden />
                   ) : (
                     <Circle className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
                   )}
                   <span
                     className={
                       goal.completedToday
-                        ? "flex-1 text-sm font-medium text-[#1B2440]"
+                        ? "flex-1 text-sm font-medium text-foreground"
                         : "flex-1 text-sm font-medium"
                     }
                   >
@@ -133,7 +145,7 @@ export function TodaysHabits({
         </ul>
       )}
       {total > 0 && done === total ? (
-        <p className="mt-2 px-1 text-sm font-medium text-[#1B2440]">
+        <p className="mt-2 px-1 text-sm font-medium text-foreground">
           All your habits completed today! 🎉
         </p>
       ) : null}

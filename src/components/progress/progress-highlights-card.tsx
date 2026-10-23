@@ -18,8 +18,8 @@ export function ProgressHighlightsCard({
   const active = joinedChallenges.filter((c) => c.progressPercent < 100);
 
   return (
-    <Card className="space-y-3 border-[#3156E8]/15">
-      <h2 className="text-base font-semibold text-[#1B2440]">Your consistency story</h2>
+    <Card className="space-y-3 border-primary/15">
+      <h2 className="text-base font-semibold text-foreground">Your consistency story</h2>
       <p className="text-sm text-muted-foreground">
         Tavro celebrates showing up — not perfect streaks. Missing a day doesn&apos;t erase what
         you&apos;ve already done.
@@ -41,7 +41,7 @@ export function ProgressHighlightsCard({
             : null}
         </li>
       </ul>
-      <Link href="/" className="text-sm font-semibold text-[#3156E8]">
+      <Link href="/" className="text-sm font-semibold text-primary">
         Back to today&apos;s goals →
       </Link>
     </Card>

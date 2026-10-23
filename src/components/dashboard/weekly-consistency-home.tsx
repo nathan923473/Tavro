@@ -2,8 +2,8 @@ import { Card } from "@/components/ui/card";
 import type { WeeklyConsistency } from "@/lib/progress/consistency";
 
 const STATUS_STYLES = {
-  complete: "bg-[#B8F4DA] ring-1 ring-[#B8F4DA]",
-  partial: "bg-[#3156E8]/40 ring-1 ring-[#3156E8]/30",
+  complete: "bg-mint-subtle ring-1 ring-accent",
+  partial: "bg-primary/40 ring-1 ring-primary/30",
   none: "bg-muted ring-1 ring-border",
   future: "bg-transparent ring-1 ring-dashed ring-border/60",
 } as const;
@@ -27,7 +27,7 @@ export function WeeklyConsistencyHome({
         Weekly consistency
       </h2>
       <Card>
-        <p className="text-3xl font-semibold tabular-nums text-[#3156E8]">
+        <p className="text-3xl font-semibold tabular-nums text-primary">
           {hasData ? `${summary.percent}%` : "—"}
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -35,7 +35,7 @@ export function WeeklyConsistencyHome({
             ? `${summary.completed} of ${summary.planned} scheduled habits completed this week`
             : "Add habits to track weekly consistency."}
         </p>
-        <p className="mt-2 text-sm text-[#1B2440]">{summary.message}</p>
+        <p className="mt-2 text-sm text-foreground">{summary.message}</p>
         <div className="mt-4 flex justify-between gap-1">
           {weekDayIndicators.map((d) => (
             <div key={d.dateKey} className="flex flex-1 flex-col items-center gap-1">

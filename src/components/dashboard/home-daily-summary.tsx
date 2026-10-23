@@ -27,9 +27,9 @@ export function HomeDailySummary({
   return (
     <section
       aria-labelledby="home-daily-summary"
-      className="relative overflow-hidden rounded-2xl bg-[#3156E8] px-4 py-4 text-white shadow-md shadow-[#3156E8]/25"
+      className="relative overflow-hidden rounded-2xl bg-primary px-5 py-5 text-primary-foreground shadow-card"
     >
-      <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-[#B8F4DA]/25" aria-hidden />
+      <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-accent/30" aria-hidden />
       <div className="absolute bottom-0 right-0 h-12 w-24 rounded-tl-full bg-white/10" aria-hidden />
       <div className="relative space-y-3">
         <div>
@@ -68,7 +68,7 @@ export function HomeDailySummary({
 
         <Link
           href={primaryAction.href}
-          className="flex min-h-11 w-full items-center justify-center rounded-2xl bg-white text-sm font-semibold text-[#3156E8] hover:bg-white/90"
+          className="focus-ring flex min-h-11 w-full items-center justify-center rounded-2xl bg-surface text-sm font-semibold text-primary transition-colors hover:bg-surface/90"
         >
           {primaryAction.label}
         </Link>

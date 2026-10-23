@@ -15,7 +15,7 @@ export function ReportMetricCard({
         {label}
         {hint ? <span className="sr-only"> — {hint}</span> : null}
       </p>
-      <p className="text-xl font-semibold tabular-nums text-[#1B2440]">{value}</p>
+      <p className="text-xl font-semibold tabular-nums text-foreground">{value}</p>
       {hint ? (
         <p className="text-[11px] leading-snug text-muted-foreground">{hint}</p>
       ) : null}

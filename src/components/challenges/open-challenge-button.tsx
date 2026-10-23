@@ -22,7 +22,7 @@ export function OpenChallengeButton({
       type="button"
       disabled={pending}
       className={cn(
-        "flex min-h-10 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60",
+        "focus-ring flex min-h-10 w-full items-center justify-center rounded-2xl bg-primary text-sm font-semibold text-primary-foreground shadow-sm shadow-primary/15 transition-all hover:bg-primary-dark active:scale-[0.98] disabled:opacity-60",
         className,
       )}
       onClick={() =>

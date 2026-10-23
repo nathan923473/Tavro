@@ -10,6 +10,8 @@ import {
 import { buildCreatorChallengeWindow } from "@/lib/challenge-lifecycle/creator-windows";
 import { RECOMMENDED_REGISTRATION_OPEN_DAYS_BEFORE_START } from "@/lib/challenge-lifecycle/config";
 import type { StudioChallengeBucket } from "@/types/creator-studio";
+import { PrimaryLink, SecondaryLink } from "@/components/ui/link-button";
+import { SectionHeader } from "@/components/ui/section-header";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 
@@ -49,29 +51,25 @@ export default async function StudioChallengesPage() {
         ~{RECOMMENDED_REGISTRATION_OPEN_DAYS_BEFORE_START} days early when you can.
       </p>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Link
-          href="/studio/challenges/new"
-          className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
-        >
+        <PrimaryLink href="/studio/challenges/new" fullWidth className="flex-1 rounded-xl">
           <PlusCircle className="h-4 w-4" aria-hidden />
           Create challenge
-        </Link>
-        <Link
+        </PrimaryLink>
+        <SecondaryLink
           href="/studio/challenges/demo/report"
-          className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-primary/40 bg-primary/5 px-3 text-sm font-semibold text-primary"
+          fullWidth
+          className="flex-1 rounded-xl border-primary/40 bg-primary/5 text-primary"
         >
           Preview sample report
-        </Link>
+        </SecondaryLink>
       </div>
 
       {BUCKETS.map(({ key, label }) => {
         const list = challenges.filter((c) => c.bucket === key);
         if (!list.length) return null;
         return (
-          <section key={key} aria-labelledby={`bucket-${key}`}>
-            <h2 id={`bucket-${key}`} className="mb-2 text-base font-semibold">
-              {label}
-            </h2>
+          <section key={key} aria-labelledby={`bucket-${key}`} className="section-stack">
+            <SectionHeader titleId={`bucket-${key}`} title={label} />
             <ul className="space-y-2">
               {list.map((c) => (
                 <li key={c.id}>

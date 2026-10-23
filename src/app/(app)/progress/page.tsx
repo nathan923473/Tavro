@@ -6,6 +6,8 @@ import { WeightProgressChart } from "@/components/progress/weight-progress-chart
 import { WeightTrackingSettings } from "@/components/progress/weight-tracking-settings";
 import { ShareWithGroupCard } from "@/components/progress/share-with-group-card";
 import { Card } from "@/components/ui/card";
+import { MutedCallout } from "@/components/ui/muted-callout";
+import { SectionHeader } from "@/components/ui/section-header";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchChallengesForUser } from "@/lib/data/challenges";
@@ -69,14 +71,11 @@ export default async function ProgressPage() {
         title="Progress"
         subtitle="Private habits & consistency · share wins if you want"
       />
-      <div className="space-y-4 px-4 py-4">
-        <Card>
-          <p className="text-sm text-muted-foreground">
-            Personal progress stays private by default. Weight, mood, and reflections
-            are never shared unless you choose to celebrate a milestone with your
-            group.
-          </p>
-        </Card>
+      <div className="page-stack px-4 py-4">
+        <MutedCallout title="Your private space">
+          Habits, weight, mood and reflections stay on this tab unless you choose to
+          share a win with your group.
+        </MutedCallout>
 
         {userId ? (
           <>
@@ -95,10 +94,8 @@ export default async function ProgressPage() {
           </>
         ) : null}
 
-        <section aria-labelledby="this-week-heading">
-          <h2 id="this-week-heading" className="mb-2 px-1 text-base font-semibold">
-            This week
-          </h2>
+        <section aria-labelledby="this-week-heading" className="section-stack">
+          <SectionHeader titleId="this-week-heading" title="This week" />
           <Card className="space-y-2">
             <p className="text-2xl font-semibold tabular-nums text-primary">
               {consistency.percent}% consistency
@@ -113,10 +110,8 @@ export default async function ProgressPage() {
           </Card>
         </section>
 
-        <section aria-labelledby="week-viz-heading">
-          <h2 id="week-viz-heading" className="mb-2 px-1 text-base font-semibold">
-            Last 7 days
-          </h2>
+        <section aria-labelledby="week-viz-heading" className="section-stack">
+          <SectionHeader titleId="week-viz-heading" title="Last 7 days" />
           <Card>
             <div className="flex h-36 items-end justify-between gap-2">
               {weekDays.map((day) => {

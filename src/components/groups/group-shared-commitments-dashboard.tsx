@@ -16,7 +16,7 @@ import { useMemo, useState } from "react";
 function statusTone(status: GroupSharedCommitment["todayStatus"]): string {
   switch (status) {
     case "completed":
-      return "bg-[#B8F4DA]/40 text-[#1B2440] border-[#B8F4DA]";
+      return "bg-mint-subtle/40 text-foreground border-accent";
     case "pending":
       return "bg-secondary/60 text-foreground border-border";
     case "missed":

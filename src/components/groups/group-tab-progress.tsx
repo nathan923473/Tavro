@@ -87,7 +87,7 @@ export function GroupTabProgress({
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-xl bg-muted/30 px-3 py-2">
             <p className="text-xs text-muted-foreground">Your consistency</p>
-            <p className="text-lg font-bold text-[#1B2440]">
+            <p className="text-lg font-bold text-foreground">
               {weekProgress.target ? `${weekProgress.pct}%` : "—"}
             </p>
             {weekProgress.target ? (
@@ -100,7 +100,7 @@ export function GroupTabProgress({
           </div>
           <div className="rounded-xl bg-muted/30 px-3 py-2">
             <p className="text-xs text-muted-foreground">Group consistency</p>
-            <p className="text-lg font-bold text-[#1B2440]">
+            <p className="text-lg font-bold text-foreground">
               {groupWeekProgress.target ? `${groupWeekProgress.pct}%` : "—"}
             </p>
             {groupWeekProgress.target ? (
@@ -136,7 +136,7 @@ export function GroupTabProgress({
 
       <GroupWeeklyCommitmentsBoard group={group} pending={pending} run={run} />
 
-      <Card className="space-y-3 border-[#3156E8]/15 bg-[#3156E8]/[0.03]">
+      <Card className="space-y-3 border-primary/15 bg-primary/[0.03]">
         <div>
           <h3 className="font-semibold">Add a weekly group commitment</h3>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -147,7 +147,7 @@ export function GroupTabProgress({
         </div>
         {habitsForCommitmentPicker.length > 0 ? (
           <div className="space-y-2 rounded-xl border border-border bg-surface/80 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <p className="text-caption font-medium text-muted-foreground">
               From Progress (weekly target only)
             </p>
             <p className="text-xs text-muted-foreground">

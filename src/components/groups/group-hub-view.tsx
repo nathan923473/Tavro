@@ -4,6 +4,7 @@ import { GroupOwnerPendingCard } from "@/components/groups/group-owner-pending-c
 import { GroupTabChat } from "@/components/groups/group-tab-chat";
 import { GroupTabProgress } from "@/components/groups/group-tab-progress";
 import { GroupTabToday } from "@/components/groups/group-tab-today";
+import { TabPills } from "@/components/ui/tab-pills";
 import type { AccountabilityGroup, GroupActivity, PersonalGoal } from "@/types";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -47,7 +48,7 @@ export function GroupHubView({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="page-stack">
       {group.isOwner ? (
         <GroupOwnerPendingCard
           pendingRequests={group.pendingRequests}
@@ -55,22 +56,7 @@ export function GroupHubView({
         />
       ) : null}
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {TAB_LABELS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className={
-              tab === t.id
-                ? "shrink-0 rounded-full bg-[#3156E8] px-4 py-2 text-xs font-semibold text-white"
-                : "shrink-0 rounded-full border border-border bg-surface px-4 py-2 text-xs font-medium text-muted-foreground"
-            }
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <TabPills tabs={TAB_LABELS} active={tab} onChange={setTab} />
 
       {tab === "today" ? (
         <GroupTabToday

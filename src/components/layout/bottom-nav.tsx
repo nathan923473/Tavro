@@ -48,7 +48,7 @@ export function BottomNav() {
               href={href}
               title={navTitle}
               className={cn(
-                "relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1 text-[11px] font-semibold transition-colors",
+                "focus-ring relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1 text-[11px] font-semibold transition-colors",
                 active
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground",

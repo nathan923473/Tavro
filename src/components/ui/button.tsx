@@ -3,8 +3,11 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "outline";
 
+type ButtonSize = "default" | "sm";
+
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
+  size?: ButtonSize;
   children: ReactNode;
   fullWidth?: boolean;
 };
@@ -19,9 +22,15 @@ const variants: Record<ButtonVariant, string> = {
     "border border-border bg-surface text-foreground shadow-sm hover:bg-muted active:scale-[0.98]",
 };
 
+const sizes: Record<ButtonSize, string> = {
+  default: "min-h-11 px-5 text-sm",
+  sm: "min-h-9 rounded-xl px-3 text-xs",
+};
+
 export function Button({
   className,
   variant = "primary",
+  size = "default",
   fullWidth,
   children,
   ...props
@@ -30,8 +39,9 @@ export function Button({
     <button
       type="button"
       className={cn(
-        "inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold transition-all duration-200 disabled:pointer-events-none disabled:opacity-50",
+        "focus-ring inline-flex items-center justify-center gap-2 rounded-2xl font-semibold transition-all duration-200 disabled:pointer-events-none disabled:opacity-50",
         variants[variant],
+        sizes[size],
         fullWidth && "w-full",
         className,
       )}

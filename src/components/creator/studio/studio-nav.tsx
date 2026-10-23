@@ -40,10 +40,10 @@ export function StudioNav() {
             key={href}
             href={href}
             className={cn(
-              "flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold",
+              "focus-ring flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-colors",
               active
-                ? "bg-primary text-primary-foreground"
-                : "border border-border bg-surface text-muted-foreground",
+                ? "bg-primary text-primary-foreground shadow-sm shadow-primary/15"
+                : "border border-border/80 bg-surface text-muted-foreground hover:bg-muted/50",
             )}
           >
             <Icon className="h-3.5 w-3.5" aria-hidden />

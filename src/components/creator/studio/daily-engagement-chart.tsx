@@ -34,14 +34,14 @@ export function DailyEngagementChart({
       >
         <polyline
           fill="none"
-          stroke="#3156E8"
+          stroke="var(--primary)"
           strokeWidth="2.5"
           strokeLinejoin="round"
           strokeLinecap="round"
           points={polyline}
         />
         {points.map((p) => (
-          <circle key={p.label} cx={p.x} cy={p.y} r="3.5" fill="#3156E8" />
+          <circle key={p.label} cx={p.x} cy={p.y} r="3.5" fill="var(--primary)" />
         ))}
         {points.map((p, i) =>
           i % Math.ceil(data.length / 8) === 0 || i === data.length - 1 ? (

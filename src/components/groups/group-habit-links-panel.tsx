@@ -60,7 +60,7 @@ export function GroupHabitLinksPanel({
 
       {linkedHere.length > 0 ? (
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="text-caption font-medium text-muted-foreground">
             Linked to {groupName}
           </p>
           <ul className="space-y-2">
@@ -93,7 +93,7 @@ export function GroupHabitLinksPanel({
 
       {linkable.length > 0 ? (
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="text-caption font-medium text-muted-foreground">
             {linkedHere.length ? "Link another habit" : "Your Progress habits"}
           </p>
           <ul className="space-y-2">

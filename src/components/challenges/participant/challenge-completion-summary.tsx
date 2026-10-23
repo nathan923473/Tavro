@@ -56,7 +56,7 @@ export function ChallengeCompletionSummary({
             🎉
           </p>
           <h2 className="text-lg font-semibold">You finished this challenge</h2>
-          <p className="font-medium text-[#1B2440]">{hub.title}</p>
+          <p className="font-medium text-foreground">{hub.title}</p>
           <p className="mt-1 text-sm text-muted-foreground">Hosted by {hub.creatorName}</p>
         </div>
 
@@ -70,7 +70,7 @@ export function ChallengeCompletionSummary({
             <p className="text-xs text-muted-foreground">Participation</p>
           </div>
           {habitConsistencyPercent != null ? (
-            <div className="col-span-2 rounded-xl bg-[#B8F4DA]/30 px-2 py-3">
+            <div className="col-span-2 rounded-xl bg-mint-subtle/30 px-2 py-3">
               <p className="text-lg font-semibold tabular-nums">{habitConsistencyPercent}%</p>
               <p className="text-xs text-muted-foreground">Personal habit consistency this week</p>
             </div>

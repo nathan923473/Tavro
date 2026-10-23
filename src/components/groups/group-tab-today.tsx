@@ -69,8 +69,8 @@ export function GroupTabToday({
       <Card className="p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h2 className="text-lg font-bold leading-snug text-[#1B2440]">{group.name}</h2>
-            <p className="mt-0.5 text-sm font-medium text-[#3156E8]">
+            <h2 className="text-lg font-bold leading-snug text-foreground">{group.name}</h2>
+            <p className="mt-0.5 text-sm font-medium text-primary">
               {groupFocusLabel(group.focusType, group.focusCustomLabel)}
             </p>
             {group.sharedGoal ? (
@@ -133,9 +133,9 @@ export function GroupTabToday({
         />
       ) : null}
 
-      <Card className="overflow-hidden border-[#3156E8]/20 p-0">
-        <div className="bg-gradient-to-br from-[#3156E8]/10 via-background to-[#B8F4DA]/20 p-4">
-          <h3 className="text-base font-semibold text-[#1B2440]">Today&apos;s accountability</h3>
+      <Card className="overflow-hidden border-primary/20 p-0">
+        <div className="bg-gradient-to-br from-primary/10 via-background to-accent/20 p-4">
+          <h3 className="text-base font-semibold text-foreground">Today&apos;s accountability</h3>
           <p className="mt-1 text-sm text-muted-foreground">
             {stats.scheduledCount > 0
               ? `${stats.checkedInCount} of ${stats.scheduledCount} checked in`
@@ -157,14 +157,14 @@ export function GroupTabToday({
                       size="md"
                       className={
                         done
-                          ? "ring-2 ring-[#B8F4DA] ring-offset-2 ring-offset-background"
+                          ? "ring-2 ring-accent ring-offset-2 ring-offset-background"
                           : pendingToday
                             ? "ring-2 ring-border ring-offset-2 ring-offset-background"
                             : "opacity-70"
                       }
                     />
                     {done ? (
-                      <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#B8F4DA] text-[#1B2440]">
+                      <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-mint-subtle text-foreground">
                         <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
                       </span>
                     ) : m.scheduledToday ? (
@@ -174,7 +174,7 @@ export function GroupTabToday({
                       />
                     ) : null}
                   </div>
-                  <span className="line-clamp-1 text-[10px] font-medium text-[#1B2440]">
+                  <span className="line-clamp-1 text-[10px] font-medium text-foreground">
                     {m.displayName.split(" ")[0]}
                   </span>
                   <span className="text-[10px] text-muted-foreground">{memberStatusLabel(m)}</span>
@@ -189,8 +189,8 @@ export function GroupTabToday({
                 Rest day for you — no check-in needed today.
               </div>
             ) : viewerCheckedIn ? (
-              <div className="rounded-xl border border-[#B8F4DA] bg-[#B8F4DA]/30 px-4 py-3 text-center">
-                <p className="text-sm font-semibold text-[#1B2440]">You checked in today</p>
+              <div className="rounded-xl border border-accent bg-mint-subtle/30 px-4 py-3 text-center">
+                <p className="text-sm font-semibold text-foreground">You checked in today</p>
                 <p className="mt-1 text-xs capitalize text-muted-foreground">
                   {group.viewerCheckInStatus?.replace("_", " ")}
                 </p>
@@ -207,7 +207,7 @@ export function GroupTabToday({
               <Button
                 type="button"
                 fullWidth
-                className="min-h-11 bg-[#3156E8] text-base hover:bg-[#2442C4]"
+                className="min-h-11 bg-primary text-base hover:bg-primary-dark"
                 disabled={pending}
                 onClick={() => setShowCheckInForm(true)}
               >
@@ -241,7 +241,7 @@ export function GroupTabToday({
               <Button
                 type="button"
                 fullWidth
-                className="bg-[#3156E8] hover:bg-[#2442C4]"
+                className="bg-primary hover:bg-primary-dark"
                 disabled={pending}
                 onClick={() =>
                   run(async () => {
@@ -266,7 +266,7 @@ export function GroupTabToday({
           <h3 className="font-semibold">Recent activity</h3>
           <button
             type="button"
-            className="text-xs font-medium text-[#3156E8]"
+            className="text-xs font-medium text-primary"
             onClick={onOpenProgress}
           >
             Full progress
