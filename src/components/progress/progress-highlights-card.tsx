@@ -1,16 +1,15 @@
-import { Card } from "@/components/ui/card";
+import { ProgressDashboardHero } from "@/components/progress/progress-dashboard-hero";
 import type { Challenge } from "@/types";
+import type { WeeklyConsistency } from "@/lib/progress/consistency";
 import Link from "next/link";
 
 export function ProgressHighlightsCard({
-  consistencyPercent,
-  consistencyMessage,
+  consistency,
   habitsActive,
   joinedChallenges,
   completedChallengeCount,
 }: {
-  consistencyPercent: number;
-  consistencyMessage: string;
+  consistency: WeeklyConsistency;
   habitsActive: number;
   joinedChallenges: Challenge[];
   completedChallengeCount: number;
@@ -18,32 +17,21 @@ export function ProgressHighlightsCard({
   const active = joinedChallenges.filter((c) => c.progressPercent < 100);
 
   return (
-    <Card className="space-y-3 border-primary/15">
-      <h2 className="text-base font-semibold text-foreground">Your consistency story</h2>
-      <p className="text-sm text-muted-foreground">
-        Tavro celebrates showing up — not perfect streaks. Missing a day doesn&apos;t erase what
-        you&apos;ve already done.
+    <section aria-labelledby="progress-hero-heading" className="section-stack">
+      <h2 id="progress-hero-heading" className="sr-only">
+        Progress overview
+      </h2>
+      <ProgressDashboardHero
+        consistency={consistency}
+        habitsActive={habitsActive}
+        activeChallengeCount={active.length}
+        completedChallengeCount={completedChallengeCount}
+      />
+      <p className="px-0.5 text-center text-sm">
+        <Link href="/" className="font-medium text-primary">
+          Back to today&apos;s plan →
+        </Link>
       </p>
-      <ul className="space-y-2 text-sm">
-        <li>
-          <span className="font-medium tabular-nums">{consistencyPercent}%</span> habit consistency
-          this week — {consistencyMessage.toLowerCase()}
-        </li>
-        <li>
-          <span className="font-medium tabular-nums">{habitsActive}</span> active habit
-          {habitsActive === 1 ? "" : "s"}
-        </li>
-        <li>
-          <span className="font-medium tabular-nums">{active.length}</span> creator challenge
-          {active.length === 1 ? "" : "s"} in progress
-          {completedChallengeCount > 0
-            ? ` · ${completedChallengeCount} completed`
-            : null}
-        </li>
-      </ul>
-      <Link href="/" className="text-sm font-semibold text-primary">
-        Back to today&apos;s goals →
-      </Link>
-    </Card>
+    </section>
   );
 }

@@ -22,11 +22,11 @@ export function WeeklyConsistencyHome({
   const hasData = summary.planned > 0;
 
   return (
-    <section aria-labelledby="weekly-consistency-heading">
-      <h2 id="weekly-consistency-heading" className="mb-2 px-1 text-base font-semibold">
-        Weekly consistency
+    <section aria-labelledby="weekly-consistency-heading" className="section-stack">
+      <h2 id="weekly-consistency-heading" className="px-0.5 text-title">
+        Weekly rhythm
       </h2>
-      <Card>
+      <Card variant="muted">
         <p className="text-3xl font-semibold tabular-nums text-primary">
           {hasData ? `${summary.percent}%` : "—"}
         </p>

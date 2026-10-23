@@ -1,12 +1,14 @@
 import { HomeAccountabilityGroups } from "@/components/dashboard/home-accountability-groups";
 import { HomeChallengesSection } from "@/components/dashboard/home-challenges-section";
 import { HomeDailyCheckIn } from "@/components/dashboard/home-daily-check-in";
-import { HomeCreatorStudioShortcut } from "@/components/dashboard/home-creator-studio-shortcut";
-import { HomeDailySummary } from "@/components/dashboard/home-daily-summary";
+import { HomeHero } from "@/components/dashboard/home-hero";
+import { HomeChallengeSpotlightFromList } from "@/components/dashboard/home-challenge-spotlight";
 import { TodaysGoals } from "@/components/dashboard/todays-goals";
 import { fetchMemberGoalPreferences } from "@/lib/data/member-preferences";
 import { WeeklyConsistencyHome } from "@/components/dashboard/weekly-consistency-home";
 import { PageHeader } from "@/components/layout/page-header";
+import Link from "next/link";
+import { LayoutDashboard } from "lucide-react";
 import { HomeInstallBanner } from "@/components/pwa/home-install-banner";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchChallengeParticipantHub } from "@/lib/data/challenge-participant-hub";
@@ -38,12 +40,14 @@ const emptyDashboard = {
   milestones: [],
 };
 
-function challengeIsActive(
+function challengePhase(
   c: Awaited<ReturnType<typeof fetchJoinedChallengesForHome>>[number],
-): boolean {
+): "upcoming" | "active" | "completed" {
   if (!c.startAt || !c.endAt) {
     const today = new Date().toISOString().slice(0, 10);
-    return c.startDate <= today && c.endDate >= today;
+    if (c.endDate < today) return "completed";
+    if (c.startDate > today) return "upcoming";
+    return "active";
   }
   const start = resolveChallengeStartAt({
     start_date: c.startDate,
@@ -55,7 +59,7 @@ function challengeIsActive(
     end_at: c.endAt,
     challenge_timezone: c.challengeTimezone ?? null,
   });
-  return challengePhaseFromInstants(start, end) === "active";
+  return challengePhaseFromInstants(start, end);
 }
 
 export default async function HomePage() {
@@ -86,10 +90,14 @@ export default async function HomePage() {
     userId ? fetchMemberGoalPreferences(userId) : Promise.resolve({ workTowards: null, growthFriction: null }),
   ]);
 
-  const activeChallenge = joinedChallenges.find((c) => c.joined && challengeIsActive(c));
+  const joined = joinedChallenges.filter((c) => c.joined);
+  const primaryChallenge =
+    joined.find((c) => challengePhase(c) === "active") ??
+    joined.find((c) => challengePhase(c) === "upcoming") ??
+    null;
   const activeChallengeHub =
-    userId && activeChallenge
-      ? await fetchChallengeParticipantHub(activeChallenge.id, userId)
+    userId && primaryChallenge
+      ? await fetchChallengeParticipantHub(primaryChallenge.id, userId)
       : null;
 
   const { goals, checkIn, consistency, weekDayIndicators } = dashboard;
@@ -103,23 +111,44 @@ export default async function HomePage() {
   });
 
   const hasActiveChallenge = activeChallengeHub?.phase === "active";
+  const isCreator = profile?.role === "creator" || profile?.role === "admin";
 
   return (
     <div className="animate-fade-up">
-      <PageHeader title="Home" subtitle="Today&apos;s habits, challenges and support" />
-      <div className="page-stack px-4 py-4">
+      <PageHeader
+        title="Today"
+        subtitle={memberPrefs.workTowards ? undefined : "Habits, challenges & your crew"}
+        action={
+          isCreator ? (
+            <Link
+              href="/studio"
+              className="focus-ring flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-primary"
+              aria-label="Creator Studio"
+            >
+              <LayoutDashboard className="h-5 w-5" aria-hidden />
+            </Link>
+          ) : undefined
+        }
+      />
+      <div className="page-stack-compact px-4 py-3 pb-4">
         <HomeInstallBanner />
-        <HomeDailySummary
+        <HomeHero
           firstName={firstName}
           timezone={timezone}
           goals={goals}
           group={groupData.group}
+          activeChallengeHub={activeChallengeHub}
           primaryAction={primaryAction}
           loggedIn={Boolean(userId)}
+          viewerUserId={userId}
+          workTowards={memberPrefs.workTowards}
         />
 
-        {profile?.role === "creator" || profile?.role === "admin" ? (
-          <HomeCreatorStudioShortcut />
+        {activeChallengeHub ? (
+          <HomeChallengeSpotlightFromList
+            activeHub={activeChallengeHub}
+            challenges={joinedChallenges}
+          />
         ) : null}
 
         <TodaysGoals
@@ -138,6 +167,7 @@ export default async function HomePage() {
               challenges={joinedChallenges}
               activeHub={activeChallengeHub}
               workTowards={memberPrefs.workTowards}
+              spotlightShown={Boolean(activeChallengeHub)}
             />
           </>
         ) : hasActiveChallenge ? (
@@ -146,6 +176,7 @@ export default async function HomePage() {
               challenges={joinedChallenges}
               activeHub={activeChallengeHub}
               workTowards={memberPrefs.workTowards}
+              spotlightShown={Boolean(activeChallengeHub)}
             />
             <HomeAccountabilityGroups group={groupData.group} viewerUserId={userId} />
           </>
@@ -156,6 +187,7 @@ export default async function HomePage() {
               challenges={joinedChallenges}
               activeHub={activeChallengeHub}
               workTowards={memberPrefs.workTowards}
+              spotlightShown={Boolean(activeChallengeHub)}
             />
           </>
         )}

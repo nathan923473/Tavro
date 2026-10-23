@@ -33,7 +33,7 @@ export function ChallengesInteractive({
         </h2>
         {mine.length === 0 ? (
           <EmptyState
-            icon={Heart}
+            icon={<Heart className="h-6 w-6" aria-hidden />}
             title="No challenges yet"
             description="Search above to join a free challenge — it will show up here."
           />

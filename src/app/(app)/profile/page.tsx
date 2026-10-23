@@ -1,3 +1,4 @@
+import { ProfileHeroCard } from "@/components/profile/profile-hero-card";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
@@ -71,7 +72,22 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
           </Link>
         </div>
       ) : null}
-      <div className="space-y-4 px-4 py-4">
+      <div className="page-stack-compact px-4 py-4">
+        {profile ? (
+          <ProfileHeroCard
+            displayName={profile.displayName ?? user?.email?.split("@")[0] ?? "Member"}
+            email={user?.email}
+            avatarUrl={profile.avatarUrl}
+            workTowards={memberPrefs.workTowards}
+            roleLabel={
+              profile.role === "creator"
+                ? "Creator"
+                : profile.role === "admin"
+                  ? "Admin"
+                  : null
+            }
+          />
+        ) : null}
         {profile?.role === "creator" || profile?.role === "admin" ? (
           <CreatorStudioProfileCard />
         ) : null}

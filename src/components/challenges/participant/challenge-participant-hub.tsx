@@ -224,7 +224,7 @@ function HubHeader({
   return (
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0">
-        <h1 className="text-lg font-semibold leading-snug">{hub.title}</h1>
+        <h1 className="text-title-lg leading-snug">{hub.title}</h1>
       </div>
       <div className="relative shrink-0">
         <button
@@ -520,7 +520,7 @@ function ActivityRow({
           onActChange({ completed: !act.completed });
         })
       }
-      className="flex w-full items-start gap-3 text-left disabled:opacity-50"
+      className="focus-ring flex min-h-11 w-full items-start gap-3 rounded-xl text-left disabled:opacity-50"
     >
       <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border text-sm">
         {act.completed ? "✓" : "○"}

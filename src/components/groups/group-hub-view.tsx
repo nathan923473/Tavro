@@ -1,5 +1,6 @@
 "use client";
 
+import { GroupOverviewHeader } from "@/components/groups/group-overview-header";
 import { GroupOwnerPendingCard } from "@/components/groups/group-owner-pending-card";
 import { GroupTabChat } from "@/components/groups/group-tab-chat";
 import { GroupTabProgress } from "@/components/groups/group-tab-progress";
@@ -48,7 +49,8 @@ export function GroupHubView({
   }
 
   return (
-    <div className="page-stack">
+    <div className="page-stack-compact">
+      <GroupOverviewHeader group={group} />
       {group.isOwner ? (
         <GroupOwnerPendingCard
           pendingRequests={group.pendingRequests}

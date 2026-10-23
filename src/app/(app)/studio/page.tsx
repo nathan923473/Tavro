@@ -41,12 +41,12 @@ export default async function CreatorStudioPage() {
         </Card>
       ) : null}
 
-      <Card className="border-primary/20 bg-secondary/30">
+      <Card variant="brand" className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone="success">Approved creator</Badge>
           {profile.isAdmin ? <Badge tone="muted">Admin</Badge> : null}
         </div>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           {overview.currentChallenge
             ? `Live now: ${overview.currentChallenge.title} · ${overview.currentChallenge.participantCount} participants`
             : overview.upcomingChallenge

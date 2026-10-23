@@ -1,6 +1,9 @@
 import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PrimaryLink } from "@/components/ui/link-button";
 import { Card } from "@/components/ui/card";
+import { Trophy } from "lucide-react";
 import type { ChallengeParticipantHub } from "@/lib/data/challenge-participant-hub";
 import { challengePhaseFromInstants } from "@/lib/timezone/challenge-calendar";
 import { resolveChallengeEndAt, resolveChallengeStartAt } from "@/lib/timezone/challenge-fields";
@@ -33,10 +36,13 @@ export function HomeChallengesSection({
   challenges,
   activeHub,
   workTowards = null,
+  spotlightShown = false,
 }: {
   challenges: Challenge[];
   activeHub: ChallengeParticipantHub | null;
   workTowards?: WorkTowards | null;
+  /** When true, primary challenge is shown in HomeChallengeSpotlight above. */
+  spotlightShown?: boolean;
 }) {
   const joined = challenges.filter((c) => c.joined);
   const active = joined.filter((c) => phaseOf(c) === "active");
@@ -44,23 +50,24 @@ export function HomeChallengesSection({
 
   if (!active.length && !upcoming.length) {
     return (
-      <section aria-labelledby="home-challenges-empty" className="px-1">
-        <h2 id="home-challenges-empty" className="text-base font-semibold">
+      <section aria-labelledby="home-challenges-empty" className="section-stack">
+        <h2 id="home-challenges-empty" className="sr-only">
           Creator challenges
         </h2>
-        <Card className="mt-2">
-          <p className="text-sm text-muted-foreground">
-            {workTowards
-              ? `Free creator challenges that fit your focus — ${workTowardsLabel(workTowards).toLowerCase()}.`
-              : "Join a free creator challenge for structured daily activities."}
-          </p>
-          <Link
-            href="/challenges"
-            className="mt-3 flex min-h-11 w-full items-center justify-center rounded-2xl border border-border bg-secondary text-sm font-semibold"
-          >
-            Browse challenges
-          </Link>
-        </Card>
+        <EmptyState
+          title="Join a creator challenge"
+          description={
+            workTowards
+              ? `Free programs aligned with ${workTowardsLabel(workTowards).toLowerCase()} — daily structure from coaches you follow.`
+              : "Structured daily activities from fitness creators — free to join."
+          }
+          icon={<Trophy className="h-6 w-6" aria-hidden />}
+          action={
+            <PrimaryLink href="/challenges" fullWidth variant="secondary">
+              Browse challenges
+            </PrimaryLink>
+          }
+        />
       </section>
     );
   }
@@ -73,7 +80,7 @@ export function HomeChallengesSection({
         Creator challenges
       </h2>
 
-      {primaryActive ? (
+      {primaryActive && !spotlightShown ? (
         <Card className="space-y-2 border-primary/20">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Active · {primaryActive.creatorName}

@@ -119,9 +119,14 @@ function ChallengeLandingBody({
         </div>
       ) : null}
 
-      <Card className="overflow-hidden p-0">
-        <ChallengeCoverImage coverUrl={challenge.coverUrl} title={challenge.title} priority />
-        <div className="p-4">
+      <Card padding="none" className="overflow-hidden shadow-elevated">
+        <ChallengeCoverImage
+          coverUrl={challenge.coverUrl}
+          title={challenge.title}
+          aspectClassName="aspect-[4/5] sm:aspect-[5/4]"
+          priority
+        />
+        <div className="p-4 sm:p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <ChallengeCreatorLine
