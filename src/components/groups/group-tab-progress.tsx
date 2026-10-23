@@ -147,7 +147,7 @@ export function GroupTabProgress({
         </div>
         {habitsForCommitmentPicker.length > 0 ? (
           <div className="space-y-2 rounded-xl border border-border bg-surface/80 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <p className="text-caption font-medium text-muted-foreground">
               From Progress (weekly target only)
             </p>
             <p className="text-xs text-muted-foreground">
