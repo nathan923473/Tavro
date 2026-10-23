@@ -1,6 +1,7 @@
 "use client";
 
 import { toggleGoalAction } from "@/app/(app)/member/actions";
+import { cn } from "@/lib/cn";
 import { HabitQuickAdd } from "@/components/progress/habit-quick-add";
 import { Card } from "@/components/ui/card";
 import type { ChallengeParticipantHub } from "@/lib/data/challenge-participant-hub";
@@ -11,7 +12,7 @@ import type { AccountabilityGroup, PersonalGoal } from "@/types";
 import { Check, Circle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 
 type GoalRow =
   | {
@@ -40,6 +41,7 @@ export function TodaysGoals({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [pulseGoalId, setPulseGoalId] = useState<string | null>(null);
 
   const scheduled = habitsScheduledToday(goals);
   const { done: habitsDone, total: habitsTotal } = habitsCompletedToday(goals);
@@ -118,7 +120,7 @@ export function TodaysGoals({
   return (
     <section aria-labelledby="todays-goals-heading">
       <div className="mb-2 flex items-end justify-between gap-2 px-1">
-        <h2 id="todays-goals-heading" className="text-base font-semibold">
+        <h2 id="todays-goals-heading" className="text-title">
           Today&apos;s goals
         </h2>
         {totalCount > 0 ? (
@@ -153,22 +155,37 @@ export function TodaysGoals({
             <li key={row.id}>
               <Card
                 padding="sm"
-                className={row.done ? "border-[#B8F4DA] bg-[#B8F4DA]/20" : undefined}
+                className={
+                  row.done ||
+                  (row.kind === "habit" && pulseGoalId === row.goalId)
+                    ? cn(
+                        "border-accent bg-mint-subtle/20",
+                        row.kind === "habit" &&
+                          pulseGoalId === row.goalId &&
+                          "animate-success-pulse",
+                      )
+                    : undefined
+                }
               >
                 {row.kind === "habit" ? (
                   <button
                     type="button"
                     disabled={pending}
-                    className="flex w-full items-center gap-3 text-left"
+                    className="focus-ring flex min-h-11 w-full items-center gap-3 rounded-xl text-left"
                     onClick={() =>
                       startTransition(async () => {
+                        const wasDone = row.done;
                         await toggleGoalAction(row.goalId);
+                        if (!wasDone) {
+                          setPulseGoalId(row.goalId);
+                          window.setTimeout(() => setPulseGoalId(null), 600);
+                        }
                         router.refresh();
                       })
                     }
                   >
                     {row.done ? (
-                      <Check className="h-5 w-5 shrink-0 text-[#1B2440]" aria-hidden />
+                      <Check className="h-5 w-5 shrink-0 text-foreground" aria-hidden />
                     ) : (
                       <Circle className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
                     )}
@@ -187,13 +204,13 @@ export function TodaysGoals({
                     className="flex items-center gap-3"
                   >
                     {row.done ? (
-                      <Check className="h-5 w-5 shrink-0 text-[#1B2440]" aria-hidden />
+                      <Check className="h-5 w-5 shrink-0 text-foreground" aria-hidden />
                     ) : (
                       <Circle className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
                     )}
                     <span className="flex-1 text-sm font-medium">{row.label}</span>
                     {!row.done ? (
-                      <span className="text-xs font-semibold text-[#3156E8]">Open</span>
+                      <span className="text-xs font-semibold text-primary">Open</span>
                     ) : null}
                   </Link>
                 )}
@@ -211,7 +228,7 @@ export function TodaysGoals({
       ) : null}
 
       <p className="mt-2 px-1">
-        <Link href="/progress#habits-manage-heading" className="text-sm font-medium text-[#3156E8]">
+        <Link href="/progress#habits-manage-heading" className="text-sm font-medium text-primary">
           Manage habits
         </Link>
       </p>

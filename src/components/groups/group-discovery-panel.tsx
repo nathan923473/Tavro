@@ -40,7 +40,7 @@ export function GroupDiscoveryPanel({
     return (
       <div className="grid gap-2 sm:grid-cols-2">
         <Card className="space-y-2 border-primary/20">
-          <h2 className="font-semibold text-[#1B2440]">Create a group</h2>
+          <h2 className="font-semibold text-foreground">Create a group</h2>
           <p className="text-sm text-muted-foreground">
             Start a private accountability group and invite people you know.
           </p>
@@ -54,8 +54,8 @@ export function GroupDiscoveryPanel({
             Create a group ↓
           </Button>
         </Card>
-        <Card className="space-y-2 border-[#3156E8]/30 bg-[#3156E8]/5">
-          <h2 className="font-semibold text-[#1B2440]">Find a group</h2>
+        <Card className="space-y-2 border-primary/30 bg-primary/5">
+          <h2 className="font-semibold text-foreground">Find a group</h2>
           <p className="text-sm text-muted-foreground">
             Join a small group of people working toward similar goals.
           </p>

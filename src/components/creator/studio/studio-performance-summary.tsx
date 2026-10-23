@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { SectionHeader } from "@/components/ui/section-header";
 
 export function StudioPerformanceSummary({
   followers,
@@ -23,14 +24,16 @@ export function StudioPerformanceSummary({
   ] as const;
 
   return (
-    <section aria-labelledby="performance-summary-heading">
-      <h2 id="performance-summary-heading" className="mb-2 text-base font-semibold">
-        Performance summary
-      </h2>
-      <div className="grid grid-cols-2 gap-2">
+    <section aria-labelledby="performance-summary-heading" className="section-stack">
+      <SectionHeader
+        titleId="performance-summary-heading"
+        title="Performance summary"
+        description="Last 30 days across your community"
+      />
+      <div className="grid grid-cols-2 gap-3">
         {items.map((item) => (
-          <Card key={item.label} padding="sm" className="space-y-0.5">
-            <p className="text-xs text-muted-foreground">{item.label}</p>
+          <Card key={item.label} padding="sm" variant="muted" className="space-y-0.5">
+            <p className="text-caption">{item.label}</p>
             {"emptyHint" in item && item.value === null ? (
               <p className="text-sm font-medium leading-snug">{item.emptyHint}</p>
             ) : (

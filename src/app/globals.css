@@ -46,6 +46,9 @@
   --radius-2xl: 1.25rem;
   --shadow-card: 0 1px 2px rgb(var(--shadow-color) / 0.04),
     0 4px 12px rgb(var(--shadow-color) / 0.05);
+  --shadow-elevated: 0 4px 24px rgb(var(--shadow-color) / 0.08);
+  --space-section: 1.5rem;
+  --space-page: 1.25rem;
 }
 
 @layer base {
@@ -93,6 +96,38 @@
   .bg-mint-subtle {
     background-color: rgb(184 244 218 / 0.45);
   }
+
+  .text-display {
+    @apply text-3xl font-bold tracking-tight text-foreground;
+  }
+
+  .text-title-lg {
+    @apply text-2xl font-bold tracking-tight text-foreground;
+  }
+
+  .text-title {
+    @apply text-base font-semibold tracking-tight text-foreground;
+  }
+
+  .text-body {
+    @apply text-sm leading-relaxed text-foreground;
+  }
+
+  .text-caption {
+    @apply text-xs leading-normal text-muted-foreground;
+  }
+
+  .page-stack {
+    @apply flex flex-col gap-6;
+  }
+
+  .section-stack {
+    @apply flex flex-col gap-3;
+  }
+
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
 }
 
 @keyframes fade-up {
@@ -108,4 +143,27 @@
 
 .animate-fade-up {
   animation: fade-up 0.45s ease-out both;
+}
+
+@keyframes success-pulse {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-success-pulse {
+  animation: success-pulse 0.35s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-success-pulse {
+    animation: none;
+  }
 }

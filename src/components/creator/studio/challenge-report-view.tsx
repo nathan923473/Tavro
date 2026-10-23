@@ -68,7 +68,7 @@ function V2ReportView({ report }: { report: Extract<AnyChallengeReportPayload, {
       </p>
 
       <section aria-labelledby="report-overview">
-        <h2 id="report-overview" className="mb-2 text-base font-semibold text-[#1B2440]">
+        <h2 id="report-overview" className="mb-2 text-base font-semibold text-foreground">
           Challenge overview
         </h2>
         <Card className="space-y-2 border-primary/10">
@@ -317,7 +317,7 @@ function V2ReportView({ report }: { report: Extract<AnyChallengeReportPayload, {
           <ul className="space-y-2">
             {report.insights.map((line) => (
               <li key={line}>
-                <Card padding="sm" className="border-l-4 border-l-[#3156E8] text-sm">
+                <Card padding="sm" className="border-l-4 border-l-primary text-sm">
                   {line}
                 </Card>
               </li>

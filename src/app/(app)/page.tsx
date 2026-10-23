@@ -107,7 +107,7 @@ export default async function HomePage() {
   return (
     <div className="animate-fade-up">
       <PageHeader title="Home" subtitle="Today&apos;s habits, challenges and support" />
-      <div className="space-y-5 px-4 py-4">
+      <div className="page-stack px-4 py-4">
         <HomeInstallBanner />
         <HomeDailySummary
           firstName={firstName}

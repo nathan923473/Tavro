@@ -42,15 +42,15 @@ export function ChallengeParticipantOnboarding({
     "Daily or scheduled activities to help you build consistent fitness habits.";
 
   return (
-    <Card className="space-y-4">
+    <Card className="section-stack">
       <div>
-        <p className="text-lg font-semibold">You&apos;re in!</p>
-        <p className="mt-1 text-xl font-semibold text-[#1B2440]">{challengeTitle}</p>
-        <p className="text-sm text-muted-foreground">Hosted by {creatorName}</p>
+        <p className="text-title">You&apos;re in!</p>
+        <p className="mt-1 text-title-lg text-foreground">{challengeTitle}</p>
+        <p className="text-caption">Hosted by {creatorName}</p>
       </div>
 
-      <div className="rounded-xl bg-[#B8F4DA]/25 px-3 py-3 text-sm">
-        <p className="font-medium text-[#1B2440]">What you&apos;re working towards</p>
+      <div className="rounded-xl bg-mint-subtle/25 px-3 py-3 text-sm">
+        <p className="font-medium text-foreground">What you&apos;re working towards</p>
         <p className="mt-1 text-muted-foreground">{about}</p>
       </div>
 

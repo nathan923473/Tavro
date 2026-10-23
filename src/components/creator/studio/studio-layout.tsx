@@ -12,16 +12,18 @@ export function StudioLayout({
 }) {
   return (
     <div className="animate-fade-up">
-      <div className="space-y-3 px-4 pt-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-          {subtitle ? (
-            <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
-          ) : null}
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-surface/95 backdrop-blur-md">
+        <div className="space-y-3 px-4 py-3.5">
+          <div>
+            <h1 className="text-title-lg">{title}</h1>
+            {subtitle ? (
+              <p className="mt-0.5 text-caption">{subtitle}</p>
+            ) : null}
+          </div>
+          <StudioNav />
         </div>
-        <StudioNav />
-      </div>
-      <div className="space-y-4 px-4 py-4">{children}</div>
+      </header>
+      <div className="page-stack px-4 py-4">{children}</div>
     </div>
   );
 }

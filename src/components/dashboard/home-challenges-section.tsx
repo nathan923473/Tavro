@@ -74,7 +74,7 @@ export function HomeChallengesSection({
       </h2>
 
       {primaryActive ? (
-        <Card className="space-y-2 border-[#3156E8]/20">
+        <Card className="space-y-2 border-primary/20">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Active · {primaryActive.creatorName}
           </p>
@@ -99,7 +99,7 @@ export function HomeChallengesSection({
           )}
           <Link
             href={`/challenges/${primaryActive.challengeId}?tab=today`}
-            className="flex min-h-11 w-full items-center justify-center rounded-2xl bg-[#3156E8] text-sm font-semibold text-white hover:bg-[#2442C4]"
+            className="flex min-h-11 w-full items-center justify-center rounded-2xl bg-primary text-sm font-semibold text-white hover:bg-primary-dark"
           >
             Continue challenge
           </Link>
@@ -118,7 +118,7 @@ export function HomeChallengesSection({
                 </div>
                 <Link
                   href={`/challenges/${c.id}?tab=today`}
-                  className="shrink-0 text-sm font-semibold text-[#3156E8]"
+                  className="shrink-0 text-sm font-semibold text-primary"
                 >
                   Open
                 </Link>

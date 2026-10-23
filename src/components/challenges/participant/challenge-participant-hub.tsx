@@ -15,6 +15,8 @@ import { ShareChallengeButton } from "@/components/share/share-challenge-button"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { MoodPicker } from "@/components/ui/mood-picker";
+import { TabPills } from "@/components/ui/tab-pills";
 import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { formatCalendarDateKeyShort } from "@/lib/timezone/format";
@@ -37,13 +39,6 @@ const TABS = [
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
-
-const MOODS = [
-  { value: "rough", emoji: "😣", label: "Rough" },
-  { value: "okay", emoji: "😐", label: "Okay" },
-  { value: "good", emoji: "🙂", label: "Good" },
-  { value: "great", emoji: "🔥", label: "Great" },
-] as const;
 
 export function ChallengeParticipantHub({
   hub,
@@ -102,7 +97,7 @@ export function ChallengeParticipantHub({
             initial={feedbackInitial}
           />
         ) : null}
-        <TabBar tab={tab} setTab={setTab} />
+        <TabBar tab={tab} setTab={setTab} sticky />
         {!localHub.isOwner ? (
           <LeaveChallengeButton
             challengeId={localHub.challengeId}
@@ -127,7 +122,7 @@ export function ChallengeParticipantHub({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="page-stack">
       <HubHeader hub={localHub} shareOpen={shareOpen} setShareOpen={setShareOpen} />
 
       <ChallengeAtAGlance hub={localHub} onOpenAbout={() => setTab("about")} />
@@ -177,7 +172,7 @@ export function ChallengeParticipantHub({
         </Card>
       )}
 
-      <TabBar tab={tab} setTab={setTab} />
+      <TabBar tab={tab} setTab={setTab} sticky />
 
       {tab === "today" ? (
         <TodayPanel
@@ -235,7 +230,7 @@ function HubHeader({
         <button
           type="button"
           aria-label="Share challenge"
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-border"
+          className="focus-ring flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-surface"
           onClick={() => setShareOpen(!shareOpen)}
         >
           <MoreHorizontal className="h-5 w-5" />
@@ -253,24 +248,26 @@ function HubHeader({
   );
 }
 
-function TabBar({ tab, setTab }: { tab: TabId; setTab: (t: TabId) => void }) {
+function TabBar({
+  tab,
+  setTab,
+  sticky,
+}: {
+  tab: TabId;
+  setTab: (t: TabId) => void;
+  sticky?: boolean;
+}) {
   return (
-    <div className="overflow-x-auto pb-1">
-      <div className="flex min-w-max gap-1 rounded-xl bg-muted/60 p-1">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              tab === t.id ? "bg-surface text-foreground shadow-sm" : "text-muted-foreground"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-    </div>
+    <TabPills
+      tabs={TABS}
+      active={tab}
+      onChange={setTab}
+      className={
+        sticky
+          ? "sticky top-[calc(env(safe-area-inset-top,0px)+4.5rem)] z-30 -mx-1 bg-background/90 px-1 py-2 backdrop-blur-md"
+          : undefined
+      }
+    />
   );
 }
 
@@ -373,30 +370,19 @@ function TodayPanel({
       ) : null}
 
       {hub.phase !== "active" ? null : (
-      <Card className="space-y-3">
-        <h2 className="font-semibold">How did today go?</h2>
-        <p className="text-xs text-muted-foreground">Private — creators don&apos;t see this.</p>
-        <div className="grid grid-cols-4 gap-2">
-          {MOODS.map((m) => (
-            <button
-              key={m.value}
-              type="button"
-              disabled={pending}
-              onClick={() =>
-                startTransition(async () => {
-                  await saveChallengeDailyCheckInAction(hub.challengeId, m.value, note);
-                  onMutate({ ...hub, todayMood: m.value });
-                })
-              }
-              className={`rounded-xl border px-2 py-2 text-xs ${
-                hub.todayMood === m.value ? "border-primary bg-primary/10" : "border-border"
-              }`}
-            >
-              <span className="text-lg">{m.emoji}</span>
-              <span className="mt-1 block">{m.label}</span>
-            </button>
-          ))}
-        </div>
+      <Card className="section-stack">
+        <h2 className="text-title">How did today go?</h2>
+        <p className="text-caption">Private — creators don&apos;t see this.</p>
+        <MoodPicker
+          value={(hub.todayMood as "rough" | "okay" | "good" | "great" | null) ?? null}
+          onChange={(m) =>
+            startTransition(async () => {
+              await saveChallengeDailyCheckInAction(hub.challengeId, m, note);
+              onMutate({ ...hub, todayMood: m });
+            })
+          }
+          disabled={pending}
+        />
         <textarea
           rows={2}
           value={note}

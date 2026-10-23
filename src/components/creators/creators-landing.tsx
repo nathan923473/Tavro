@@ -28,7 +28,7 @@ export function CreatorsLanding({ loggedIn }: { loggedIn: boolean }) {
         </p>
         <Link
           href={loggedIn ? "#apply" : "/login?next=/creators%23apply"}
-          className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[#B8F4DA] text-sm font-semibold text-[#1B2440]"
+          className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-mint-subtle text-sm font-semibold text-foreground"
         >
           Apply to become a creator
         </Link>

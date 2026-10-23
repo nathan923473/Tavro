@@ -63,7 +63,7 @@ export function GroupCheckInReactions({
             onClick={() => toggle(key)}
             className={
               active
-                ? "inline-flex min-h-8 items-center gap-1 rounded-full border border-[#B8F4DA] bg-[#B8F4DA]/50 px-2 text-xs font-medium text-[#1B2440]"
+                ? "inline-flex min-h-8 items-center gap-1 rounded-full border border-accent bg-mint-subtle/50 px-2 text-xs font-medium text-foreground"
                 : "inline-flex min-h-8 items-center gap-1 rounded-full border border-border bg-background px-2 text-xs text-muted-foreground hover:border-primary/30"
             }
           >

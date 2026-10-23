@@ -52,7 +52,7 @@ export function GroupTabChat({
                 {item.messageId ? (
                   <button
                     type="button"
-                    className="text-xs font-medium text-[#3156E8]"
+                    className="text-xs font-medium text-primary"
                     disabled={pending}
                     onClick={() => run(() => toggleGroupMessageReactionAction(item.messageId!))}
                   >
@@ -72,7 +72,7 @@ export function GroupTabChat({
         placeholder="Encourage your group…"
       />
       <Button
-        className="mt-2 bg-[#3156E8] hover:bg-[#2442C4]"
+        className="mt-2 bg-primary hover:bg-primary-dark"
         fullWidth
         disabled={pending || !chatDraft.trim()}
         onClick={() =>

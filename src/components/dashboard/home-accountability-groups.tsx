@@ -22,7 +22,7 @@ export function HomeAccountabilityGroups({
   if (!group) {
     return (
       <section aria-labelledby="home-groups-empty" className="px-1">
-        <h2 id="home-groups-empty" className="text-base font-semibold text-[#1B2440]">
+        <h2 id="home-groups-empty" className="text-base font-semibold text-foreground">
           Your accountability groups
         </h2>
         <Card className="mt-2 space-y-2">
@@ -52,18 +52,18 @@ export function HomeAccountabilityGroups({
   return (
     <section aria-labelledby="home-groups-heading" className="space-y-2">
       <div className="flex items-center justify-between px-1">
-        <h2 id="home-groups-heading" className="text-base font-semibold text-[#1B2440]">
+        <h2 id="home-groups-heading" className="text-base font-semibold text-foreground">
           Your accountability groups
         </h2>
-        <Link href="/groups" className="text-sm font-medium text-[#3156E8]">
+        <Link href="/groups" className="text-sm font-medium text-primary">
           View all
         </Link>
       </div>
 
       <Card className="space-y-3">
         <div>
-          <p className="font-semibold text-[#1B2440]">{group.name}</p>
-          <p className="text-xs font-medium text-[#3156E8]">
+          <p className="font-semibold text-foreground">{group.name}</p>
+          <p className="text-xs font-medium text-primary">
             {groupFocusLabel(group.focusType, group.focusCustomLabel)}
           </p>
           {group.sharedGoal ? (
@@ -88,12 +88,12 @@ export function HomeAccountabilityGroups({
                     displayName={m.displayName}
                     avatarUrl={m.avatarUrl}
                     size="sm"
-                    className={done ? "ring-2 ring-[#B8F4DA]" : undefined}
+                    className={done ? "ring-2 ring-accent" : undefined}
                   />
                   <span className="flex-1">
                     {firstName(m.displayName)}{" "}
                     {done ? (
-                      <span className="text-[#1B2440]">checked in ✓</span>
+                      <span className="text-foreground">checked in ✓</span>
                     ) : (
                       <span className="text-muted-foreground">pending</span>
                     )}
@@ -126,7 +126,7 @@ export function HomeAccountabilityGroups({
 
         <Link
           href="/groups"
-          className="flex min-h-11 w-full items-center justify-center rounded-2xl bg-[#3156E8] text-sm font-semibold text-white hover:bg-[#2442C4]"
+          className="flex min-h-11 w-full items-center justify-center rounded-2xl bg-primary text-sm font-semibold text-white hover:bg-primary-dark"
         >
           Open group
         </Link>

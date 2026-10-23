@@ -33,9 +33,9 @@ export function ChallengeAtAGlance({
     "Build consistent fitness habits with daily activities and support from your creator.";
 
   return (
-    <Card className="space-y-2 border-[#3156E8]/20 bg-[#3156E8]/5">
+    <Card className="space-y-2 border-primary/20 bg-primary/5">
       <div className="flex items-start justify-between gap-2">
-        <h2 className="text-sm font-semibold text-[#1B2440]">Your challenge at a glance</h2>
+        <h2 className="text-sm font-semibold text-foreground">Your challenge at a glance</h2>
         <button
           type="button"
           className="text-xs font-medium text-muted-foreground"
@@ -68,7 +68,7 @@ export function ChallengeAtAGlance({
       </ul>
       <button
         type="button"
-        className="text-xs font-semibold text-[#3156E8]"
+        className="text-xs font-semibold text-primary"
         onClick={onOpenAbout}
       >
         Full challenge details →

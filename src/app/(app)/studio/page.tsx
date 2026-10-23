@@ -10,6 +10,8 @@ import { Card } from "@/components/ui/card";
 import { requireApprovedCreator } from "@/lib/auth/profile";
 import { fetchCommunityBySlug, fetchOwnerCommunity } from "@/lib/data/communities";
 import { fetchCreatorStudioOverview } from "@/lib/data/creator-studio";
+import { PrimaryLink } from "@/components/ui/link-button";
+import { SectionHeader } from "@/components/ui/section-header";
 import Link from "next/link";
 
 export const metadata = { title: "Creator Studio" };
@@ -62,10 +64,8 @@ export default async function CreatorStudioPage() {
         linkClicks={overview.totalLinkClicks}
       />
 
-      <section aria-labelledby="current-challenge-heading">
-        <h2 id="current-challenge-heading" className="mb-2 text-base font-semibold">
-          Current challenge
-        </h2>
+      <section aria-labelledby="current-challenge-heading" className="section-stack">
+        <SectionHeader titleId="current-challenge-heading" title="Current challenge" />
         {overview.currentChallenge ? (
           <div className="space-y-2">
             <CurrentChallengeCard
@@ -84,29 +84,22 @@ export default async function CreatorStudioPage() {
         ) : (
           <Card className="border-dashed text-center">
             <p className="text-sm text-muted-foreground">No active challenge</p>
-            <Link
-              href="/studio/challenges/new"
-              className="mt-3 inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
-            >
+            <PrimaryLink href="/studio/challenges/new" className="mt-3 rounded-xl">
               Create challenge
-            </Link>
+            </PrimaryLink>
           </Card>
         )}
       </section>
 
       {overview.upcomingChallenge ? (
-        <section aria-labelledby="upcoming-challenge-heading">
-          <h2 id="upcoming-challenge-heading" className="mb-2 text-base font-semibold">
-            Upcoming challenge
-          </h2>
+        <section aria-labelledby="upcoming-challenge-heading" className="section-stack">
+          <SectionHeader titleId="upcoming-challenge-heading" title="Upcoming challenge" />
           <StudioUpcomingChallengeCard challenge={overview.upcomingChallenge} />
         </section>
       ) : null}
 
-      <section aria-labelledby="your-community-heading">
-        <h2 id="your-community-heading" className="mb-2 text-base font-semibold">
-          Your community
-        </h2>
+      <section aria-labelledby="your-community-heading" className="section-stack">
+        <SectionHeader titleId="your-community-heading" title="Your community" />
         <Card className="space-y-1">
           {overview.communityName ? (
             <>
@@ -134,19 +127,15 @@ export default async function CreatorStudioPage() {
       </section>
 
       {overview.growthByWeek.some((w) => w.count > 0) ? (
-        <section aria-labelledby="growth-heading">
-          <h2 id="growth-heading" className="mb-2 text-base font-semibold">
-            Follower growth
-          </h2>
+        <section aria-labelledby="growth-heading" className="section-stack">
+          <SectionHeader titleId="growth-heading" title="Follower growth" />
           <CommunityGrowthChart data={overview.growthByWeek} />
         </section>
       ) : null}
 
       {overview.recentActivity.length > 0 ? (
-        <section aria-labelledby="recent-activity-heading">
-          <h2 id="recent-activity-heading" className="mb-2 text-base font-semibold">
-            Recent community activity
-          </h2>
+        <section aria-labelledby="recent-activity-heading" className="section-stack">
+          <SectionHeader titleId="recent-activity-heading" title="Recent community activity" />
           <ul className="space-y-2">
             {overview.recentActivity.map((item) => (
               <li key={item.id}>
@@ -163,10 +152,8 @@ export default async function CreatorStudioPage() {
       ) : null}
 
       {community ? (
-        <section aria-labelledby="challenge-groups-heading">
-          <h2 id="challenge-groups-heading" className="mb-2 text-base font-semibold">
-            Message challenge groups
-          </h2>
+        <section aria-labelledby="challenge-groups-heading" className="section-stack">
+          <SectionHeader titleId="challenge-groups-heading" title="Message challenge groups" />
           <CreatorChallengeMessageHub
             creatorDisplayName={community.creatorDisplayName}
             challenges={community.challenges}

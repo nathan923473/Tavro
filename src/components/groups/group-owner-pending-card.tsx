@@ -44,7 +44,7 @@ export function GroupOwnerPendingCard({
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold uppercase tracking-wide text-primary">Action needed</p>
-          <h3 className="mt-0.5 text-base font-semibold text-[#1B2440]">{headline}</h3>
+          <h3 className="mt-0.5 text-base font-semibold text-foreground">{headline}</h3>
           <p className="mt-1 text-sm text-muted-foreground">
             Approve to add them to your group, or decline if it&apos;s not a fit.
           </p>

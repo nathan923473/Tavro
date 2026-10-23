@@ -68,7 +68,7 @@ export function GroupWeeklyCommitmentsBoard({
                   return (
                     <li
                       key={c.id}
-                      className={`rounded-xl border px-3 py-2 ${done ? "border-[#B8F4DA] bg-[#B8F4DA]/25" : "border-border bg-background"}`}
+                      className={`rounded-xl border px-3 py-2 ${done ? "border-accent bg-mint-subtle/25" : "border-border bg-background"}`}
                     >
                       <p className="text-sm font-medium">{c.title}</p>
                       <p className="text-xs text-muted-foreground">

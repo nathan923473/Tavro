@@ -3,16 +3,11 @@
 import { submitDailyCheckInAction } from "@/app/(app)/member/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { MoodPicker } from "@/components/ui/mood-picker";
+import { SectionHeader } from "@/components/ui/section-header";
 import type { DailyCheckInMood } from "@/types";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-
-const MOODS: { value: DailyCheckInMood; label: string }[] = [
-  { value: "rough", label: "Rough" },
-  { value: "okay", label: "Okay" },
-  { value: "good", label: "Good" },
-  { value: "great", label: "Great" },
-];
 
 const MOOD_LABEL: Record<DailyCheckInMood, string> = {
   rough: "A tough day",
@@ -56,12 +51,12 @@ export function HomeDailyCheckIn({
           Daily reflection
         </h2>
         <Card padding="sm" className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm font-medium text-[#1B2440]">
+          <p className="text-sm font-medium text-foreground">
             {mood ? `${MOOD_LABEL[mood]} ✓` : "Reflection saved ✓"}
           </p>
           <button
             type="button"
-            className="text-sm font-semibold text-[#3156E8]"
+            className="focus-ring rounded-lg text-sm font-semibold text-primary"
             onClick={() => setExpanded(true)}
           >
             Edit reflection
@@ -72,37 +67,24 @@ export function HomeDailyCheckIn({
   }
 
   return (
-    <section aria-labelledby="home-reflection-open-heading" className="px-1">
-      <h2 id="home-reflection-open-heading" className="mb-2 text-base font-semibold">
-        Daily reflection
-      </h2>
-      <Card className="space-y-3">
-        <p className="text-sm text-muted-foreground">
-          How are you feeling about your progress today?
-        </p>
+    <section aria-labelledby="home-reflection-open-heading" className="section-stack">
+      <SectionHeader
+        titleId="home-reflection-open-heading"
+        title="Daily reflection"
+        description="Private — only you see this."
+      />
+      <Card className="section-stack">
         {!expanded ? (
           <Button type="button" fullWidth disabled={pending} onClick={() => setExpanded(true)}>
             Check in
           </Button>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-2">
-              {MOODS.map((m) => (
-                <button
-                  key={m.value}
-                  type="button"
-                  disabled={pending}
-                  onClick={() => setSelectedMood(m.value)}
-                  className={`min-h-10 rounded-xl border px-3 text-sm font-medium ${
-                    selectedMood === m.value
-                      ? "border-[#3156E8] bg-[#3156E8]/10"
-                      : "border-border"
-                  }`}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
+            <MoodPicker
+              value={selectedMood}
+              onChange={setSelectedMood}
+              disabled={pending}
+            />
             <textarea
               rows={2}
               value={reflection}
