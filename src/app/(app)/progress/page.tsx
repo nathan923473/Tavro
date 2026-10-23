@@ -80,8 +80,7 @@ export default async function ProgressPage() {
         {userId ? (
           <>
             <ProgressHighlightsCard
-              consistencyPercent={consistency.percent}
-              consistencyMessage={consistency.message}
+              consistency={consistency}
               habitsActive={habits.filter((h) => !h.paused).length}
               joinedChallenges={joined}
               completedChallengeCount={completedChallenges.length}

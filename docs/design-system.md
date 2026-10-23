@@ -47,6 +47,17 @@ Use utilities: `text-brand`, `bg-brand-subtle`, `bg-mint-subtle`. Avoid hardcode
 - `SectionHeader` — section title + description
 - `MutedCallout` — short privacy / hint text
 - `MoodPicker` — shared daily mood control
+- `ProgressRing` — circular daily/weekly completion indicator
+- `EmptyState` — centred empty views with optional action
+
+## Surfaces
+
+| Class | Use |
+|--------|-----|
+| `surface-hero` | Primary branded hero (Home welcome, profile header) |
+| `surface-soft` | Secondary panels with light blur |
+| `surface-inset` | Recessed empty states |
+| `page-stack-compact` | Tighter vertical rhythm on Home |
 
 ## Motion
 

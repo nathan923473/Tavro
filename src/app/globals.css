@@ -85,6 +85,26 @@
     @apply rounded-2xl border border-border/70 bg-surface shadow-card;
   }
 
+  .surface-hero {
+    @apply rounded-2xl border border-primary/20 bg-primary shadow-elevated;
+  }
+
+  .surface-inset {
+    @apply rounded-2xl border border-border/50 bg-muted/35;
+  }
+
+  .surface-soft {
+    @apply rounded-2xl border border-border/60 bg-surface/80 backdrop-blur-sm;
+  }
+
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .page-stack-compact {
+    @apply flex flex-col gap-4;
+  }
+
   .text-brand {
     color: var(--primary);
   }

@@ -76,22 +76,19 @@ export function ChallengeSummaryCard({
     isChallengeUpcoming({ startAt: startAt ?? null, startDate });
 
   return (
-    <Card className="overflow-hidden p-0">
+    <Card padding="none" className="overflow-hidden transition-shadow duration-200 hover:shadow-elevated">
       <ChallengeCoverImage
         coverUrl={coverUrl}
         fallbackGradient={coverFallbackGradient}
         title={title}
+        aspectClassName="aspect-[5/4]"
         report={reportCover}
       />
 
-      <div className="space-y-2 p-4">
+      <div className="space-y-2.5 p-4">
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            {upcoming ? (
-              <Badge tone="warning" className="shrink-0 uppercase tracking-wide">
-                Upcoming
-              </Badge>
-            ) : null}
+            {upcoming ? <Badge tone="warning">Upcoming</Badge> : null}
           </div>
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
             {upcoming ? (

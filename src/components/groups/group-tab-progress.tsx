@@ -192,7 +192,7 @@ export function GroupTabProgress({
           </p>
         ) : null}
         <div className="rounded-xl border border-dashed border-border bg-surface/80 p-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="text-caption font-medium text-muted-foreground">
             Your custom group target
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
