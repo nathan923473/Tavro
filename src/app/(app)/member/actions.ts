@@ -570,8 +570,6 @@ export async function ensureChallengeHubAccessAction(challengeId: string) {
     challengeId,
     row.created_by as string,
   );
-  revalidatePath(`/challenges/${challengeId}`);
-  revalidatePath("/challenges");
   return { ok: true as const, reason: "host" as const, inviteSlug: row.invite_slug as string };
 }
 
