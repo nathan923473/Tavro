@@ -39,3 +39,21 @@ node scripts/measure-build.mjs > docs/performance-after.json
 ```
 
 Compare `clientChunksBytes` and top chunk sizes. For real-world TTFB/LCP, use Vercel Speed Insights or Chrome Lighthouse on production with auth.
+
+## Measured bundle (this run)
+
+| Metric | Before | After | Notes |
+|--------|--------|-------|--------|
+| Client `static/chunks` | **2.05 MB** | **2.06 MB** | ~flat — wins are mostly **server/data**, not JS removal |
+| Server `server/app` | **3.67 MB** | **3.71 MB** | ~flat — new loading route + cache helper |
+
+**Expected runtime gains (not captured by bundle size):**
+
+- **Challenges page:** O(all public challenges) → O(joined only); messages **N queries → 1**.
+- **Discover page:** no full challenge table fetch; joined IDs only.
+- **Progress page:** joined challenges only (same as Home).
+- **Repeat visits:** discover sections cached 120s at the edge/server.
+- **Mobile covers:** smaller image payloads via Next Image optimizer.
+- **Challenge hub navigation:** separate JS chunk loads after route transition (`dynamic()` + `loading.tsx`).
+
+Commit: **`6fca80b`** on Cloud Agent `main`.
