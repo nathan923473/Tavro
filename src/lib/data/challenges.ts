@@ -147,6 +147,43 @@ export async function fetchChallengesForUser(userId: string | null): Promise<{
   };
 }
 
+/** Joined challenge ids only — for Discover join badges (minimal query). */
+export async function fetchJoinedChallengeIds(userId: string): Promise<string[]> {
+  const supabase = await createClient();
+  const { data: memberships } = await supabase
+    .from("challenge_participants")
+    .select("challenge_id")
+    .eq("user_id", userId);
+
+  const ids = new Set((memberships ?? []).map((m) => m.challenge_id));
+
+  const { data: ownedRows } = await supabase
+    .from("challenges")
+    .select("id")
+    .eq("created_by", userId);
+
+  for (const row of ownedRows ?? []) {
+    ids.add(row.id);
+  }
+
+  return [...ids];
+}
+
+/** Joined challenges with gallery + focus areas — for My challenges cards. */
+export async function fetchJoinedChallengesForMember(userId: string): Promise<Challenge[]> {
+  const list = await fetchJoinedChallengesForHome(userId);
+  if (!list.length) return list;
+
+  const ids = list.map((c) => c.id);
+  const galleryDetailsMap = await fetchChallengeGalleryDetailsMap(ids);
+
+  return list.map((c) => ({
+    ...c,
+    galleryPhotos: (galleryDetailsMap[c.id] ?? []).map((p) => p.imageUrl),
+    galleryPhotoItems: galleryDetailsMap[c.id] ?? [],
+  }));
+}
+
 /** Joined challenges only — for Home (avoids loading every challenge + gallery). */
 export async function fetchJoinedChallengesForHome(
   userId: string,

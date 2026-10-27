@@ -10,7 +10,7 @@ import { MutedCallout } from "@/components/ui/muted-callout";
 import { SectionHeader } from "@/components/ui/section-header";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
-import { fetchChallengesForUser } from "@/lib/data/challenges";
+import { fetchJoinedChallengesForHome } from "@/lib/data/challenges";
 import { fetchUserAccountabilityGroups } from "@/lib/data/user-accountability-groups";
 import {
   fetchAllMemberGoals,
@@ -44,7 +44,7 @@ export default async function ProgressPage() {
         fetchMilestones(userId),
         fetchWeeklyConsistencySummary(userId),
         fetchWeeklyProgress(userId),
-        fetchChallengesForUser(userId),
+        fetchJoinedChallengesForHome(userId),
         fetchWeighIns(userId),
         fetchWeightSummary(userId),
         fetchWeightTrackingEnabled(userId),
@@ -55,14 +55,14 @@ export default async function ProgressPage() {
         [],
         { planned: 0, completed: 0, percent: 0, message: "" },
         [],
-        { mine: [], discover: [] },
+        [],
         [],
         null,
         true,
         [],
       ];
 
-  const joined = challenges.mine;
+  const joined = challenges;
   const completedChallenges = joined.filter((c) => c.progressPercent >= 100);
 
   return (

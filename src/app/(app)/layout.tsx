@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
+import { Suspense } from "react";
 
 export default async function MainAppLayout({
   children,
@@ -10,7 +11,13 @@ export default async function MainAppLayout({
   const { user } = await getCurrentUserProfile();
   return (
     <AppShell
-      notificationSlot={user ? <NotificationBell userId={user.id} /> : null}
+      notificationSlot={
+        user ? (
+          <Suspense fallback={null}>
+            <NotificationBell userId={user.id} />
+          </Suspense>
+        ) : null
+      }
     >
       {children}
     </AppShell>

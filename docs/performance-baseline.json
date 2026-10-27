@@ -1,0 +1,39 @@
+{
+  "measuredAt": "2026-10-27T06:39:28.371Z",
+  "clientChunksBytes": 2054458,
+  "serverAppBytes": 3666462,
+  "topClientChunks": [
+    {
+      "name": "8928-338cfa8a4cf19f8f.js",
+      "bytes": 248073
+    },
+    {
+      "name": "4bd1b696-8a4ab4fdf0ae305a.js",
+      "bytes": 201060
+    },
+    {
+      "name": "8652-d84658a72d558f19.js",
+      "bytes": 194351
+    },
+    {
+      "name": "framework-666c53740fc261c8.js",
+      "bytes": 189686
+    },
+    {
+      "name": "main-2443aedaab078443.js",
+      "bytes": 146102
+    },
+    {
+      "name": "polyfills-42372ed130431b0a.js",
+      "bytes": 112594
+    },
+    {
+      "name": "page-da2b2e8697ca958a.js",
+      "bytes": 90109
+    },
+    {
+      "name": "44530001-2f4e96388e27a973.js",
+      "bytes": 67465
+    }
+  ]
+}

@@ -10,6 +10,7 @@ export type UserProfile = {
   avatarUrl: string | null;
   referralCode: string | null;
   creatorStatus: "none" | "pending" | "approved" | "rejected";
+  timezone: string | null;
   isAdmin: boolean;
   role: AccountRole;
   creatorOnboardingCompleted: boolean;
@@ -33,7 +34,7 @@ export const getCurrentUserProfile = cache(async (): Promise<{
   }
 
   const fullSelect =
-    "id, display_name, avatar_url, referral_code, creator_status, is_admin, is_creator, creator_onboarding_completed_at";
+    "id, display_name, avatar_url, referral_code, creator_status, timezone, is_admin, is_creator, creator_onboarding_completed_at";
   const legacySelect =
     "id, display_name, referral_code, creator_status, is_admin, is_creator";
 
@@ -79,6 +80,8 @@ export const getCurrentUserProfile = cache(async (): Promise<{
       avatarUrl,
       referralCode: row.referral_code,
       creatorStatus,
+      timezone:
+        "timezone" in row && typeof row.timezone === "string" ? row.timezone : null,
       isAdmin: row.is_admin ?? false,
       role,
       creatorOnboardingCompleted: Boolean(

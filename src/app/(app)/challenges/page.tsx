@@ -2,11 +2,11 @@ import { ChallengesInteractive } from "@/components/challenges/challenges-intera
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { DiscoverInteractive } from "@/components/discover/discover-interactive";
-import { fetchChallengesForUser } from "@/lib/data/challenges";
-import { fetchDiscoverSections } from "@/lib/data/discover";
+import { fetchJoinedChallengesForMember } from "@/lib/data/challenges";
+import { fetchDiscoverSectionsCached } from "@/lib/data/discover-cached";
 import { fetchMemberGoalPreferences } from "@/lib/data/member-preferences";
 import { sortChallengesByMemberPreferences } from "@/lib/member/sort-challenges";
-import { fetchChallengeMessages } from "@/lib/data/messages";
+import { fetchChallengeMessagesForChallenges } from "@/lib/data/messages";
 import { MutedCallout } from "@/components/ui/muted-callout";
 import { SecondaryLink } from "@/components/ui/link-button";
 import { Sparkles } from "lucide-react";
@@ -23,9 +23,9 @@ export default async function ChallengesPage() {
     user?.email?.split("@")[0] ??
     "Member";
 
-  const [{ mine }, discoverSections, memberPrefs] = await Promise.all([
-    fetchChallengesForUser(userId),
-    fetchDiscoverSections(),
+  const [mine, discoverSections, memberPrefs] = await Promise.all([
+    userId ? fetchJoinedChallengesForMember(userId) : Promise.resolve([]),
+    fetchDiscoverSectionsCached(),
     userId
       ? fetchMemberGoalPreferences(userId)
       : Promise.resolve({ workTowards: null, growthFriction: null }),
@@ -38,10 +38,9 @@ export default async function ChallengesPage() {
     featured: sortChallengesByMemberPreferences(discoverSections.featured, memberPrefs),
   };
 
-  const challengeMessages: Record<string, Awaited<ReturnType<typeof fetchChallengeMessages>>> = {};
-  for (const c of mine) {
-    challengeMessages[c.id] = await fetchChallengeMessages(c.id);
-  }
+  const challengeMessages = userId
+    ? await fetchChallengeMessagesForChallenges(mine.map((c) => c.id))
+    : {};
 
   return (
     <div className="animate-fade-up">
