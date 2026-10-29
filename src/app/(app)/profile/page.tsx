@@ -2,6 +2,7 @@ import { ProfileHeroCard } from "@/components/profile/profile-hero-card";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
+import { RouteFallback } from "@/components/layout/route-fallback";
 import { AccountExperience } from "@/components/profile/account-experience";
 import { CreatorStudioProfileCard } from "@/components/profile/creator-studio-profile-card";
 import { AdminToolsCard } from "@/components/profile/admin-tools-card";
@@ -23,6 +24,7 @@ import { MemberGoalPreferencesCard } from "@/components/profile/member-goal-pref
 import { userReferralPath } from "@/lib/site-url";
 import Link from "next/link";
 import { BarChart3, Shield, Users } from "lucide-react";
+import { Suspense } from "react";
 
 export const metadata = { title: "Profile" };
 
@@ -32,12 +34,35 @@ type ProfilePageProps = {
 
 export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   const { error: profileError } = await searchParams;
+
+  return (
+    <div className="animate-fade-up">
+      {profileError === "admin_only" ? (
+        <p className="mx-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          That page is admin-only. If you should have access, set{" "}
+          <code className="text-xs">is_admin = true</code> on your profile in Supabase.
+        </p>
+      ) : null}
+      <Suspense
+        fallback={
+          <RouteFallback title="Profile" subtitle="Member or creator · one account" />
+        }
+      >
+        <ProfilePageContent />
+      </Suspense>
+    </div>
+  );
+}
+
+async function ProfilePageContent() {
   const { user, profile } = await getCurrentUserProfile();
   const referralCode = profile?.referralCode ?? "sign-in-for-code";
-  const goals = user ? await fetchMemberGoals(user.id) : [];
-  const memberPrefs = user
-    ? await fetchMemberGoalPreferences(user.id)
-    : { workTowards: null, growthFriction: null };
+  const [goals, memberPrefs] = await Promise.all([
+    user ? fetchMemberGoals(user.id) : Promise.resolve([]),
+    user
+      ? fetchMemberGoalPreferences(user.id)
+      : Promise.resolve({ workTowards: null, growthFriction: null }),
+  ]);
 
   let timezone: string | null = null;
   let auState: AuStateOrTerritory | null = null;
@@ -53,14 +78,8 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   }
 
   return (
-    <div className="animate-fade-up">
+    <>
       <PageHeader title="Profile" subtitle="Member or creator · one account" />
-      {profileError === "admin_only" ? (
-        <p className="mx-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-          That page is admin-only. If you should have access, set{" "}
-          <code className="text-xs">is_admin = true</code> on your profile in Supabase.
-        </p>
-      ) : null}
       {profile?.isAdmin ? (
         <div className="px-4">
           <Link
@@ -206,6 +225,6 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
 
         {user ? <DeleteAccountSection /> : null}
       </div>
-    </div>
+    </>
   );
 }

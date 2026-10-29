@@ -1,18 +1,13 @@
 import { AppShell } from "@/components/layout/app-shell";
-import { NotificationBell } from "@/components/notifications/notification-bell";
-import { getCurrentUserProfile } from "@/lib/auth/profile";
+import { NotificationBellSlot } from "@/components/notifications/notification-bell-slot";
 
-export default async function MainAppLayout({
+/** Sync layout: bottom nav stays mounted; notifications stream in separately. */
+export default function MainAppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { user } = await getCurrentUserProfile();
   return (
-    <AppShell
-      notificationSlot={user ? <NotificationBell userId={user.id} /> : null}
-    >
-      {children}
-    </AppShell>
+    <AppShell notificationSlot={<NotificationBellSlot />}>{children}</AppShell>
   );
 }

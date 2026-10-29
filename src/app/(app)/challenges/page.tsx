@@ -1,5 +1,6 @@
 import { ChallengesInteractive } from "@/components/challenges/challenges-interactive";
 import { PageHeader } from "@/components/layout/page-header";
+import { RouteFallback } from "@/components/layout/route-fallback";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { DiscoverInteractive } from "@/components/discover/discover-interactive";
 import { fetchChallengesForUser } from "@/lib/data/challenges";
@@ -10,12 +11,28 @@ import { fetchChallengeMessages } from "@/lib/data/messages";
 import { MutedCallout } from "@/components/ui/muted-callout";
 import { SecondaryLink } from "@/components/ui/link-button";
 import { Sparkles } from "lucide-react";
+import { Suspense } from "react";
 
 export const metadata = {
   title: "Challenges",
 };
 
-export default async function ChallengesPage() {
+export default function ChallengesPage() {
+  return (
+    <Suspense
+      fallback={
+        <RouteFallback
+          title="Challenges"
+          subtitle="Search free creator challenges · join in one tap"
+        />
+      }
+    >
+      <ChallengesPageContent />
+    </Suspense>
+  );
+}
+
+async function ChallengesPageContent() {
   const { user, profile } = await getCurrentUserProfile();
   const userId = user?.id ?? null;
   const viewerName =
@@ -38,10 +55,10 @@ export default async function ChallengesPage() {
     featured: sortChallengesByMemberPreferences(discoverSections.featured, memberPrefs),
   };
 
-  const challengeMessages: Record<string, Awaited<ReturnType<typeof fetchChallengeMessages>>> = {};
-  for (const c of mine) {
-    challengeMessages[c.id] = await fetchChallengeMessages(c.id);
-  }
+  const messageEntries = await Promise.all(
+    mine.map(async (c) => [c.id, await fetchChallengeMessages(c.id)] as const),
+  );
+  const challengeMessages = Object.fromEntries(messageEntries);
 
   return (
     <div className="animate-fade-up">

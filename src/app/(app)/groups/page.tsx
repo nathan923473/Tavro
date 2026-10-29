@@ -1,5 +1,6 @@
 import { GroupsInteractive } from "@/components/groups/groups-interactive";
 import { PageHeader } from "@/components/layout/page-header";
+import { RouteFallback } from "@/components/layout/route-fallback";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import {
   fetchDiscoveryEligibility,
@@ -12,10 +13,26 @@ import {
   ACCOUNTABILITY_GROUP_PLURAL,
   ACCOUNTABILITY_GROUP_SIZE_LABEL,
 } from "@/lib/copy/accountability-groups";
+import { Suspense } from "react";
 
 export const metadata = { title: "Private accountability groups" };
 
-export default async function GroupsPage() {
+export default function GroupsPage() {
+  return (
+    <Suspense
+      fallback={
+        <RouteFallback
+          title="Private accountability groups"
+          subtitle={`Member-only ${ACCOUNTABILITY_GROUP_PLURAL} · ${ACCOUNTABILITY_GROUP_SIZE_LABEL.toLowerCase()} · not visible to creators`}
+        />
+      }
+    >
+      <GroupsPageContent />
+    </Suspense>
+  );
+}
+
+async function GroupsPageContent() {
   const { user } = await getCurrentUserProfile();
   const userId = user?.id ?? null;
   const [{ group, feed, pendingJoin, existingGroupBlocked }, viewerHabits] = userId

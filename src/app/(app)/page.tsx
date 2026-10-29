@@ -7,6 +7,7 @@ import { TodaysGoals } from "@/components/dashboard/todays-goals";
 import { fetchMemberGoalPreferences } from "@/lib/data/member-preferences";
 import { WeeklyConsistencyHome } from "@/components/dashboard/weekly-consistency-home";
 import { PageHeader } from "@/components/layout/page-header";
+import { RouteFallback } from "@/components/layout/route-fallback";
 import Link from "next/link";
 import { LayoutDashboard } from "lucide-react";
 import { HomeInstallBanner } from "@/components/pwa/home-install-banner";
@@ -19,6 +20,7 @@ import { resolveHomePrimaryAction } from "@/lib/home/primary-action";
 import { createClient } from "@/lib/supabase/server";
 import { challengePhaseFromChallenge } from "@/lib/timezone/challenge-fields";
 import { DEFAULT_FALLBACK_TIMEZONE } from "@/lib/timezone/constants";
+import { Suspense } from "react";
 
 const emptyDashboard = {
   goals: [],
@@ -45,7 +47,22 @@ function challengePhase(
   return challengePhaseFromChallenge(c);
 }
 
-export default async function HomePage() {
+export default function HomePage() {
+  return (
+    <Suspense
+      fallback={
+        <RouteFallback
+          title="Today"
+          subtitle="Habits, challenges & your crew"
+        />
+      }
+    >
+      <HomePageContent />
+    </Suspense>
+  );
+}
+
+async function HomePageContent() {
   const { user, profile } = await getCurrentUserProfile();
   const userId = user?.id ?? null;
   const firstName =
