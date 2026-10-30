@@ -1,9 +1,9 @@
-import { unstable_cache } from "next/cache";
 import { fetchDiscoverSections } from "@/lib/data/discover";
 
-/** Public discover lists — safe to cache (no user-specific rows). */
-export const fetchDiscoverSectionsCached = unstable_cache(
-  () => fetchDiscoverSections(),
-  ["tavro-discover-sections"],
-  { revalidate: 120, tags: ["discover-sections"] },
-);
+/**
+ * Discover sections (public data). Intentionally not wrapped in unstable_cache —
+ * cached callbacks cannot use cookies()/createClient() safely on Vercel.
+ */
+export async function fetchDiscoverSectionsCached() {
+  return fetchDiscoverSections();
+}

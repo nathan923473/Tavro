@@ -146,21 +146,30 @@ export async function fetchDiscoverSections(): Promise<{
   creators: DiscoverCreator[];
 }> {
   const supabase = await createClient();
-  const { data: rows } = await supabase
-    .from("challenges")
-    .select(
-      `
+  const select = `
       id, title, short_description, invite_slug, start_date, end_date,
       start_at, end_at, challenge_timezone, cover_url, created_by,
       community:creator_communities ( slug, community_name, avatar_url ),
       creator:profiles!challenges_created_by_fkey ( display_name, creator_status, avatar_url ),
       participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count )
-    `,
-    )
+    `;
+
+  let { data: rows, error } = await supabase
+    .from("challenges")
+    .select(select)
     .eq("visibility", "public")
     .eq("publish_status", "published")
     .order("start_date", { ascending: true })
     .limit(40);
+
+  if (error && /publish_status|schema cache/i.test(error.message)) {
+    ({ data: rows } = await supabase
+      .from("challenges")
+      .select(select)
+      .eq("visibility", "public")
+      .order("start_date", { ascending: true })
+      .limit(40));
+  }
 
   const all: DiscoverChallenge[] = (rows ?? [])
     .filter((r) => unwrapOne(r.creator)?.creator_status === "approved")

@@ -44,7 +44,7 @@ export const getCurrentUserProfile = cache(async (): Promise<{
     .eq("id", user.id)
     .maybeSingle();
 
-  if (error && /avatar_url|creator_onboarding|schema cache/i.test(error.message)) {
+  if (error && /avatar_url|creator_onboarding|timezone|schema cache/i.test(error.message)) {
     ({ data: row } = await supabase
       .from("profiles")
       .select(legacySelect)
