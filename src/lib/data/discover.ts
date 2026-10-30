@@ -1,4 +1,5 @@
 import { CHALLENGE_PARTICIPANTS_EMBED, unwrapOne } from "@/lib/data/relations";
+import { createPublicReadClient } from "@/lib/supabase/public-read";
 import { createClient } from "@/lib/supabase/server";
 import { resolveCreatorAvatarUrl } from "@/lib/creator-avatar";
 import { challengePhaseFromSchedule } from "@/lib/timezone/challenge-fields";
@@ -138,8 +139,8 @@ export async function fetchDiscoverSections(): Promise<{
   featured: DiscoverChallenge[];
   creators: DiscoverCreator[];
 }> {
-  const supabase = await createClient();
-  const select = `
+  const supabase = createPublicReadClient();
+  const challengeSelect = `
       id, title, short_description, invite_slug, start_date, end_date,
       start_at, end_at, challenge_timezone, cover_url, created_by,
       community:creator_communities ( slug, community_name, avatar_url ),
@@ -147,24 +148,42 @@ export async function fetchDiscoverSections(): Promise<{
       participants:${CHALLENGE_PARTICIPANTS_EMBED} ( count )
     `;
 
-  let { data: rows, error } = await supabase
-    .from("challenges")
-    .select(select)
-    .eq("visibility", "public")
-    .eq("publish_status", "published")
-    .order("start_date", { ascending: true })
-    .limit(40);
+  const communitySelect = `
+      id, slug, community_name, bio, avatar_url, member_count_cache,
+      owner:profiles!creator_communities_owner_id_fkey ( display_name, creator_status, avatar_url )
+    `;
 
-  if (error && /publish_status|schema cache/i.test(error.message)) {
-    ({ data: rows } = await supabase
+  async function loadPublishedChallenges() {
+    let { data: rows, error } = await supabase
       .from("challenges")
-      .select(select)
+      .select(challengeSelect)
       .eq("visibility", "public")
+      .eq("publish_status", "published")
       .order("start_date", { ascending: true })
-      .limit(40));
+      .limit(40);
+
+    if (error && /publish_status|schema cache/i.test(error.message)) {
+      ({ data: rows } = await supabase
+        .from("challenges")
+        .select(challengeSelect)
+        .eq("visibility", "public")
+        .order("start_date", { ascending: true })
+        .limit(40));
+    }
+    return rows ?? [];
   }
 
-  const all: DiscoverChallenge[] = (rows ?? [])
+  const [rows, communityRows] = await Promise.all([
+    loadPublishedChallenges(),
+    supabase
+      .from("creator_communities")
+      .select(communitySelect)
+      .order("member_count_cache", { ascending: false })
+      .limit(12)
+      .then((r) => r.data ?? []),
+  ]);
+
+  const all: DiscoverChallenge[] = rows
     .filter((r) => unwrapOne(r.creator)?.creator_status === "approved")
     .map((r) => {
       const community = unwrapOne(r.community);
@@ -197,18 +216,7 @@ export async function fetchDiscoverSections(): Promise<{
   const upcoming = all.filter((c) => c.timeline === "upcoming");
   const featured = [...active, ...upcoming].slice(0, 6);
 
-  const { data: communityRows } = await supabase
-    .from("creator_communities")
-    .select(
-      `
-      id, slug, community_name, bio, avatar_url, member_count_cache,
-      owner:profiles!creator_communities_owner_id_fkey ( display_name, creator_status, avatar_url )
-    `,
-    )
-    .order("member_count_cache", { ascending: false })
-    .limit(12);
-
-  const creators: DiscoverCreator[] = (communityRows ?? [])
+  const creators: DiscoverCreator[] = communityRows
     .filter((c) => unwrapOne(c.owner)?.creator_status === "approved")
     .map((c) => ({
       id: c.id,

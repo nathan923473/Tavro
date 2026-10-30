@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import type { AuStateOrTerritory } from "@/lib/timezone/constants";
 
 export type AccountRole = "guest" | "member" | "creator_pending" | "creator" | "admin";
 
@@ -11,6 +12,7 @@ export type UserProfile = {
   referralCode: string | null;
   creatorStatus: "none" | "pending" | "approved" | "rejected";
   timezone: string | null;
+  auStateOrTerritory: AuStateOrTerritory | null;
   isAdmin: boolean;
   role: AccountRole;
   creatorOnboardingCompleted: boolean;
@@ -34,9 +36,9 @@ export const getCurrentUserProfile = cache(async (): Promise<{
   }
 
   const fullSelect =
-    "id, display_name, avatar_url, referral_code, creator_status, timezone, is_admin, is_creator, creator_onboarding_completed_at";
+    "id, display_name, avatar_url, referral_code, creator_status, timezone, au_state_or_territory, is_admin, is_creator, creator_onboarding_completed_at";
   const legacySelect =
-    "id, display_name, referral_code, creator_status, is_admin, is_creator";
+    "id, display_name, referral_code, creator_status, timezone, is_admin, is_creator";
 
   let { data: row, error } = await supabase
     .from("profiles")
@@ -44,7 +46,7 @@ export const getCurrentUserProfile = cache(async (): Promise<{
     .eq("id", user.id)
     .maybeSingle();
 
-  if (error && /avatar_url|creator_onboarding|timezone|schema cache/i.test(error.message)) {
+  if (error && /avatar_url|creator_onboarding|timezone|au_state|schema cache/i.test(error.message)) {
     ({ data: row } = await supabase
       .from("profiles")
       .select(legacySelect)
@@ -82,6 +84,11 @@ export const getCurrentUserProfile = cache(async (): Promise<{
       creatorStatus,
       timezone:
         "timezone" in row && typeof row.timezone === "string" ? row.timezone : null,
+      auStateOrTerritory:
+        "au_state_or_territory" in row &&
+        typeof row.au_state_or_territory === "string"
+          ? (row.au_state_or_territory as AuStateOrTerritory)
+          : null,
       isAdmin: row.is_admin ?? false,
       role,
       creatorOnboardingCompleted: Boolean(

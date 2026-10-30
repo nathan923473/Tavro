@@ -35,14 +35,22 @@ export default function GroupsPage() {
 async function GroupsPageContent() {
   const { user } = await getCurrentUserProfile();
   const userId = user?.id ?? null;
-  const [{ group, feed, pendingJoin, existingGroupBlocked }, viewerHabits] = userId
-    ? await Promise.all([fetchUserGroup(userId), fetchAllMemberGoals(userId)])
+  const [
+    { group, feed, pendingJoin, existingGroupBlocked },
+    viewerHabits,
+    discoveryEligible,
+  ] = userId
+    ? await Promise.all([
+        fetchUserGroup(userId),
+        fetchAllMemberGoals(userId),
+        fetchDiscoveryEligibility(userId).then((r) => r.eligible),
+      ])
     : [
         { group: null, feed: [], pendingJoin: null, existingGroupBlocked: false },
         [] as Awaited<ReturnType<typeof fetchAllMemberGoals>>,
+        false,
       ];
 
-  const discoveryEligible = userId ? (await fetchDiscoveryEligibility(userId)).eligible : false;
   const discoverableGroups =
     userId && !group && !pendingJoin && discoveryEligible
       ? await fetchDiscoverableGroups({})

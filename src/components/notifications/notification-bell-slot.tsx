@@ -1,4 +1,4 @@
-import { NotificationBell } from "@/components/notifications/notification-bell";
+import { NotificationBellClient } from "@/components/notifications/notification-bell-client";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { Suspense } from "react";
 
@@ -10,7 +10,7 @@ function NotificationBellPlaceholder() {
 async function AuthedNotificationBell() {
   const { user } = await getCurrentUserProfile();
   if (!user) return null;
-  return <NotificationBell userId={user.id} />;
+  return <NotificationBellClient userId={user.id} />;
 }
 
 /** Streams the unread count so the app shell can paint without waiting on auth/DB. */

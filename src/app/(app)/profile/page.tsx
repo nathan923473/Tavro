@@ -10,8 +10,6 @@ import { DisplayNameCard } from "@/components/profile/display-name-card";
 import { CreatorMediaCard } from "@/components/profile/creator-media-card";
 import { NotificationPreferencesCard } from "@/components/profile/notification-preferences-card";
 import { TimezoneSettingsCard } from "@/components/profile/timezone-settings-card";
-import { createClient } from "@/lib/supabase/server";
-import type { AuStateOrTerritory } from "@/lib/timezone/constants";
 import { ProfilePhotoCard } from "@/components/profile/profile-photo-card";
 import { CopyLinkButton } from "@/components/share/copy-link-button";
 import { AdminSupabaseDiagnostics } from "@/components/admin/admin-supabase-diagnostics";
@@ -64,18 +62,8 @@ async function ProfilePageContent() {
       : Promise.resolve({ workTowards: null, growthFriction: null }),
   ]);
 
-  let timezone: string | null = null;
-  let auState: AuStateOrTerritory | null = null;
-  if (user) {
-    const supabase = await createClient();
-    const { data: tzRow } = await supabase
-      .from("profiles")
-      .select("timezone, au_state_or_territory")
-      .eq("id", user.id)
-      .maybeSingle();
-    timezone = tzRow?.timezone ?? null;
-    auState = (tzRow?.au_state_or_territory as AuStateOrTerritory | null) ?? null;
-  }
+  const timezone = profile?.timezone ?? null;
+  const auState = profile?.auStateOrTerritory ?? null;
 
   return (
     <>
