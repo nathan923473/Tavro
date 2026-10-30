@@ -17,7 +17,6 @@ import { fetchJoinedChallengesForHome } from "@/lib/data/challenges";
 import { fetchUserGroup } from "@/lib/data/groups";
 import { fetchHomeDashboardBundle } from "@/lib/data/member";
 import { resolveHomePrimaryAction } from "@/lib/home/primary-action";
-import { createClient } from "@/lib/supabase/server";
 import { challengePhaseFromChallenge } from "@/lib/timezone/challenge-fields";
 import { DEFAULT_FALLBACK_TIMEZONE } from "@/lib/timezone/constants";
 import { Suspense } from "react";
@@ -70,16 +69,7 @@ async function HomePageContent() {
     user?.email?.split("@")[0] ??
     "there";
 
-  let timezone: string | null = DEFAULT_FALLBACK_TIMEZONE;
-  if (userId) {
-    const supabase = await createClient();
-    const { data: tzRow } = await supabase
-      .from("profiles")
-      .select("timezone")
-      .eq("id", userId)
-      .maybeSingle();
-    if (tzRow?.timezone) timezone = tzRow.timezone as string;
-  }
+  const timezone = profile?.timezone ?? DEFAULT_FALLBACK_TIMEZONE;
 
   const [dashboard, joinedChallenges, groupData, memberPrefs] = await Promise.all([
     userId ? fetchHomeDashboardBundle(userId) : Promise.resolve(emptyDashboard),

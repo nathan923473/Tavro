@@ -880,6 +880,14 @@ export async function logChallengeActivityAction(challengeId: string) {
   revalidatePath("/challenges");
 }
 
+export async function loadChallengeMessagesAction(
+  challengeId: string,
+): Promise<Awaited<ReturnType<typeof import("@/lib/data/messages").fetchChallengeMessages>>> {
+  await requireUserId();
+  const { fetchChallengeMessages } = await import("@/lib/data/messages");
+  return fetchChallengeMessages(challengeId);
+}
+
 export async function postChallengeMessageAction(input: {
   challengeId: string;
   body: string;

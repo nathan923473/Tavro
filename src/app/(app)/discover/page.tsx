@@ -1,8 +1,8 @@
 import { DiscoverInteractive } from "@/components/discover/discover-interactive";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
-import { fetchChallengesForUser } from "@/lib/data/challenges";
-import { fetchDiscoverSections } from "@/lib/data/discover";
+import { fetchJoinedChallengeIds } from "@/lib/data/challenges";
+import { fetchDiscoverSectionsCached } from "@/lib/data/discover-cached";
 import { fetchMemberGoalPreferences } from "@/lib/data/member-preferences";
 import { sortChallengesByMemberPreferences } from "@/lib/member/sort-challenges";
 
@@ -10,9 +10,9 @@ export const metadata = { title: "Discover" };
 
 export default async function DiscoverPage() {
   const { user } = await getCurrentUserProfile();
-  const [sections, joinedMine, memberPrefs] = await Promise.all([
-    fetchDiscoverSections(),
-    user?.id ? fetchChallengesForUser(user.id) : Promise.resolve({ mine: [], discover: [] }),
+  const [sections, joinedIds, memberPrefs] = await Promise.all([
+    fetchDiscoverSectionsCached(),
+    user?.id ? fetchJoinedChallengeIds(user.id) : Promise.resolve([]),
     user?.id
       ? fetchMemberGoalPreferences(user.id)
       : Promise.resolve({ workTowards: null, growthFriction: null }),
@@ -35,7 +35,7 @@ export default async function DiscoverPage() {
         <DiscoverInteractive
           initial={personalized}
           viewerUserId={user?.id ?? null}
-          joinedChallengeIds={joinedMine.mine.map((c) => c.id)}
+          joinedChallengeIds={joinedIds}
         />
       </div>
     </div>

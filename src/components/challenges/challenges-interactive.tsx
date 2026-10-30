@@ -1,7 +1,6 @@
 "use client";
 
 import { ChallengeCard } from "@/components/challenges/challenge-card";
-import type { ChallengeChatMessage } from "@/lib/challenge-chat";
 import type { Challenge } from "@/types";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Heart } from "lucide-react";
@@ -11,7 +10,6 @@ type ChallengesInteractiveProps = {
   viewerName: string;
   loggedIn: boolean;
   viewerUserId?: string | null;
-  challengeMessages: Record<string, ChallengeChatMessage[]>;
 };
 
 export function ChallengesInteractive({
@@ -19,7 +17,6 @@ export function ChallengesInteractive({
   viewerName,
   loggedIn,
   viewerUserId = null,
-  challengeMessages,
 }: ChallengesInteractiveProps) {
   return (
     <>
@@ -48,7 +45,7 @@ export function ChallengesInteractive({
                   viewerRole="member"
                   loggedIn={loggedIn}
                   viewerUserId={viewerUserId}
-                  messages={challengeMessages[challenge.id] ?? []}
+                  deferChatLoad
                 />
               </li>
             ))}

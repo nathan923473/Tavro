@@ -1,5 +1,6 @@
 import { ChallengeHubAccessDenied } from "@/components/challenges/challenge-hub-access-denied";
-import { ChallengeParticipantHub } from "@/components/challenges/participant/challenge-participant-hub";
+import dynamic from "next/dynamic";
+import { PageSkeleton } from "@/components/ui/skeleton";
 import { BackButton } from "@/components/layout/back-button";
 import { ensureChallengeHubAccessAction } from "@/app/(app)/member/actions";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
@@ -8,7 +9,14 @@ import { fetchChallengeParticipantHub } from "@/lib/data/challenge-participant-h
 import { fetchUserGroup } from "@/lib/data/groups";
 import { fetchWeeklyConsistencySummary } from "@/lib/data/member";
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
+
+const ChallengeParticipantHub = dynamic(
+  () =>
+    import("@/components/challenges/participant/challenge-participant-hub").then(
+      (m) => m.ChallengeParticipantHub,
+    ),
+  { loading: () => <PageSkeleton /> },
+);
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -29,6 +37,7 @@ export default async function JoinedChallengePage({ params }: Props) {
     redirect(`/login?next=${encodeURIComponent(`/challenges/${id}`)}`);
   }
 
+  // Sequential on purpose: host auto-join must finish before hub fetch (see e9fface).
   const access = await ensureChallengeHubAccessAction(id);
   let hub = await fetchChallengeParticipantHub(id, user.id);
   if (!hub && access.ok) {
@@ -56,12 +65,10 @@ export default async function JoinedChallengePage({ params }: Props) {
     );
   }
 
-  const feedbackInitial =
+  const [feedbackInitial, groupState, consistency] = await Promise.all([
     hub.phase === "completed" && !hub.isOwner
-      ? await fetchMyChallengeFeedback(id, user.id)
-      : null;
-
-  const [groupState, consistency] = await Promise.all([
+      ? fetchMyChallengeFeedback(id, user.id)
+      : Promise.resolve(null),
     fetchUserGroup(user.id),
     fetchWeeklyConsistencySummary(user.id),
   ]);
@@ -72,17 +79,15 @@ export default async function JoinedChallengePage({ params }: Props) {
         <BackButton fallbackHref="/challenges" />
       </div>
       <div className="px-4 py-4">
-        <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
-          <ChallengeParticipantHub
-            hub={hub}
-            viewerUserId={user.id}
-            feedbackInitial={feedbackInitial}
-            hasAccountabilityGroup={Boolean(groupState.group)}
-            habitConsistencyPercent={
-              consistency.planned > 0 ? consistency.percent : null
-            }
-          />
-        </Suspense>
+        <ChallengeParticipantHub
+          hub={hub}
+          viewerUserId={user.id}
+          feedbackInitial={feedbackInitial}
+          hasAccountabilityGroup={Boolean(groupState.group)}
+          habitConsistencyPercent={
+            consistency.planned > 0 ? consistency.percent : null
+          }
+        />
       </div>
     </div>
   );

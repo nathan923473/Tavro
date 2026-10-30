@@ -21,6 +21,7 @@ const nextConfig: NextConfig = {
   // Soft-nav client cache for dynamic tabs (default dynamic=0 forces a full RSC refetch).
   // Mutations already revalidatePath / router.refresh so progress stays correct after writes.
   experimental: {
+    optimizePackageImports: ["lucide-react"],
     staleTimes: {
       dynamic: 20,
       static: 180,

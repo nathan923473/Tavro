@@ -32,6 +32,8 @@ type ChallengeCardProps = {
   viewerName: string;
   viewerRole: "creator" | "member";
   messages?: ChallengeChatMessage[];
+  /** Defer chat fetch until client mount (Challenges list page). */
+  deferChatLoad?: boolean;
   loggedIn: boolean;
   viewerUserId?: string | null;
 };
@@ -42,6 +44,7 @@ export function ChallengeCard({
   viewerName,
   viewerRole,
   messages = [],
+  deferChatLoad = false,
   loggedIn,
   viewerUserId = null,
 }: ChallengeCardProps) {
@@ -218,7 +221,8 @@ export function ChallengeCard({
             viewerName={viewerName}
             viewerRole={viewerRole}
             canPost={loggedIn}
-            messages={messages}
+            messages={deferChatLoad ? undefined : messages}
+            loadMessagesOnMount={deferChatLoad}
             compact
             viewerUserId={viewerUserId}
           />

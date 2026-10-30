@@ -3,11 +3,10 @@ import { PageHeader } from "@/components/layout/page-header";
 import { RouteFallback } from "@/components/layout/route-fallback";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { DiscoverInteractive } from "@/components/discover/discover-interactive";
-import { fetchChallengesForUser } from "@/lib/data/challenges";
-import { fetchDiscoverSections } from "@/lib/data/discover";
+import { fetchJoinedChallengesForMember } from "@/lib/data/challenges";
+import { fetchDiscoverSectionsCached } from "@/lib/data/discover-cached";
 import { fetchMemberGoalPreferences } from "@/lib/data/member-preferences";
 import { sortChallengesByMemberPreferences } from "@/lib/member/sort-challenges";
-import { fetchChallengeMessages } from "@/lib/data/messages";
 import { MutedCallout } from "@/components/ui/muted-callout";
 import { SecondaryLink } from "@/components/ui/link-button";
 import { Sparkles } from "lucide-react";
@@ -40,9 +39,9 @@ async function ChallengesPageContent() {
     user?.email?.split("@")[0] ??
     "Member";
 
-  const [{ mine }, discoverSections, memberPrefs] = await Promise.all([
-    fetchChallengesForUser(userId),
-    fetchDiscoverSections(),
+  const [mine, discoverSections, memberPrefs] = await Promise.all([
+    userId ? fetchJoinedChallengesForMember(userId) : Promise.resolve([]),
+    fetchDiscoverSectionsCached(),
     userId
       ? fetchMemberGoalPreferences(userId)
       : Promise.resolve({ workTowards: null, growthFriction: null }),
@@ -54,11 +53,6 @@ async function ChallengesPageContent() {
     upcoming: sortChallengesByMemberPreferences(discoverSections.upcoming, memberPrefs),
     featured: sortChallengesByMemberPreferences(discoverSections.featured, memberPrefs),
   };
-
-  const messageEntries = await Promise.all(
-    mine.map(async (c) => [c.id, await fetchChallengeMessages(c.id)] as const),
-  );
-  const challengeMessages = Object.fromEntries(messageEntries);
 
   return (
     <div className="animate-fade-up">
@@ -91,7 +85,6 @@ async function ChallengesPageContent() {
           viewerName={viewerName}
           loggedIn={Boolean(userId)}
           viewerUserId={userId}
-          challengeMessages={challengeMessages}
         />
       </div>
     </div>
