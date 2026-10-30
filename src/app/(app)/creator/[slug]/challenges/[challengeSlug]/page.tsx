@@ -6,6 +6,7 @@ import {
   landingCanonicalPath,
 } from "@/lib/data/challenge-landing";
 import { challengeLandingMetadata } from "@/lib/seo/challenge-open-graph";
+import { challengePhaseFromChallenge } from "@/lib/timezone/challenge-fields";
 import { notFound, redirect } from "next/navigation";
 
 type Props = {
@@ -44,10 +45,11 @@ export default async function CreatorChallengePublicPage({ params }: Props) {
   }
 
   if (user && data.joined) {
-    if (!data.onboardingCompleted) {
-      redirect(`/join/${challengeSlug}/start`);
+    const upcoming = challengePhaseFromChallenge(data.challenge) === "upcoming";
+    if (upcoming || data.onboardingCompleted) {
+      redirect(`/challenges/${data.challenge.id}`);
     }
-    redirect(`/challenges/${data.challenge.id}`);
+    redirect(`/join/${challengeSlug}/start`);
   }
 
   const canonicalPath = landingCanonicalPath(data);

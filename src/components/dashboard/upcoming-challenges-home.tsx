@@ -1,26 +1,14 @@
 import { ChallengeDateRange } from "@/components/challenges/challenge-date-range";
 import { ChallengeStartCountdown } from "@/components/challenges/challenge-start-countdown";
 import { Card } from "@/components/ui/card";
-import { challengePhaseFromInstants } from "@/lib/timezone/challenge-calendar";
-import { resolveChallengeEndAt, resolveChallengeStartAt } from "@/lib/timezone/challenge-fields";
+import { challengePhaseFromChallenge } from "@/lib/timezone/challenge-fields";
 import type { Challenge } from "@/types";
 import Link from "next/link";
 
 export function UpcomingChallengesHome({ challenges }: { challenges: Challenge[] }) {
-  const upcoming = challenges.filter((c) => {
-    if (!c.startAt || !c.endAt) return c.startDate > new Date().toISOString().slice(0, 10);
-    const start = resolveChallengeStartAt({
-      start_date: c.startDate,
-      start_at: c.startAt,
-      challenge_timezone: c.challengeTimezone ?? null,
-    });
-    const end = resolveChallengeEndAt({
-      end_date: c.endDate,
-      end_at: c.endAt,
-      challenge_timezone: c.challengeTimezone ?? null,
-    });
-    return challengePhaseFromInstants(start, end) === "upcoming";
-  });
+  const upcoming = challenges.filter(
+    (c) => challengePhaseFromChallenge(c) === "upcoming",
+  );
 
   if (!upcoming.length) return null;
 
@@ -51,7 +39,7 @@ export function UpcomingChallengesHome({ challenges }: { challenges: Challenge[]
                 href={`/challenges/${c.id}`}
                 className="flex min-h-10 items-center justify-center rounded-xl border border-border text-sm font-semibold"
               >
-                View preparation
+                Open challenge
               </Link>
             </Card>
           </li>

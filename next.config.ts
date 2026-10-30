@@ -17,8 +17,14 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  // Soft-nav client cache for dynamic tabs (default dynamic=0 forces a full RSC refetch).
+  // Mutations already revalidatePath / router.refresh so progress stays correct after writes.
   experimental: {
     optimizePackageImports: ["lucide-react"],
+    staleTimes: {
+      dynamic: 20,
+      static: 180,
+    },
   },
   allowedDevOrigins: ["127.0.0.1", "localhost", "*.trycloudflare.com"],
   images: {

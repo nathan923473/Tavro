@@ -20,13 +20,16 @@
     "stop:dev": "node scripts/stop-dev.mjs",
     "fresh": "node scripts/stop-dev.mjs && next dev -p 3000 -H 0.0.0.0 --turbopack",
     "test:timezone": "node --test --experimental-strip-types scripts/timezone.test.mjs",
+    "test:challenge-phase": "node --experimental-strip-types --import ./scripts/register-src-alias.mjs --test scripts/challenge-phase.test.mjs",
     "test:challenge-lifecycle": "node --test scripts/challenge-lifecycle.test.mjs",
     "test:founder-analytics": "node --test scripts/founder-analytics.test.mjs",
     "test:creator-display": "node --test --experimental-strip-types scripts/creator-display-name.test.mjs",
     "test:account-deletion": "node --test --experimental-strip-types scripts/account-deletion.test.mjs",
     "lint": "eslint",
     "icons": "node scripts/generate-icons.mjs",
-    "postinstall": "node scripts/generate-icons.mjs"
+    "postinstall": "node scripts/generate-icons.mjs",
+    "measure:nav": "node scripts/measure-nav.mjs",
+    "measure:soft-nav": "node scripts/measure-soft-nav.mjs"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
@@ -48,6 +51,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
+    "playwright": "^1.55.0",
     "sharp": "^0.35.5",
     "tailwindcss": "^4",
     "typescript": "^5"

@@ -1,14 +1,6 @@
 import { ChallengeHubAccessDenied } from "@/components/challenges/challenge-hub-access-denied";
 import dynamic from "next/dynamic";
 import { PageSkeleton } from "@/components/ui/skeleton";
-
-const ChallengeParticipantHub = dynamic(
-  () =>
-    import("@/components/challenges/participant/challenge-participant-hub").then(
-      (m) => m.ChallengeParticipantHub,
-    ),
-  { loading: () => <PageSkeleton /> },
-);
 import { BackButton } from "@/components/layout/back-button";
 import { ensureChallengeHubAccessAction } from "@/app/(app)/member/actions";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
@@ -17,6 +9,15 @@ import { fetchChallengeParticipantHub } from "@/lib/data/challenge-participant-h
 import { fetchUserGroup } from "@/lib/data/groups";
 import { fetchWeeklyConsistencySummary } from "@/lib/data/member";
 import { redirect } from "next/navigation";
+
+const ChallengeParticipantHub = dynamic(
+  () =>
+    import("@/components/challenges/participant/challenge-participant-hub").then(
+      (m) => m.ChallengeParticipantHub,
+    ),
+  { loading: () => <PageSkeleton /> },
+);
+
 type Props = {
   params: Promise<{ id: string }>;
 };
@@ -36,10 +37,12 @@ export default async function JoinedChallengePage({ params }: Props) {
     redirect(`/login?next=${encodeURIComponent(`/challenges/${id}`)}`);
   }
 
-  const [access, hub] = await Promise.all([
-    ensureChallengeHubAccessAction(id),
-    fetchChallengeParticipantHub(id, user.id),
-  ]);
+  // Sequential on purpose: host auto-join must finish before hub fetch (see e9fface).
+  const access = await ensureChallengeHubAccessAction(id);
+  let hub = await fetchChallengeParticipantHub(id, user.id);
+  if (!hub && access.ok) {
+    hub = await fetchChallengeParticipantHub(id, user.id);
+  }
 
   if (!hub) {
     const reason =

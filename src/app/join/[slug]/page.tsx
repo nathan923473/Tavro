@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { ChallengeLandingView } from "@/components/challenges/challenge-landing-view";
 import { StandalonePageHeader } from "@/components/layout/standalone-page-header";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
@@ -8,7 +7,8 @@ import {
 } from "@/lib/data/challenge-landing";
 import { creatorChallengePath } from "@/lib/data/creator-studio";
 import { challengeLandingMetadata } from "@/lib/seo/challenge-open-graph";
-import { notFound } from "next/navigation";
+import { challengePhaseFromChallenge } from "@/lib/timezone/challenge-fields";
+import { notFound, redirect } from "next/navigation";
 
 type JoinChallengePageProps = {
   params: Promise<{ slug: string }>;
@@ -36,8 +36,11 @@ export default async function JoinChallengePage({ params }: JoinChallengePagePro
     notFound();
   }
 
-  if (user && data.joined && data.onboardingCompleted) {
-    redirect(`/challenges/${data.challenge.id}`);
+  if (user && data.joined) {
+    const upcoming = challengePhaseFromChallenge(data.challenge) === "upcoming";
+    if (upcoming || data.onboardingCompleted) {
+      redirect(`/challenges/${data.challenge.id}`);
+    }
   }
 
   if (data.communitySlug) {

@@ -1,5 +1,6 @@
 import { ChallengesInteractive } from "@/components/challenges/challenges-interactive";
 import { PageHeader } from "@/components/layout/page-header";
+import { RouteFallback } from "@/components/layout/route-fallback";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { DiscoverInteractive } from "@/components/discover/discover-interactive";
 import { fetchJoinedChallengesForMember } from "@/lib/data/challenges";
@@ -9,12 +10,28 @@ import { sortChallengesByMemberPreferences } from "@/lib/member/sort-challenges"
 import { MutedCallout } from "@/components/ui/muted-callout";
 import { SecondaryLink } from "@/components/ui/link-button";
 import { Sparkles } from "lucide-react";
+import { Suspense } from "react";
 
 export const metadata = {
   title: "Challenges",
 };
 
-export default async function ChallengesPage() {
+export default function ChallengesPage() {
+  return (
+    <Suspense
+      fallback={
+        <RouteFallback
+          title="Challenges"
+          subtitle="Search free creator challenges · join in one tap"
+        />
+      }
+    >
+      <ChallengesPageContent />
+    </Suspense>
+  );
+}
+
+async function ChallengesPageContent() {
   const { user, profile } = await getCurrentUserProfile();
   const userId = user?.id ?? null;
   const viewerName =

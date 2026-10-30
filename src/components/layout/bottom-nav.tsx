@@ -13,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 
 const tabs = [
@@ -26,6 +27,19 @@ const tabs = [
   { href: "/progress", label: "Progress", icon: TrendingUp },
   { href: "/profile", label: "Profile", icon: UserRound },
 ] as const;
+
+function NavPendingHint() {
+  const { pending } = useLinkStatus();
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "absolute inset-x-3 bottom-1 h-0.5 rounded-full bg-primary transition-opacity duration-150",
+        pending ? "opacity-100" : "opacity-0",
+      )}
+    />
+  );
+}
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -65,6 +79,7 @@ export function BottomNav() {
                 aria-hidden
               />
               <span className="relative">{label}</span>
+              <NavPendingHint />
             </Link>
           );
         })}

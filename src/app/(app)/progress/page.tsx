@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { MutedCallout } from "@/components/ui/muted-callout";
 import { SectionHeader } from "@/components/ui/section-header";
 import { PageHeader } from "@/components/layout/page-header";
+import { RouteFallback } from "@/components/layout/route-fallback";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { fetchJoinedChallengesForHome } from "@/lib/data/challenges";
 import { fetchUserAccountabilityGroups } from "@/lib/data/user-accountability-groups";
@@ -21,11 +22,27 @@ import {
   fetchWeightSummary,
   fetchWeightTrackingEnabled,
 } from "@/lib/data/member";
+import { Suspense } from "react";
 
 export const metadata = { title: "Progress" };
 
-export default async function ProgressPage() {
-  const { user, profile } = await getCurrentUserProfile();
+export default function ProgressPage() {
+  return (
+    <Suspense
+      fallback={
+        <RouteFallback
+          title="Progress"
+          subtitle="Private habits & consistency · share wins if you want"
+        />
+      }
+    >
+      <ProgressPageContent />
+    </Suspense>
+  );
+}
+
+async function ProgressPageContent() {
+  const { user } = await getCurrentUserProfile();
   const userId = user?.id;
 
   const [
