@@ -57,3 +57,8 @@ Compare `clientChunksBytes` and top chunk sizes. For real-world TTFB/LCP, use Ve
 - **Challenge hub navigation:** separate JS chunk loads after route transition (`dynamic()` + `loading.tsx`).
 
 Commit: **`6fca80b`** on Cloud Agent `main`.
+
+### Follow-up (continued execution)
+
+- **Challenges page:** challenge group chat messages load **on the client** per card (`loadChallengeMessagesAction`) — server no longer waits on batched message query before paint.
+- **Progress / Groups:** route-level **`loading.tsx`** skeletons for faster perceived navigation.

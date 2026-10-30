@@ -1,6 +1,9 @@
 "use client";
 
-import { postChallengeMessageAction } from "@/app/(app)/member/actions";
+import {
+  loadChallengeMessagesAction,
+  postChallengeMessageAction,
+} from "@/app/(app)/member/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,7 +11,7 @@ import type { ChallengeChatMessage } from "@/lib/challenge-chat";
 import { ReportContentMenu } from "@/components/moderation/report-content-menu";
 import { MessageCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 type ChallengeGroupChatProps = {
   challengeId: string;
@@ -16,7 +19,9 @@ type ChallengeGroupChatProps = {
   viewerName: string;
   viewerRole: "creator" | "member";
   canPost: boolean;
-  messages: ChallengeChatMessage[];
+  messages?: ChallengeChatMessage[];
+  /** When true, messages load after mount (faster Challenges page TTFB). */
+  loadMessagesOnMount?: boolean;
   compact?: boolean;
   viewerUserId?: string | null;
 };
@@ -39,14 +44,37 @@ export function ChallengeGroupChat({
   challengeTitle,
   viewerRole,
   canPost,
-  messages,
+  messages: messagesProp,
+  loadMessagesOnMount = false,
   compact = false,
   viewerUserId = null,
 }: ChallengeGroupChatProps) {
   const router = useRouter();
   const [draft, setDraft] = useState("");
   const [status, setStatus] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChallengeChatMessage[]>(messagesProp ?? []);
+  const [loadingMessages, setLoadingMessages] = useState(loadMessagesOnMount);
   const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (!loadMessagesOnMount) {
+      setMessages(messagesProp ?? []);
+      return;
+    }
+    let cancelled = false;
+    setLoadingMessages(true);
+    loadChallengeMessagesAction(challengeId)
+      .then((rows) => {
+        if (!cancelled) setMessages(rows);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingMessages(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only lazy-load once per card
+  }, [challengeId, loadMessagesOnMount]);
 
   function handleSend() {
     const text = draft.trim();
@@ -85,7 +113,9 @@ export function ChallengeGroupChat({
         className="mt-4 max-h-56 space-y-2 overflow-y-auto rounded-xl border border-border bg-muted/30 p-3"
         aria-live="polite"
       >
-        {messages.length === 0 ? (
+        {loadingMessages ? (
+          <li className="text-sm text-muted-foreground">Loading messages…</li>
+        ) : messages.length === 0 ? (
           <li className="text-sm text-muted-foreground">
             No messages yet. Be the first to encourage the group.
           </li>

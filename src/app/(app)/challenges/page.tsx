@@ -6,7 +6,6 @@ import { fetchJoinedChallengesForMember } from "@/lib/data/challenges";
 import { fetchDiscoverSectionsCached } from "@/lib/data/discover-cached";
 import { fetchMemberGoalPreferences } from "@/lib/data/member-preferences";
 import { sortChallengesByMemberPreferences } from "@/lib/member/sort-challenges";
-import { fetchChallengeMessagesForChallenges } from "@/lib/data/messages";
 import { MutedCallout } from "@/components/ui/muted-callout";
 import { SecondaryLink } from "@/components/ui/link-button";
 import { Sparkles } from "lucide-react";
@@ -37,10 +36,6 @@ export default async function ChallengesPage() {
     upcoming: sortChallengesByMemberPreferences(discoverSections.upcoming, memberPrefs),
     featured: sortChallengesByMemberPreferences(discoverSections.featured, memberPrefs),
   };
-
-  const challengeMessages = userId
-    ? await fetchChallengeMessagesForChallenges(mine.map((c) => c.id))
-    : {};
 
   return (
     <div className="animate-fade-up">
@@ -73,7 +68,6 @@ export default async function ChallengesPage() {
           viewerName={viewerName}
           loggedIn={Boolean(userId)}
           viewerUserId={userId}
-          challengeMessages={challengeMessages}
         />
       </div>
     </div>
