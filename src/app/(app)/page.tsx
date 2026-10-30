@@ -19,6 +19,7 @@ import { fetchHomeDashboardBundle } from "@/lib/data/member";
 import { resolveHomePrimaryAction } from "@/lib/home/primary-action";
 import { challengePhaseFromChallenge } from "@/lib/timezone/challenge-fields";
 import { DEFAULT_FALLBACK_TIMEZONE } from "@/lib/timezone/constants";
+import { TabReady } from "@/components/navigation/tab-ready";
 import { Suspense } from "react";
 
 const emptyDashboard = {
@@ -104,6 +105,7 @@ async function HomePageContent() {
   const isCreator = profile?.role === "creator" || profile?.role === "admin";
 
   return (
+    <TabReady tab="/">
     <div className="animate-fade-up">
       <PageHeader
         title="Today"
@@ -194,5 +196,6 @@ async function HomePageContent() {
         />
       </div>
     </div>
+    </TabReady>
   );
 }

@@ -12,6 +12,11 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
+import {
+  mainTabFromPath,
+  useInstantTabNavigate,
+  type MainTab,
+} from "@/components/navigation/instant-tab-host";
 import Link from "next/link";
 import { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
@@ -43,6 +48,7 @@ function NavPendingHint() {
 
 export function BottomNav() {
   const pathname = usePathname();
+  const instantNavigate = useInstantTabNavigate();
 
   return (
     <nav
@@ -61,6 +67,22 @@ export function BottomNav() {
               key={href}
               href={href}
               title={navTitle}
+              prefetch
+              onClick={(event) => {
+                if (
+                  event.metaKey ||
+                  event.ctrlKey ||
+                  event.shiftKey ||
+                  event.altKey ||
+                  event.button !== 0
+                ) {
+                  return;
+                }
+                const tab = mainTabFromPath(href);
+                if (!tab || !instantNavigate) return;
+                event.preventDefault();
+                instantNavigate(tab as MainTab);
+              }}
               className={cn(
                 "focus-ring relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1 text-[11px] font-semibold transition-colors",
                 active

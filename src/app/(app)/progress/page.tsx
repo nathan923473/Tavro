@@ -22,6 +22,7 @@ import {
   fetchWeightSummary,
   fetchWeightTrackingEnabled,
 } from "@/lib/data/member";
+import { TabReady } from "@/components/navigation/tab-ready";
 import { Suspense } from "react";
 
 export const metadata = { title: "Progress" };
@@ -83,6 +84,7 @@ async function ProgressPageContent() {
   const completedChallenges = joined.filter((c) => c.progressPercent >= 100);
 
   return (
+    <TabReady tab="/progress">
     <div className="animate-fade-up">
       <PageHeader
         title="Progress"
@@ -252,5 +254,6 @@ async function ProgressPageContent() {
         ) : null}
       </div>
     </div>
+    </TabReady>
   );
 }

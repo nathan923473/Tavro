@@ -1,13 +1,15 @@
-import { AppShell } from "@/components/layout/app-shell";
+import { InstantTabHost } from "@/components/navigation/instant-tab-host";
 import { NotificationBellSlot } from "@/components/notifications/notification-bell-slot";
 
-/** Sync layout: bottom nav stays mounted; notifications stream in separately. */
+/** Bottom nav stays mounted. Tab clicks paint before RSC data arrives. */
 export default function MainAppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <AppShell notificationSlot={<NotificationBellSlot />}>{children}</AppShell>
+    <InstantTabHost notificationSlot={<NotificationBellSlot />}>
+      {children}
+    </InstantTabHost>
   );
 }

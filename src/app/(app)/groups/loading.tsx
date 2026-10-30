@@ -1,9 +1,10 @@
-import { PageSkeleton } from "@/components/ui/skeleton";
+import { RouteFallback } from "@/components/layout/route-fallback";
 
 export default function GroupsLoading() {
   return (
-    <div className="px-4 py-4">
-      <PageSkeleton />
-    </div>
+    <RouteFallback
+      title="Private accountability groups"
+      subtitle="Member-only groups · not visible to creators"
+    />
   );
 }

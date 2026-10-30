@@ -10,6 +10,7 @@ import { sortChallengesByMemberPreferences } from "@/lib/member/sort-challenges"
 import { MutedCallout } from "@/components/ui/muted-callout";
 import { SecondaryLink } from "@/components/ui/link-button";
 import { Sparkles } from "lucide-react";
+import { TabReady } from "@/components/navigation/tab-ready";
 import { Suspense } from "react";
 
 export const metadata = {
@@ -55,6 +56,7 @@ async function ChallengesPageContent() {
   };
 
   return (
+    <TabReady tab="/challenges">
     <div className="animate-fade-up">
       <PageHeader
         title="Challenges"
@@ -88,5 +90,6 @@ async function ChallengesPageContent() {
         />
       </div>
     </div>
+    </TabReady>
   );
 }

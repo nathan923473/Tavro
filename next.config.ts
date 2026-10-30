@@ -22,8 +22,8 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react"],
     staleTimes: {
-      dynamic: 20,
-      static: 180,
+      dynamic: 300,
+      static: 300,
     },
   },
   allowedDevOrigins: ["127.0.0.1", "localhost", "*.trycloudflare.com"],

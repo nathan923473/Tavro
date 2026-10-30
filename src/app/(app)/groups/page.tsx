@@ -13,6 +13,7 @@ import {
   ACCOUNTABILITY_GROUP_PLURAL,
   ACCOUNTABILITY_GROUP_SIZE_LABEL,
 } from "@/lib/copy/accountability-groups";
+import { TabReady } from "@/components/navigation/tab-ready";
 import { Suspense } from "react";
 
 export const metadata = { title: "Private accountability groups" };
@@ -57,6 +58,7 @@ async function GroupsPageContent() {
       : [];
 
   return (
+    <TabReady tab="/groups">
     <div className="animate-fade-up">
       <PageHeader
         title="Private accountability groups"
@@ -76,5 +78,6 @@ async function GroupsPageContent() {
         />
       </div>
     </div>
+    </TabReady>
   );
 }

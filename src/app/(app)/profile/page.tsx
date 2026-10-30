@@ -22,6 +22,7 @@ import { MemberGoalPreferencesCard } from "@/components/profile/member-goal-pref
 import { userReferralPath } from "@/lib/site-url";
 import Link from "next/link";
 import { BarChart3, Shield, Users } from "lucide-react";
+import { TabReady } from "@/components/navigation/tab-ready";
 import { Suspense } from "react";
 
 export const metadata = { title: "Profile" };
@@ -66,6 +67,7 @@ async function ProfilePageContent() {
   const auState = profile?.auStateOrTerritory ?? null;
 
   return (
+    <TabReady tab="/profile">
     <>
       <PageHeader title="Profile" subtitle="Member or creator · one account" />
       {profile?.isAdmin ? (
@@ -214,5 +216,6 @@ async function ProfilePageContent() {
         {user ? <DeleteAccountSection /> : null}
       </div>
     </>
+    </TabReady>
   );
 }
