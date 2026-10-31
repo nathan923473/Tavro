@@ -56,7 +56,7 @@ export function HomeHero({
       className="surface-hero relative overflow-hidden px-4 py-4 text-primary-foreground"
     >
       <div
-        className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-accent/25 blur-2xl"
+        className="pointer-events-none absolute -left-16 -top-16 h-32 w-32 rounded-full bg-white/10 blur-2xl"
         aria-hidden
       />
       <div
@@ -66,19 +66,19 @@ export function HomeHero({
 
       <div className="relative flex gap-4">
         <div className="min-w-0 flex-1 space-y-2">
-          <p className="text-caption text-white/85">{greeting}</p>
-          <h2 id="home-hero-heading" className="text-title-lg text-white">
+          <p className="text-sm font-medium text-white">{greeting}</p>
+          <h2 id="home-hero-heading" className="text-2xl font-bold tracking-tight text-white">
             {firstName}
           </h2>
           {focusLine ? (
-            <p className="text-sm font-medium leading-snug text-white/95 line-clamp-2">
+            <p className="line-clamp-2 text-sm font-semibold leading-snug text-white">
               {focusLine}
             </p>
           ) : null}
-          <p className="text-sm text-white/85">{statusLine}</p>
+          <p className="text-sm font-medium text-white">{statusLine}</p>
 
           {loggedIn && today.segments.length > 0 ? (
-            <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-white/90">
+            <ul className="flex flex-wrap gap-x-3 gap-y-1 text-sm font-medium text-white">
               {today.segments.map((s) => (
                 <li key={s.id}>
                   <span className="font-medium">{s.label}</span>{" "}
@@ -117,7 +117,7 @@ export function HomeHero({
         )}
 
         {loggedIn && !today.hasPlan ? (
-          <p className="text-center text-xs text-white/80">
+          <p className="text-center text-sm font-medium text-white">
             <Link href="/progress" className="underline underline-offset-2">
               Add habits
             </Link>

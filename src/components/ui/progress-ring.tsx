@@ -39,7 +39,7 @@ export function ProgressRing({
           fill="none"
           strokeWidth={stroke}
           className={cn(
-            onDark ? "stroke-white/25" : "stroke-muted",
+            onDark ? "stroke-white/80" : "stroke-muted",
             trackClassName,
           )}
         />
@@ -62,11 +62,11 @@ export function ProgressRing({
       <span
         className={cn(
           "absolute inset-0 flex flex-col items-center justify-center tabular-nums",
-          onDark ? "text-primary-foreground" : "text-foreground",
+          onDark ? "text-white" : "text-foreground",
         )}
       >
         <span className="text-xl font-bold leading-none">{clamped}</span>
-        <span className={cn("text-[10px] font-medium", onDark ? "text-white/80" : "text-muted-foreground")}>
+        <span className={cn("text-[10px] font-semibold", onDark ? "text-white" : "text-muted-foreground")}>
           %
         </span>
       </span>

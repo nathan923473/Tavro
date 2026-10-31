@@ -21,18 +21,18 @@ export function ProfileHeroCard({
         displayName={displayName}
         avatarUrl={avatarUrl}
         size="lg"
-        className="ring-2 ring-white/30"
+        className="ring-2 ring-white"
       />
       <div className="min-w-0 flex-1">
-        <p className="text-title-lg text-white">{displayName}</p>
-        {email ? <p className="truncate text-caption text-white/80">{email}</p> : null}
+        <p className="text-2xl font-bold tracking-tight text-white">{displayName}</p>
+        {email ? <p className="truncate text-sm font-medium text-white">{email}</p> : null}
         {workTowards ? (
-          <p className="mt-1 text-sm text-white/90">
+          <p className="mt-1 text-sm font-medium text-white">
             Focus: {workTowardsLabel(workTowards)}
           </p>
         ) : null}
         {roleLabel ? (
-          <p className="mt-0.5 text-xs font-medium uppercase tracking-wide text-white/70">
+          <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-white">
             {roleLabel}
           </p>
         ) : null}

@@ -86,7 +86,17 @@
   }
 
   .surface-hero {
-    @apply rounded-2xl border border-primary/20 bg-primary shadow-elevated;
+    @apply rounded-2xl border border-primary/20 bg-primary text-white shadow-elevated;
+  }
+
+  /* Typography utilities set foreground/muted colors and win over text-white.
+     On the blue hero, keep those sizes but force readable white. */
+  .surface-hero .text-display,
+  .surface-hero .text-title-lg,
+  .surface-hero .text-title,
+  .surface-hero .text-body,
+  .surface-hero .text-caption {
+    color: #fff;
   }
 
   .surface-inset {
