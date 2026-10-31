@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { TabAuthSync } from "@/components/auth/tab-auth-sync";
 import { NavigationStackRecorder } from "@/components/layout/navigation-stack-recorder";
 import { APP_NAME, APP_TAGLINE, BRAND_COLORS } from "@/lib/branding";
@@ -60,6 +61,7 @@ export default function RootLayout({
         <TabAuthSync />
         <NavigationStackRecorder />
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
