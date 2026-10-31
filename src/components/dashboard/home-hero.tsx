@@ -1,5 +1,13 @@
+"use client";
+
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { PrimaryLink } from "@/components/ui/link-button";
+import {
+  applyHabitOverrides,
+  getHabitOverrideSnapshot,
+  getServerHabitOverrideSnapshot,
+  subscribeHabitOverrides,
+} from "@/lib/home/habit-overrides";
 import { computeTodayCompletion } from "@/lib/home/today-progress";
 import { greetingForTimezone } from "@/lib/home/greeting";
 import type { HomePrimaryAction } from "@/lib/home/primary-action";
@@ -8,6 +16,7 @@ import type { AccountabilityGroup, PersonalGoal } from "@/types";
 import { workTowardsLabel } from "@/lib/member/preferences";
 import type { WorkTowards } from "@/lib/member/preferences";
 import Link from "next/link";
+import { useMemo, useSyncExternalStore } from "react";
 
 export function HomeHero({
   firstName,
@@ -30,9 +39,19 @@ export function HomeHero({
   viewerUserId: string | null;
   workTowards?: WorkTowards | null;
 }) {
+  const habitSnapshot = useSyncExternalStore(
+    subscribeHabitOverrides,
+    getHabitOverrideSnapshot,
+    getServerHabitOverrideSnapshot,
+  );
+  const goalsForToday = useMemo(
+    () => applyHabitOverrides(goals, habitSnapshot.overrides),
+    [goals, habitSnapshot.overrides],
+  );
+
   const greeting = greetingForTimezone(timezone);
   const today = computeTodayCompletion({
-    goals,
+    goals: goalsForToday,
     activeChallengeHub,
     group,
     viewerUserId,
@@ -44,7 +63,8 @@ export function HomeHero({
       ? activeChallengeHub.title
       : group?.sharedGoal?.trim() || null;
 
-  const statusLine = primaryAction.allComplete
+  const showedUp = today.hasPlan && today.done === today.total;
+  const statusLine = showedUp
     ? "You showed up today — momentum saved."
     : today.hasPlan
       ? `${today.done} of ${today.total} daily items complete`

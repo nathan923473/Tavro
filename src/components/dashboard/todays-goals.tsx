@@ -1,7 +1,14 @@
 "use client";
 
-import { toggleGoalAction } from "@/app/(app)/member/actions";
+import { setGoalCompletedAction } from "@/app/(app)/member/actions";
 import { cn } from "@/lib/cn";
+import {
+  applyHabitOverrides,
+  getHabitOverrideSnapshot,
+  getServerHabitOverrideSnapshot,
+  queueHabitCompletion,
+  subscribeHabitOverrides,
+} from "@/lib/home/habit-overrides";
 import { HabitQuickAdd } from "@/components/progress/habit-quick-add";
 import { Card } from "@/components/ui/card";
 import type { ChallengeParticipantHub } from "@/lib/data/challenge-participant-hub";
@@ -12,7 +19,8 @@ import type { AccountabilityGroup, PersonalGoal } from "@/types";
 import { Check, Circle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
+import { flushSync } from "react-dom";
 
 type GoalRow =
   | {
@@ -40,11 +48,20 @@ export function TodaysGoals({
   loggedIn: boolean;
 }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
   const [pulseGoalId, setPulseGoalId] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const habitSnapshot = useSyncExternalStore(
+    subscribeHabitOverrides,
+    getHabitOverrideSnapshot,
+    getServerHabitOverrideSnapshot,
+  );
+  const goalsForToday = useMemo(
+    () => applyHabitOverrides(goals, habitSnapshot.overrides),
+    [goals, habitSnapshot.overrides],
+  );
 
-  const scheduled = habitsScheduledToday(goals);
-  const { done: habitsDone, total: habitsTotal } = habitsCompletedToday(goals);
+  const scheduled = habitsScheduledToday(goalsForToday);
+  const { done: habitsDone, total: habitsTotal } = habitsCompletedToday(goalsForToday);
 
   const rows = useMemo((): GoalRow[] => {
     const list: GoalRow[] = [];
@@ -170,19 +187,29 @@ export function TodaysGoals({
                 {row.kind === "habit" ? (
                   <button
                     type="button"
-                    disabled={pending}
+                    aria-pressed={row.done}
                     className="focus-ring flex min-h-11 w-full items-center gap-3 rounded-xl text-left"
-                    onClick={() =>
-                      startTransition(async () => {
-                        const wasDone = row.done;
-                        await toggleGoalAction(row.goalId);
-                        if (!wasDone) {
-                          setPulseGoalId(row.goalId);
-                          window.setTimeout(() => setPulseGoalId(null), 600);
-                        }
-                        router.refresh();
-                      })
-                    }
+                    onClick={() => {
+                      const nextDone = !row.done;
+                      setSaveError(null);
+                      flushSync(() => {
+                        if (nextDone) setPulseGoalId(row.goalId);
+                        void queueHabitCompletion(
+                          row.goalId,
+                          nextDone,
+                          setGoalCompletedAction,
+                        )
+                          .then((saved) => {
+                            if (saved) router.refresh();
+                          })
+                          .catch(() => {
+                            setSaveError("Couldn't update that habit. Try again.");
+                          });
+                      });
+                      if (nextDone) {
+                        window.setTimeout(() => setPulseGoalId(null), 600);
+                      }
+                    }}
                   >
                     {row.done ? (
                       <Check className="h-5 w-5 shrink-0 text-foreground" aria-hidden />
@@ -219,6 +246,12 @@ export function TodaysGoals({
           ))}
         </ul>
       )}
+
+      {saveError ? (
+        <p className="mt-2 px-1 text-sm text-red-700" role="alert">
+          {saveError}
+        </p>
+      ) : null}
 
       {habitsTotal > 0 && habitsDone === habitsTotal && rows.some((r) => r.kind === "habit") ? (
         <p className="mt-2 px-1 text-sm text-muted-foreground">

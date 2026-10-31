@@ -39,7 +39,7 @@ export function ProgressRing({
           fill="none"
           strokeWidth={stroke}
           className={cn(
-            onDark ? "stroke-white/80" : "stroke-muted",
+            onDark ? "stroke-white" : "stroke-muted",
             trackClassName,
           )}
         />

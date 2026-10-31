@@ -278,31 +278,48 @@ export async function submitDailyCheckInAction(input: {
   revalidatePath("/progress");
 }
 
-export async function toggleGoalAction(goalId: string) {
-  const { supabase, userId } = await requireUserId();
-  const today = todayDateKey();
-
-  const { data: existing } = await supabase
+async function goalCompletedToday(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  goalId: string,
+  today: string,
+) {
+  const { data: existing, error } = await supabase
     .from("goal_completions")
     .select("goal_id")
     .eq("goal_id", goalId)
     .eq("user_id", userId)
     .eq("completion_date", today)
     .maybeSingle();
+  if (error) throw new Error(error.message);
+  return Boolean(existing);
+}
 
-  if (existing) {
-    await supabase
+async function writeGoalCompletion(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  goalId: string,
+  today: string,
+  completed: boolean,
+  alreadyDone: boolean,
+) {
+  if (alreadyDone === completed) return;
+
+  if (!completed) {
+    const { error } = await supabase
       .from("goal_completions")
       .delete()
       .eq("goal_id", goalId)
       .eq("user_id", userId)
       .eq("completion_date", today);
+    if (error) throw new Error(error.message);
   } else {
-    await supabase.from("goal_completions").insert({
+    const { error } = await supabase.from("goal_completions").insert({
       goal_id: goalId,
       user_id: userId,
       completion_date: today,
     });
+    if (error) throw new Error(error.message);
 
     const { data: habit } = await supabase
       .from("member_goals")
@@ -375,6 +392,21 @@ export async function toggleGoalAction(goalId: string) {
   revalidatePath("/progress");
   revalidatePath("/challenges");
   revalidatePath("/groups");
+}
+
+/** Saves the checked state the screen already showed. */
+export async function setGoalCompletedAction(goalId: string, completed: boolean) {
+  const { supabase, userId } = await requireUserId();
+  const today = todayDateKey();
+  const alreadyDone = await goalCompletedToday(supabase, userId, goalId, today);
+  await writeGoalCompletion(supabase, userId, goalId, today, completed, alreadyDone);
+}
+
+export async function toggleGoalAction(goalId: string) {
+  const { supabase, userId } = await requireUserId();
+  const today = todayDateKey();
+  const alreadyDone = await goalCompletedToday(supabase, userId, goalId, today);
+  await writeGoalCompletion(supabase, userId, goalId, today, !alreadyDone, alreadyDone);
 }
 
 async function maybeUnlockHabitMilestones(
