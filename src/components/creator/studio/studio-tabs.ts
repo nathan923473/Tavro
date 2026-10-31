@@ -11,7 +11,6 @@ import {
 export type StudioTab = {
   href: string;
   label: string;
-  sidebarLabel?: string;
   icon: LucideIcon;
   exact?: boolean;
 };
@@ -22,7 +21,7 @@ export const studioTabs: readonly StudioTab[] = [
   { href: "/studio/community", label: "Community", icon: Users },
   { href: "/studio/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/studio/shop", label: "Shop & Links", icon: Link2 },
-  { href: "/studio/settings", label: "Profile", sidebarLabel: "Settings", icon: Settings },
+  { href: "/studio/settings", label: "Profile", icon: Settings },
 ];
 
 export function isStudioTabActive(pathname: string, tab: StudioTab) {

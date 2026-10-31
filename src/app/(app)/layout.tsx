@@ -12,7 +12,7 @@ export default function MainAppLayout({
   return (
     <InstantTabHost
       notificationSlot={<NotificationBellSlot />}
-      creatorStudioSidebar={
+      creatorStudioTab={
         <Suspense fallback={null}>
           <CreatorStudioSidebar />
         </Suspense>

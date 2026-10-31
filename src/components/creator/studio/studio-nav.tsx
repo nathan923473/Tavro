@@ -10,7 +10,7 @@ export function StudioNav() {
 
   return (
     <nav
-      className="scrollbar-none -mx-1 flex gap-1 overflow-x-auto pb-1 lg:hidden"
+      className="scrollbar-none -mx-1 flex gap-1 overflow-x-auto pb-1"
       aria-label="Creator Studio"
     >
       {studioTabs.map((tab) => {
