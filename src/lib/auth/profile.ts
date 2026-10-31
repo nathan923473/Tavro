@@ -1,3 +1,8 @@
+import {
+  accessDecisionForAccount,
+  accountNeedsVerification,
+  ownershipGateEnabled,
+} from "@/lib/auth/email-verification";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -19,11 +24,13 @@ export type UserProfile = {
 };
 
 export const getCurrentUserProfile = cache(async (): Promise<{
-  user: { id: string; email?: string } | null;
+  user: { id: string; email?: string; emailConfirmedAt: string | null } | null;
   profile: UserProfile | null;
+  /** undefined when migration 052 is not applied yet. */
+  emailOwnershipVerifiedAt: string | null | undefined;
 }> => {
   if (!isSupabaseConfigured()) {
-    return { user: null, profile: null };
+    return { user: null, profile: null, emailOwnershipVerifiedAt: undefined };
   }
 
   const supabase = await createClient();
@@ -32,21 +39,34 @@ export const getCurrentUserProfile = cache(async (): Promise<{
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { user: null, profile: null };
+    return { user: null, profile: null, emailOwnershipVerifiedAt: undefined };
   }
 
+  const accountUser = {
+    id: user.id,
+    email: user.email,
+    emailConfirmedAt: user.email_confirmed_at ?? null,
+  };
+
   const fullSelect =
-    "id, display_name, avatar_url, referral_code, creator_status, timezone, au_state_or_territory, is_admin, is_creator, creator_onboarding_completed_at";
+    "id, display_name, avatar_url, referral_code, creator_status, timezone, au_state_or_territory, is_admin, is_creator, creator_onboarding_completed_at, email_ownership_verified_at";
   const legacySelect =
     "id, display_name, referral_code, creator_status, timezone, is_admin, is_creator";
 
+  let usedFallback = false;
   let { data: row, error } = await supabase
     .from("profiles")
     .select(fullSelect)
     .eq("id", user.id)
     .maybeSingle();
 
-  if (error && /avatar_url|creator_onboarding|timezone|au_state|schema cache/i.test(error.message)) {
+  if (
+    error &&
+    /avatar_url|creator_onboarding|timezone|au_state|email_ownership|schema cache/i.test(
+      error.message,
+    )
+  ) {
+    usedFallback = true;
     ({ data: row } = await supabase
       .from("profiles")
       .select(legacySelect)
@@ -54,10 +74,19 @@ export const getCurrentUserProfile = cache(async (): Promise<{
       .maybeSingle());
   }
 
+  let emailOwnershipVerifiedAt: string | null | undefined = undefined;
+  if (!usedFallback && row && "email_ownership_verified_at" in row) {
+    emailOwnershipVerifiedAt =
+      typeof row.email_ownership_verified_at === "string"
+        ? row.email_ownership_verified_at
+        : null;
+  }
+
   if (!row) {
     return {
-      user: { id: user.id, email: user.email },
+      user: accountUser,
       profile: null,
+      emailOwnershipVerifiedAt,
     };
   }
 
@@ -75,7 +104,8 @@ export const getCurrentUserProfile = cache(async (): Promise<{
   else if (creatorStatus === "pending") role = "creator_pending";
 
   return {
-    user: { id: user.id, email: user.email },
+    user: accountUser,
+    emailOwnershipVerifiedAt,
     profile: {
       id: row.id,
       displayName: row.display_name,
@@ -99,12 +129,22 @@ export const getCurrentUserProfile = cache(async (): Promise<{
 });
 
 export async function requireAuth(redirectTo = "/login") {
-  const { user, profile } = await getCurrentUserProfile();
-  if (!user) {
-    const { redirect } = await import("next/navigation");
+  const session = await getCurrentUserProfile();
+  const { redirect } = await import("next/navigation");
+  if (!session.user) {
     redirect(redirectTo);
   }
-  return { user: user!, profile };
+  const user = session.user!;
+  const decision = accessDecisionForAccount({
+    hasUser: true,
+    emailConfirmedAt: user.emailConfirmedAt,
+    ownershipVerifiedAt: session.emailOwnershipVerifiedAt,
+    enforceOwnership: ownershipGateEnabled(),
+  });
+  if (accountNeedsVerification(decision)) {
+    redirect("/verify-email");
+  }
+  return { user, profile: session.profile };
 }
 
 export async function requireApprovedCreator() {

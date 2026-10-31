@@ -3,6 +3,7 @@
 import { readCreatorApplicationAttribution } from "@/lib/creator/growth-actions";
 import { validateOrganicApplication } from "@/lib/creator/onboarding-rules";
 import { bioContainsVerificationCode } from "@/lib/creator/verification";
+import { assertVerifiedAccount } from "@/lib/auth/require-user-id";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { userFacingErrorMessage } from "@/lib/errors/user-message";
@@ -30,6 +31,7 @@ export async function submitCreatorApplication(formData: FormData): Promise<void
   if (!user) {
     throw new Error("You must be logged in.");
   }
+  await assertVerifiedAccount();
 
   const attribution = await readCreatorApplicationAttribution();
   const rpcArgs = {
@@ -92,6 +94,14 @@ export async function refreshCreatorVerificationCode(applicationId: string): Pro
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, message: "Log in to refresh your verification code." };
+  try {
+    await assertVerifiedAccount();
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "Confirm your email before continuing.",
+    };
+  }
 
   const { error } = await supabase.rpc("refresh_creator_verification_code", {
     app_id: applicationId,
@@ -126,6 +136,14 @@ export async function verifyBioForApplication(applicationId: string): Promise<{
   } = await supabase.auth.getUser();
   if (!user) {
     return { ok: false, message: "Log in to verify." };
+  }
+  try {
+    await assertVerifiedAccount();
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "Confirm your email before continuing.",
+    };
   }
 
   const { data: app, error: loadError } = await supabase
@@ -194,6 +212,14 @@ export async function requestDmVerification(applicationId: string): Promise<{
   } = await supabase.auth.getUser();
   if (!user) {
     return { ok: false, message: "Log in first." };
+  }
+  try {
+    await assertVerifiedAccount();
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "Confirm your email before continuing.",
+    };
   }
 
   const { error } = await supabase.rpc("request_dm_verification", {

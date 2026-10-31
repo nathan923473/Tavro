@@ -1,17 +1,14 @@
 "use client";
 
-import { userFacingErrorMessage } from "@/lib/errors/user-message";
-
+import { requestPasswordReset } from "@/app/(auth)/actions";
 import { BrandWordmark } from "@/components/brand/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { APP_NAME } from "@/lib/branding";
-import { getOrCreateTabId, syncTabHintCookie } from "@/lib/auth/tab-id.client";
-import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useState } from "react";
 
-export function ForgotPasswordForm() {
+export function ForgotPasswordForm({ linkError }: { linkError?: string }) {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
@@ -23,34 +20,15 @@ export function ForgotPasswordForm() {
     setMessage(null);
 
     try {
-      const tabId = getOrCreateTabId();
-      syncTabHintCookie(tabId);
-      const supabase = createClient();
-      const normalizedEmail = email.trim().toLowerCase();
-      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent("/reset-password")}`;
-
-      const { error } = await supabase.auth.resetPasswordForEmail(
-        normalizedEmail,
-        { redirectTo },
-      );
-      if (error) throw error;
-
+      const result = await requestPasswordReset({ email });
+      if (!result.ok) {
+        setMessage(result.message);
+        return;
+      }
       setSent(true);
       setMessage(
         `If an account exists for that email, we sent a link to choose a new password. Check spam, then open the link on this device in ${APP_NAME}.`,
       );
-    } catch (e) {
-      const raw = userFacingErrorMessage(e, "Something went wrong");
-      if (
-        raw.toLowerCase().includes("rate limit") ||
-        raw.includes("over_email_send_rate_limit")
-      ) {
-        setMessage(
-          "Too many emails were sent recently. Wait about an hour, or reset the password in Supabase → Authentication → Users for this email.",
-        );
-      } else {
-        setMessage(raw);
-      }
     } finally {
       setLoading(false);
     }
@@ -64,6 +42,16 @@ export function ForgotPasswordForm() {
         Enter the email you use for {APP_NAME}. We&apos;ll send a secure link to
         set a new password.
       </p>
+      {linkError === "expired" ? (
+        <p className="mt-3 text-sm text-red-600" role="alert">
+          That reset link has expired. Request a new one below.
+        </p>
+      ) : null}
+      {linkError === "invalid" ? (
+        <p className="mt-3 text-sm text-red-600" role="alert">
+          That reset link is invalid or was already used. Request a new one below.
+        </p>
+      ) : null}
       {sent ? (
         <p className="mt-4 text-sm text-foreground" role="status">
           {message}

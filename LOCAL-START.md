@@ -111,7 +111,7 @@ Do these in order:
 2. **Restart** the dev server after any `.env.local` change (`Ctrl+C`, then `npm run dev:alt` again).
 3. Open the app on the **same port** as the terminal (**3456** if you used `dev:alt`).
 4. Supabase → **Authentication → Users** — is your email listed? If not, use **Sign up** in the app (not Log in).
-5. Supabase → **Authentication → Providers → Email** → turn **OFF** “Confirm email”.
+5. Supabase → **Authentication → Providers → Email** → turn **ON** “Confirm email”. New accounts must open the verification link. Run `supabase/migrations/052_email_ownership_and_auth_limits.sql` once so existing accounts can prove the inbox without losing data.
 6. Supabase → **Authentication → URL configuration** → add `http://127.0.0.1:3456/**` to Redirect URLs.
 7. In terminal: `npm run check:auth` — if it fails, follow the message (often run migration **003**).
 

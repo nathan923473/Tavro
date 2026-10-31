@@ -1,6 +1,12 @@
 "use server";
 
 import {
+  accessDecisionForAccount,
+  accountNeedsVerification,
+  ownershipGateEnabled,
+} from "@/lib/auth/email-verification";
+import { getCurrentUserProfile } from "@/lib/auth/profile";
+import {
   hashCreatorInvitationToken,
   isCreatorInvitationToken,
 } from "@/lib/creator/invitation-token";
@@ -14,13 +20,22 @@ export async function acceptCreatorInvitationAction(token: string): Promise<void
     redirect("/invite/creator/invalid");
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    redirect(`/login?next=${encodeURIComponent(`/invite/creator/${token}`)}`);
+  const nextPath = `/invite/creator/${token}`;
+  const session = await getCurrentUserProfile();
+  if (!session.user) {
+    redirect(`/login?next=${encodeURIComponent(nextPath)}`);
   }
+  const decision = accessDecisionForAccount({
+    hasUser: true,
+    emailConfirmedAt: session.user.emailConfirmedAt,
+    ownershipVerifiedAt: session.emailOwnershipVerifiedAt,
+    enforceOwnership: ownershipGateEnabled(),
+  });
+  if (accountNeedsVerification(decision)) {
+    redirect(`/verify-email?next=${encodeURIComponent(nextPath)}`);
+  }
+
+  const supabase = await createClient();
 
   const { error } = await supabase.rpc("accept_creator_invitation", { p_token: token });
   if (error) {
@@ -33,14 +48,14 @@ export async function acceptCreatorInvitationAction(token: string): Promise<void
   const { recordPlatformEvent } = await import("@/lib/analytics/record-event");
   await recordPlatformEvent({
     eventType: "creator_invitation_accepted",
-    userId: user.id,
+    userId: session.user.id,
     idempotencyKey: `creator_invitation_accepted:${hashCreatorInvitationToken(token)}`,
     properties: { pathway: "invite" },
   });
   await recordPlatformEvent({
     eventType: "creator_approved",
-    userId: user.id,
-    idempotencyKey: `creator_approved:invite:${user.id}`,
+    userId: session.user.id,
+    idempotencyKey: `creator_approved:invite:${session.user.id}`,
     properties: { pathway: "invite" },
   });
 

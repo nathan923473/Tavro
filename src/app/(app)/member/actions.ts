@@ -1,5 +1,6 @@
 "use server";
 
+import { requireUserId } from "@/lib/auth/require-user-id";
 import { createClient } from "@/lib/supabase/server";
 import { todayDateKey } from "@/lib/dates";
 import { challengeTodayDateKey } from "@/lib/timezone/challenge-calendar";
@@ -11,15 +12,6 @@ import { unwrapOne } from "@/lib/data/relations";
 import { revalidatePath } from "next/cache";
 import { randomBytes, randomUUID } from "node:crypto";
 import { userFacingErrorMessage } from "@/lib/errors/user-message";
-
-async function requireUserId() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Log in required.");
-  return { supabase, userId: user.id };
-}
 
 function isMissingParticipantsColumnError(message: string, column: string) {
   return new RegExp(`'${column}'|schema cache`, "i").test(message);

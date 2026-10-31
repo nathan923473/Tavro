@@ -8,7 +8,9 @@ import { Card } from "@/components/ui/card";
 import { PasswordInput } from "@/components/ui/password-input";
 import { APP_NAME } from "@/lib/branding";
 import { safeInternalPath } from "@/lib/site-url";
-import { signUpMember } from "@/app/(auth)/actions";
+import { loginMember, signUpMember } from "@/app/(auth)/actions";
+import { TurnstileWidget } from "@/components/auth/turnstile-widget";
+import { passwordIssue } from "@/lib/auth/email-verification";
 import { getOrCreateTabId, syncTabHintCookie } from "@/lib/auth/tab-id.client";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -35,6 +37,7 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
   const [displayName, setDisplayName] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -49,54 +52,42 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
       const normalizedPassword = password;
 
       if (mode === "signup") {
+        const passwordError = passwordIssue(normalizedPassword);
+        if (passwordError) throw new Error(passwordError);
         const serverResult = await signUpMember({
           email: normalizedEmail,
           password: normalizedPassword,
           displayName: displayName || normalizedEmail.split("@")[0],
+          next,
+          turnstileToken,
         });
-
-        if (serverResult.ok) {
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: normalizedEmail,
-            password: normalizedPassword,
-          });
-          if (signInError) throw signInError;
-          await syncProfileAfterAuth(displayName || email.split("@")[0]);
-          router.push(next);
-          router.refresh();
-          return;
-        }
-
-        if (!serverResult.useClientSignup) {
-          throw new Error(serverResult.message);
-        }
-
-        const { data, error } = await supabase.auth.signUp({
-          email: normalizedEmail,
-          password: normalizedPassword,
-          options: {
-            data: { display_name: displayName || email.split("@")[0] },
-            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-          },
-        });
-        if (error) throw error;
-        if (data.session) {
-          await syncProfileAfterAuth(displayName || email.split("@")[0]);
-          router.push(next);
-          router.refresh();
-          return;
-        }
-        setMessage(
-          "Account created. Check your email to confirm, then log in — or turn off Confirm email in Supabase for instant access.",
-        );
+        if (!serverResult.ok) throw new Error(serverResult.message);
+        const params = new URLSearchParams();
+        params.set("email", normalizedEmail);
+        if (next !== "/") params.set("next", next);
+        router.push(`/signup/check-email?${params.toString()}`);
         return;
       } else {
-        // Client sign-in sets cookies reliably on mobile Safari / PWA (server actions can miss cookies).
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const serverResult = await loginMember({
+          email: normalizedEmail,
+          password: normalizedPassword,
+          tabId,
+        });
+        if (!serverResult.ok) {
+          if (serverResult.code === "email_not_confirmed") {
+            const params = new URLSearchParams();
+            params.set("email", normalizedEmail);
+            if (next !== "/") params.set("next", next);
+            router.push(`/signup/check-email?${params.toString()}`);
+            return;
+          }
+          throw new Error(serverResult.message);
+        }
+        // Server cookies are set. A second client sign-in keeps mobile Safari / PWA sessions in sync.
+        await supabase.auth.signInWithPassword({
           email: normalizedEmail,
           password: normalizedPassword,
         });
-        if (signInError) throw signInError;
         await syncProfileAfterAuth();
         router.push(next);
         router.refresh();
@@ -111,9 +102,7 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
         raw.toLowerCase().includes("rate limit") ||
         raw.includes("over_email_send_rate_limit")
       ) {
-        setMessage(
-          "Supabase is blocking sign-ups because too many confirmation emails were sent. Fix: Supabase → Authentication → Providers → Email → turn OFF “Confirm email”, wait ~1 hour, or add your user manually under Authentication → Users (see docs/supabase-auth-setup.md).",
-        );
+        setMessage("Too many emails were sent. Wait about an hour, then try again.");
       } else if (
         raw.toLowerCase().includes("invalid login credentials") ||
         raw.toLowerCase().includes("invalid_credentials")
@@ -138,7 +127,7 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
       <p className="mt-1 text-sm text-muted-foreground">
         {mode === "signup"
           ? creatorInvite
-            ? "Create the account for the email on your creator invite. You'll accept it on the next screen."
+            ? "Create the account for the email on your creator invite. Confirm that inbox, then accept the invite."
             : "Everyone starts as a member — creators apply separately."
           : creatorInvite
             ? "Log in with the email this creator invite was issued for."
@@ -176,6 +165,13 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
             }
           />
         </Field>
+        {mode === "signup" ? (
+          <p className="-mt-1 text-xs text-muted-foreground">
+            At least 8 characters. Password managers and long passphrases are welcome.
+            72 characters is the longest Tavro can store.
+          </p>
+        ) : null}
+        {mode === "signup" ? <TurnstileWidget onToken={setTurnstileToken} /> : null}
         {mode === "login" ? (
           <p className="-mt-1 text-right text-sm">
             <Link

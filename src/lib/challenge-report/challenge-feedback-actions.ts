@@ -1,5 +1,6 @@
 "use server";
 
+import { assertVerifiedAccount } from "@/lib/auth/require-user-id";
 import { createClient } from "@/lib/supabase/server";
 import { userFacingErrorMessage } from "@/lib/errors/user-message";
 import { revalidatePath } from "next/cache";
@@ -24,6 +25,14 @@ export async function submitChallengeFeedbackAction(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, message: "Sign in to leave feedback." };
+  try {
+    await assertVerifiedAccount();
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "Confirm your email before continuing.",
+    };
+  }
 
   const { data: member } = await supabase
     .from("challenge_participants")

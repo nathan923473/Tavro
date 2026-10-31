@@ -22,7 +22,9 @@ export async function POST(request: Request) {
   }
 
   await ensureUserProfile(displayName);
-  const { applySignupAttribution } = await import("@/lib/analytics/attribution");
-  await applySignupAttribution(user.id);
+  if (user.email_confirmed_at) {
+    const { applySignupAttribution } = await import("@/lib/analytics/attribution");
+    await applySignupAttribution(user.id);
+  }
   return NextResponse.json({ ok: true });
 }

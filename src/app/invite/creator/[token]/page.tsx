@@ -2,6 +2,11 @@ import { acceptCreatorInvitationAction } from "@/app/invite/creator/[token]/acti
 import { StandalonePageHeader } from "@/components/layout/standalone-page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  accessDecisionForAccount,
+  accountNeedsVerification,
+  ownershipGateEnabled,
+} from "@/lib/auth/email-verification";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { isCreatorInvitationToken } from "@/lib/creator/invitation-token";
 import { previewCreatorInvitation } from "@/lib/creator/invitations";
@@ -25,7 +30,17 @@ export default async function CreatorInvitePage({
     ? await previewCreatorInvitation(token)
     : { state: "invalid" as const, expiresAt: null };
   const copy = invitationPreviewCopy(preview.state);
-  const { user, profile } = await getCurrentUserProfile();
+  const session = await getCurrentUserProfile();
+  const user = session.user;
+  const profile = session.profile;
+  const needsEmail = accountNeedsVerification(
+    accessDecisionForAccount({
+      hasUser: Boolean(user),
+      emailConfirmedAt: user?.emailConfirmedAt ?? null,
+      ownershipVerifiedAt: session.emailOwnershipVerifiedAt,
+      enforceOwnership: ownershipGateEnabled(),
+    }),
+  );
   const alreadyCreator = profile?.role === "creator" || profile?.role === "admin";
 
   return (
@@ -56,7 +71,21 @@ export default async function CreatorInvitePage({
               </Link>
             </div>
           ) : null}
-          {preview.state === "ready" && user ? (
+          {preview.state === "ready" && user && needsEmail ? (
+            <div className="space-y-3">
+              <p className="text-sm">
+                Signed in as <strong>{user.email}</strong>. Confirm that email before accepting.
+                The invite only works for the address the admin entered.
+              </p>
+              <Link
+                href={`/verify-email?next=${encodeURIComponent(nextPath)}`}
+                className="flex min-h-11 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+              >
+                Verify email to accept
+              </Link>
+            </div>
+          ) : null}
+          {preview.state === "ready" && user && !needsEmail ? (
             <form action={acceptCreatorInvitationAction.bind(null, token)} className="space-y-3">
               <p className="text-sm">
                 Signed in as <strong>{user.email}</strong>. The invite only works for the

@@ -6,6 +6,7 @@ import { BrandWordmark } from "@/components/brand/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PasswordInput } from "@/components/ui/password-input";
+import { passwordIssue } from "@/lib/auth/email-verification";
 import { getOrCreateTabId, syncTabHintCookie } from "@/lib/auth/tab-id.client";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -52,8 +53,9 @@ export function ResetPasswordForm() {
     event.preventDefault();
     setMessage(null);
 
-    if (password.length < 8) {
-      setMessage("Password must be at least 8 characters.");
+    const passwordError = passwordIssue(password);
+    if (passwordError) {
+      setMessage(passwordError);
       return;
     }
     if (password !== confirm) {
@@ -130,7 +132,8 @@ export function ResetPasswordForm() {
       <BrandWordmark size="md" className="mb-4 justify-center" />
       <h1 className="text-xl font-bold">Choose a new password</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Must be at least 8 characters. You&apos;ll stay signed in after saving.
+        At least 8 characters. Password managers and long passphrases are welcome.
+        72 characters is the longest Tavro can store. You&apos;ll stay signed in after saving.
       </p>
       <form onSubmit={handleSubmit} className="mt-4 space-y-3">
         <div>

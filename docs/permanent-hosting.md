@@ -26,7 +26,9 @@ In Vercel → Project → **Settings → Environment Variables**, add:
 |------|--------|
 | `NEXT_PUBLIC_SUPABASE_URL` | From Supabase → Settings → API |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon / publishable key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Service role (server-only; needed for sign-up flow) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role (server-only). Records email ownership after a confirmation link. It must not create confirmed users for normal sign-up. |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key |
+| `TURNSTILE_SECRET_KEY` | Turnstile secret (server-only) |
 
 Redeploy after adding variables.
 
@@ -34,8 +36,10 @@ Redeploy after adding variables.
 
 In Supabase → **Authentication → URL configuration**:
 
-- **Site URL:** `https://your-project.vercel.app`
-- **Redirect URLs:** `https://your-project.vercel.app/**`
+- **Site URL:** `https://www.jointavro.app`
+- **Redirect URLs:** `https://www.jointavro.app/**` and `https://jointavro.app/**`
+- Authentication → Providers → Email → **Confirm email** on
+- Authentication → Bot and Abuse Protection → Cloudflare Turnstile, using the same secret as `TURNSTILE_SECRET_KEY`
 
 ## Run on your Mac (stable for you only)
 

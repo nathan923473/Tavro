@@ -26,6 +26,8 @@ const EXACT_BACK: Record<string, string> = {
   "/signup": "/",
   "/forgot-password": "/login",
   "/reset-password": "/login",
+  "/verify-email": "/login",
+  "/signup/check-email": "/signup",
   "/onboarding": "/",
   "/offline": "/",
 };

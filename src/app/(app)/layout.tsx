@@ -1,3 +1,4 @@
+import { VerifiedAccountGate } from "@/components/auth/verified-account-gate";
 import { CreatorStudioSidebar } from "@/components/creator/studio/creator-studio-sidebar";
 import { InstantTabHost } from "@/components/navigation/instant-tab-host";
 import { NotificationBellSlot } from "@/components/notifications/notification-bell-slot";
@@ -18,7 +19,9 @@ export default function MainAppLayout({
         </Suspense>
       }
     >
-      {children}
+      <Suspense fallback={null}>
+        <VerifiedAccountGate>{children}</VerifiedAccountGate>
+      </Suspense>
     </InstantTabHost>
   );
 }

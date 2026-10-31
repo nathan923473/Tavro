@@ -67,6 +67,7 @@ async function findOrCreateDemoUser(admin, { key, displayName }) {
   );
 
   if (!user) {
+    // Demo fixture only. The app sign-up path must not confirm email this way.
     const { data, error } = await admin.auth.admin.createUser({
       email,
       password: DEMO_PASSWORD,
@@ -77,10 +78,21 @@ async function findOrCreateDemoUser(admin, { key, displayName }) {
     user = data.user;
   }
 
-  await admin.from("profiles").upsert({
+  // Local fixture only. Production sign-up must not set this column.
+  const withProof = await admin.from("profiles").upsert({
     id: user.id,
     display_name: displayName,
+    email_ownership_verified_at: new Date().toISOString(),
   });
+  if (withProof.error && /email_ownership_verified_at|schema cache/i.test(withProof.error.message)) {
+    const fallback = await admin.from("profiles").upsert({
+      id: user.id,
+      display_name: displayName,
+    });
+    if (fallback.error) throw new Error(fallback.error.message);
+  } else if (withProof.error) {
+    throw new Error(withProof.error.message);
+  }
 
   return user.id;
 }

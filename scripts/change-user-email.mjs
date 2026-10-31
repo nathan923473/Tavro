@@ -69,7 +69,7 @@ const admin = createClient(url, serviceKey, {
 
 const { data, error } = await admin.auth.admin.updateUserById(userId, {
   email: newEmail,
-  email_confirm: true,
+  email_confirm: false,
 });
 
 if (error) {
@@ -77,5 +77,28 @@ if (error) {
   process.exit(1);
 }
 
-console.log("Done. Login email is now:", data.user?.email);
-console.log("Sign out in the app, then log in with the new email and your existing password.");
+const ownership = await admin
+  .from("profiles")
+  .update({ email_ownership_verified_at: null })
+  .eq("id", userId);
+if (
+  ownership.error &&
+  !/email_ownership_verified_at|schema cache/i.test(ownership.error.message)
+) {
+  console.error("Email changed, but the ownership flag was not cleared:", ownership.error.message);
+}
+
+const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+  type: "magiclink",
+  email: newEmail,
+});
+
+console.log("Login email is now:", data.user?.email);
+console.log("The new address is not verified. Do not mark it confirmed from the dashboard.");
+if (linkError) {
+  console.error("Could not create a verification link:", linkError.message);
+  console.log("Ask them to use Forgot password after Confirm email is on.");
+} else if (linkData?.properties?.action_link) {
+  console.log("Send this one-time link to the new inbox. Opening it verifies the address:");
+  console.log(linkData.properties.action_link);
+}

@@ -1,5 +1,6 @@
 "use server";
 
+import { assertVerifiedAccount } from "@/lib/auth/require-user-id";
 import { getCurrentUserProfile } from "@/lib/auth/profile";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
@@ -11,6 +12,7 @@ export async function saveNotificationPreferencesAction(prefs: {
 }) {
   const { user } = await getCurrentUserProfile();
   if (!user) throw new Error("Log in required.");
+  await assertVerifiedAccount();
 
   const supabase = await createClient();
   const { error } = await supabase.from("notification_preferences").upsert(

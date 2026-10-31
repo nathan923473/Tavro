@@ -6,8 +6,12 @@
 NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_or_publishable_key
 
-# Recommended: enables sign-up without confirmation emails (server-only, never public)
+# Server-only. Records inbox ownership after a real confirmation link. Never public.
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_secret
+
+# Cloudflare Turnstile. Production sign-up fails closed until both are set.
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_turnstile_site_key
+TURNSTILE_SECRET_KEY=your_turnstile_secret
 ```
 
 Get keys from Supabase → **Project Settings** → **API** / **API Keys**.
@@ -26,6 +30,7 @@ In **SQL Editor**, run in order:
 6. If 006 errors with **`column "author_id" does not exist`**, run `006b_fix_messaging_tables.sql` (or re-run the updated 006 messaging section)
 7. **Accountability groups / group chat** — after 006, run **`007_one_shot_fix_groups.sql`**, then **`008_fix_group_rls_row_security.sql`** (required if create group still shows infinite recursion). Use a **single empty** SQL tab; paste each **whole file** from the top.
 8. **Profile & challenge photos** — run **`009_avatars_and_challenge_media.sql`** once. If you get **policy already exists**, run **`009b_one_shot_fix_media.sql`** instead (empty SQL tab, whole file).
+9. **Email ownership** — after 051, run **`052_email_ownership_and_auth_limits.sql`**. It does not delete accounts or sessions.
 
 ### Groups SQL mistakes
 
@@ -40,37 +45,58 @@ In **SQL Editor**, run in order:
 
 **Authentication → URL configuration**
 
-- **Site URL** (production): `https://tavro-tan.vercel.app` (or your custom domain)
-- **Site URL** (local): `http://localhost:3000` (or `http://localhost:3456` if you use `npm run dev:alt`)
+- **Site URL** (production): `https://www.jointavro.app`
+- **Site URL** (local): the origin you actually open, such as `http://127.0.0.1:43123`
 - Redirect URLs (add **all** you use):
-  - `https://tavro-tan.vercel.app/**`
-  - `https://*.vercel.app/**` (optional preview deploys)
+  - `https://www.jointavro.app/**`
+  - `https://jointavro.app/**`
   - `http://localhost:3000/**`
   - `http://127.0.0.1:3000/**`
   - `http://localhost:3456/**`
   - `http://127.0.0.1:3456/**`
-  - `https://*.trycloudflare.com/**`
+  - `http://127.0.0.1:43123/**`
+  - `http://localhost:43123/**`
+
+`jointavro.app` links are sent to `https://www.jointavro.app` so the confirmation cookie lands on the canonical host.
 
 **Authentication → Providers → Email**
 
-- Turn **off** **Confirm email** while developing (instant log in after sign-up)
+- Turn **on** **Confirm email**. New accounts stay signed out until they open the link.
 
-**Authentication → Rate limits** (if you hit limits)
+**Authentication → Bot and Abuse Protection**
 
-- Raise limits or wait ~1 hour
+- Enable Cloudflare Turnstile with the same secret as `TURNSTILE_SECRET_KEY`.
+- The app also checks the token on the server before calling sign-up. Direct Auth API calls are rejected only after this Supabase captcha setting is on.
 
-**Authentication → Password security** (optional while testing)
+**Authentication → Rate limits**
 
-- You can turn off **Leaked password protection** temporarily if Chrome/Supabase blocks a test password
+- Supabase still limits how many emails it will send. The app adds its own limits (sign-up 5 per IP per hour, login 20 per IP and 10 per email per 15 minutes, resend / re-verify / password reset 3 per email per hour) after migration 052.
+
+**Passwords**
+
+- New passwords are 8 to 72 characters. There is no composition rule. Existing passwords keep working at login.
 
 ## 4. How sign-up works in the app
 
-| Setup | Sign-up behavior |
-|--------|------------------|
-| **Service role key** in `.env.local` | App creates a **confirmed** user (no email) → logs you in |
-| **Anon key only** | Standard Supabase sign-up (needs steps 2–3 above) |
+1. The server checks Turnstile and the sign-up rate limit.
+2. `supabase.auth.signUp` creates an **unconfirmed** user and Supabase sends the confirmation email.
+3. The person lands on **Check your email** and can resend.
+4. Opening the link hits `/auth/callback`, which exchanges the code and, with the service role, sets `profiles.email_ownership_verified_at`.
+5. Profile creation does **not** mark the email verified. Admin account creation is not used for normal sign-up.
 
-Log in always uses your email + password on the **Log in** page.
+Until the link is opened, protected Tavro screens and actions stay closed. Browsing while signed out still works.
+
+### Existing accounts
+
+Migration 052 adds `email_ownership_verified_at` as null for every current profile. It does not delete users, sessions, challenges, or progress, and it does not clear `email_confirmed_at`.
+
+Accounts created with the old automatic confirmation have a confirmed flag without proof they own the inbox. After 052 is applied and the service role key is set, the next visit to a protected page asks them to open a one-time link. The same account comes back. Admins need to do this once too.
+
+Do not bulk-unconfirm or delete those users.
+
+### Creator access
+
+Member registration does not grant Creator Studio. Organic creators still complete social verification and admin approval. Invited creators still use the single-use invite, and acceptance now requires the proven inbox.
 
 ### Forgot password (self-serve)
 
@@ -78,7 +104,7 @@ Log in always uses your email + password on the **Log in** page.
 2. Enter your email — Supabase sends a reset link (same redirect rules as sign-up).
 3. Open the link on the **same device/browser** you use for Tavro; you land on **Reset password** to set a new one.
 
-Redirect URLs in step 3 must include your app origin (e.g. `https://tavro-tan.vercel.app/**`) so the link can return through `/auth/callback`.
+Redirect URLs must include `https://www.jointavro.app/**` so the link can return through `/auth/callback`. Opening the reset link also records inbox ownership.
 
 ## 5. Verify
 
@@ -91,10 +117,10 @@ npm run check:auth
 | Error | Fix |
 |--------|-----|
 | Database error saving new user | Run migration **003** |
-| Email rate limit exceeded | Add **service role** key, or disable confirm email + wait |
+| Email rate limit exceeded | Wait about an hour. Keep **Confirm email** on. App resend is limited to 3 per address per hour, and Supabase has its own cap. |
 | Invalid login credentials | Sign up first, use **Forgot password?** on log in, or reset in **Authentication → Users** |
 | User already registered | Use **Log in** |
 | Groups create/join fails (RLS) | Run migrations **006** then **`007_one_shot_fix_groups.sql`** (see step 7 above) |
-| **Log in doesn’t work** / invalid credentials | Same email must exist under **Authentication → Users** for **this** project. Try **Sign up** first, or reset password in Supabase. Check `.env.local` URL/key match that project. Run `npm run check:auth`. Turn off **Confirm email**. After changing `.env.local`, restart `npm run dev`. |
+| **Log in doesn’t work** / invalid credentials | Same email must exist under **Authentication → Users** for **this** project. Confirm the email first, or use **Forgot password?** Check `.env.local` URL/key match that project. Run `npm run check:auth`. After changing `.env.local`, restart `npm run dev`. |
 | Log in spins then nothing | Restart dev server; use **http://127.0.0.1:3456** (same port as terminal). Clear site cookies for localhost. |
-| **Works on Mac, not on phone** | Supabase → **URL configuration**: Site URL = your Vercel URL; add `https://tavro-tan.vercel.app/**` under Redirect URLs. Vercel → **Environment Variables**: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` on Production. On phone: Safari → clear site data for tavro-tan.vercel.app, then log in again. |
+| **Works on Mac, not on phone** | Supabase → **URL configuration**: Site URL = `https://www.jointavro.app`; add `https://www.jointavro.app/**` and `https://jointavro.app/**` under Redirect URLs. Vercel → **Environment Variables**: Supabase URL, anon key, service role, and both Turnstile keys on Production. |
