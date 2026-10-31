@@ -237,7 +237,6 @@ export function WeightProgressChart({
 
       {logging ? (
         <WeighInForm
-          defaultValue={Number(displaySummary.currentWeight.toFixed(1))}
           submitLabel="Save weigh-in"
           onDone={() => setLogging(false)}
         />

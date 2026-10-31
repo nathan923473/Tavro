@@ -14,12 +14,9 @@ import { useRouter } from "next/navigation";
 import { useId, useState, useSyncExternalStore, useTransition } from "react";
 
 export function WeighInForm({
-  defaultValue,
   submitLabel,
   onDone,
 }: {
-  /** Starting number, already in the current display unit. */
-  defaultValue?: number | null;
   submitLabel: string;
   onDone?: () => void;
 }) {
@@ -31,9 +28,7 @@ export function WeighInForm({
     (): WeightUnit => "kg",
   );
   const [, startTransition] = useTransition();
-  const [value, setValue] = useState(
-    defaultValue != null && Number.isFinite(defaultValue) ? String(defaultValue) : "",
-  );
+  const [value, setValue] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
 
@@ -97,7 +92,6 @@ export function WeighInForm({
           if (status === "error" || status === "saved") setStatus("idle");
         }}
         className="focus-ring w-full rounded-xl border border-border bg-surface px-3 py-3 text-base text-foreground"
-        placeholder={unit === "kg" ? "70.0" : "154.0"}
       />
       <div className="flex gap-2">
         <Button type="submit" fullWidth disabled={status === "saving"}>
