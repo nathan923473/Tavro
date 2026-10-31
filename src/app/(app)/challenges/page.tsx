@@ -62,7 +62,7 @@ async function ChallengesPageContent() {
         title="Challenges"
         subtitle="Search free creator challenges · join in one tap"
       />
-      <div className="page-stack px-4 py-4">
+      <div className="page-stack px-4 py-4 lg:px-8 lg:py-6">
         <DiscoverInteractive
           initial={personalizedDiscover}
           variant="embedded"

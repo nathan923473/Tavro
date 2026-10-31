@@ -90,14 +90,16 @@ async function ProgressPageContent() {
         title="Progress"
         subtitle="Private habits & consistency · share wins if you want"
       />
-      <div className="page-stack px-4 py-4">
+      <div className="flex flex-col gap-6 px-4 py-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:px-8 lg:py-6">
+        <div className="lg:col-span-2">
         <MutedCallout title="Your private space">
           Habits, weight, mood and reflections stay on this tab unless you choose to
           share a win with your group.
         </MutedCallout>
+        </div>
 
         {userId ? (
-          <>
+          <div className="flex flex-col gap-6 lg:col-span-2">
             <ProgressHighlightsCard
               consistency={consistency}
               habitsActive={habits.filter((h) => !h.paused).length}
@@ -109,7 +111,7 @@ async function ProgressPageContent() {
               joinedChallenges={joined}
               accountabilityGroups={accountabilityGroups}
             />
-          </>
+          </div>
         ) : null}
 
         <section aria-labelledby="this-week-heading" className="section-stack">
@@ -210,7 +212,7 @@ async function ProgressPageContent() {
 
         <ShareWithGroupCard loggedIn={Boolean(userId)} />
 
-        <section aria-labelledby="challenges-history-heading">
+        <section aria-labelledby="challenges-history-heading" className="lg:col-span-2">
           <h2
             id="challenges-history-heading"
             className="mb-2 px-1 text-base font-semibold"
@@ -234,11 +236,13 @@ async function ProgressPageContent() {
         </section>
 
         {userId ? (
-          <WeightTrackingSettings enabled={weightEnabled} weighIns={weighIns} />
+          <div className="lg:col-span-2">
+            <WeightTrackingSettings enabled={weightEnabled} weighIns={weighIns} />
+          </div>
         ) : null}
 
         {userId && weightEnabled ? (
-          <section aria-labelledby="weight-chart-heading">
+          <section aria-labelledby="weight-chart-heading" className="lg:col-span-2">
             <h2
               id="weight-chart-heading"
               className="mb-2 px-1 text-base font-semibold"

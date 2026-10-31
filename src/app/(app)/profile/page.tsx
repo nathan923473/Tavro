@@ -71,7 +71,7 @@ async function ProfilePageContent() {
     <>
       <PageHeader title="Profile" subtitle="Member or creator · one account" />
       {profile?.isAdmin ? (
-        <div className="px-4">
+        <div className="px-4 lg:px-8">
           <Link
             href="/admin/analytics"
             className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground shadow-sm"
@@ -81,8 +81,9 @@ async function ProfilePageContent() {
           </Link>
         </div>
       ) : null}
-      <div className="page-stack-compact px-4 py-4">
+      <div className="flex flex-col gap-4 px-4 py-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:px-8 lg:py-6">
         {profile ? (
+          <div className="lg:col-span-2">
           <ProfileHeroCard
             displayName={profile.displayName ?? user?.email?.split("@")[0] ?? "Member"}
             email={user?.email}
@@ -96,6 +97,7 @@ async function ProfilePageContent() {
                   : null
             }
           />
+          </div>
         ) : null}
         {profile?.role === "creator" || profile?.role === "admin" ? (
           <CreatorStudioProfileCard />
@@ -187,7 +189,7 @@ async function ProfilePageContent() {
         <NotificationPreferencesCard />
         <InstallPrompt />
 
-        <Card>
+        <Card className="lg:col-span-2">
           <h2 className="font-semibold">Privacy</h2>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li className="flex items-center gap-2">
@@ -213,7 +215,11 @@ async function ProfilePageContent() {
           </ul>
         </Card>
 
-        {user ? <DeleteAccountSection /> : null}
+        {user ? (
+          <div className="lg:col-span-2">
+            <DeleteAccountSection />
+          </div>
+        ) : null}
       </div>
     </>
     </TabReady>

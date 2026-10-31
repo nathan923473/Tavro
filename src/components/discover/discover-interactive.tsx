@@ -179,7 +179,7 @@ export function DiscoverInteractive({
             <p className="px-1 text-sm text-muted-foreground">No matches — try another name.</p>
           ) : (
             <>
-              <ul className="space-y-3">
+              <ul className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
                 {results.challenges.map((c) => (
                   <ChallengeRow
                     key={c.id}
@@ -262,7 +262,7 @@ export function DiscoverInteractive({
                 </Link>
               ) : null}
             </div>
-            <ul className="space-y-2">
+            <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
               {initial.creators.slice(0, limits.creators).map((cr) => (
                 <li key={cr.id}>
                   <Link
@@ -323,7 +323,7 @@ function Section({
           </Link>
         ) : null}
       </div>
-      <ul className="space-y-3">
+      <ul className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
         {items.map((c) => (
           <ChallengeRow
             key={c.id}

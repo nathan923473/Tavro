@@ -35,7 +35,7 @@ export function ChallengesInteractive({
             description="Search above to join a free challenge — it will show up here."
           />
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
             {mine.map((challenge) => (
               <li key={challenge.id}>
                 <ChallengeCard

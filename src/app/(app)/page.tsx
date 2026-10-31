@@ -122,78 +122,91 @@ async function HomePageContent() {
           ) : undefined
         }
       />
-      <div className="page-stack-compact px-4 py-3 pb-4">
-        <HomeInstallBanner />
-        <HomeHero
-          firstName={firstName}
-          timezone={timezone}
-          goals={goals}
-          group={groupData.group}
-          activeChallengeHub={activeChallengeHub}
-          primaryAction={primaryAction}
-          loggedIn={Boolean(userId)}
-          viewerUserId={userId}
-          workTowards={memberPrefs.workTowards}
-        />
+      <div className="flex flex-col gap-4 px-4 py-3 pb-4 lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(17rem,22rem)] lg:items-start lg:gap-6 lg:px-8 lg:py-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(19rem,24rem)]">
+        <div className="lg:col-span-2">
+          <HomeInstallBanner />
+        </div>
+        <div className="lg:col-span-2">
+          <HomeHero
+            firstName={firstName}
+            timezone={timezone}
+            goals={goals}
+            group={groupData.group}
+            activeChallengeHub={activeChallengeHub}
+            primaryAction={primaryAction}
+            loggedIn={Boolean(userId)}
+            viewerUserId={userId}
+            workTowards={memberPrefs.workTowards}
+          />
+        </div>
 
         {activeChallengeHub ? (
-          <HomeChallengeSpotlightFromList
-            activeHub={activeChallengeHub}
-            challenges={joinedChallenges}
-          />
+          <div className="lg:col-start-2">
+            <HomeChallengeSpotlightFromList
+              activeHub={activeChallengeHub}
+              challenges={joinedChallenges}
+            />
+          </div>
         ) : null}
 
-        <TodaysGoals
-          goals={goals}
-          group={groupData.group}
-          activeChallengeHub={activeChallengeHub}
-          viewerUserId={userId}
-          loggedIn={Boolean(userId)}
-        />
+        <div className="lg:col-start-1">
+          <TodaysGoals
+            goals={goals}
+            group={groupData.group}
+            activeChallengeHub={activeChallengeHub}
+            viewerUserId={userId}
+            loggedIn={Boolean(userId)}
+          />
+        </div>
 
-        {memberPrefs.growthFriction === "support" ||
-        memberPrefs.growthFriction === "consistency" ? (
-          <>
-            <HomeAccountabilityGroups group={groupData.group} viewerUserId={userId} />
-            <HomeChallengesSection
-              challenges={joinedChallenges}
-              activeHub={activeChallengeHub}
-              workTowards={memberPrefs.workTowards}
-              spotlightShown={Boolean(activeChallengeHub)}
-            />
-          </>
-        ) : hasActiveChallenge ? (
-          <>
-            <HomeChallengesSection
-              challenges={joinedChallenges}
-              activeHub={activeChallengeHub}
-              workTowards={memberPrefs.workTowards}
-              spotlightShown={Boolean(activeChallengeHub)}
-            />
-            <HomeAccountabilityGroups group={groupData.group} viewerUserId={userId} />
-          </>
-        ) : (
-          <>
-            <HomeAccountabilityGroups group={groupData.group} viewerUserId={userId} />
-            <HomeChallengesSection
-              challenges={joinedChallenges}
-              activeHub={activeChallengeHub}
-              workTowards={memberPrefs.workTowards}
-              spotlightShown={Boolean(activeChallengeHub)}
-            />
-          </>
-        )}
+        <div className="flex flex-col gap-4 lg:col-start-2">
+          {memberPrefs.growthFriction === "support" ||
+          memberPrefs.growthFriction === "consistency" ? (
+            <>
+              <HomeAccountabilityGroups group={groupData.group} viewerUserId={userId} />
+              <HomeChallengesSection
+                challenges={joinedChallenges}
+                activeHub={activeChallengeHub}
+                workTowards={memberPrefs.workTowards}
+                spotlightShown={Boolean(activeChallengeHub)}
+              />
+            </>
+          ) : hasActiveChallenge ? (
+            <>
+              <HomeChallengesSection
+                challenges={joinedChallenges}
+                activeHub={activeChallengeHub}
+                workTowards={memberPrefs.workTowards}
+                spotlightShown={Boolean(activeChallengeHub)}
+              />
+              <HomeAccountabilityGroups group={groupData.group} viewerUserId={userId} />
+            </>
+          ) : (
+            <>
+              <HomeAccountabilityGroups group={groupData.group} viewerUserId={userId} />
+              <HomeChallengesSection
+                challenges={joinedChallenges}
+                activeHub={activeChallengeHub}
+                workTowards={memberPrefs.workTowards}
+                spotlightShown={Boolean(activeChallengeHub)}
+              />
+            </>
+          )}
+        </div>
 
-        <HomeDailyCheckIn
-          checkedIn={checkIn.checkedIn}
-          mood={checkIn.mood}
-          loggedIn={Boolean(userId)}
-        />
-
-        <WeeklyConsistencyHome
-          summary={consistency}
-          weekDayIndicators={weekDayIndicators}
-        />
+        <div className="lg:col-start-1">
+          <HomeDailyCheckIn
+            checkedIn={checkIn.checkedIn}
+            mood={checkIn.mood}
+            loggedIn={Boolean(userId)}
+          />
+        </div>
+        <div className="lg:col-start-1">
+          <WeeklyConsistencyHome
+            summary={consistency}
+            weekDayIndicators={weekDayIndicators}
+          />
+        </div>
       </div>
     </div>
     </TabReady>

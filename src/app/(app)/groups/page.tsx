@@ -64,7 +64,7 @@ async function GroupsPageContent() {
         title="Private accountability groups"
         subtitle={`Member-only ${ACCOUNTABILITY_GROUP_PLURAL} · ${ACCOUNTABILITY_GROUP_SIZE_LABEL.toLowerCase()} · not visible to creators`}
       />
-      <div className="space-y-4 px-4 py-4">
+      <div className="space-y-4 px-4 py-4 lg:px-8 lg:py-6">
         <GroupsInteractive
           group={group}
           feed={feed}

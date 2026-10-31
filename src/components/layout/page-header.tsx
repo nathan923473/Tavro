@@ -31,7 +31,7 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 border-b border-border/60 bg-surface/95 px-4 py-3.5 backdrop-blur-md",
+        "sticky top-0 z-40 border-b border-border/60 bg-surface/95 px-4 py-3.5 backdrop-blur-md lg:px-8 lg:py-5 lg:pr-16",
         className,
       )}
     >

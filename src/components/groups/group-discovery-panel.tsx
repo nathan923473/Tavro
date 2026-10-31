@@ -162,7 +162,7 @@ export function GroupDiscoveryPanel({
           No matching groups available yet. Try another goal or create your own group below.
         </p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
           {groups.map((g) => (
             <li key={g.id}>
               <Card padding="sm" className="space-y-2">
