@@ -10,11 +10,10 @@ import {
   storeWeightUnit,
   subscribeWeightUnit,
 } from "@/lib/weight-units";
-import { addWeighInAction } from "@/app/(app)/member/actions";
+import { WeighInForm } from "@/components/progress/weigh-in-form";
 import type { WeightProgressSummary, WeightUnit, WeeklyWeighIn } from "@/types";
 import { Lock, Scale } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useMemo, useState, useSyncExternalStore, useTransition } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 
 type WeightProgressChartProps = {
   weighIns: WeeklyWeighIn[];
@@ -41,9 +40,7 @@ export function WeightProgressChart({
   weighIns,
   summary,
 }: WeightProgressChartProps) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const [logMessage, setLogMessage] = useState<string | null>(null);
+  const [logging, setLogging] = useState(false);
   const storageUnit = summary.unit;
 
   const displayUnit = useSyncExternalStore(
@@ -238,39 +235,23 @@ export function WeightProgressChart({
         </p>
       ) : null}
 
-      <Button
-        className="mt-4"
-        variant="primary"
-        fullWidth
-        disabled={pending}
-        onClick={() => {
-          const raw = window.prompt(
-            `Enter today's weight (${displayUnit}) — saved to your account`,
-            String(displaySummary.currentWeight),
-          );
-          if (raw == null) return;
-          const n = Number.parseFloat(raw);
-          if (Number.isNaN(n) || n <= 0) {
-            setLogMessage("Enter a valid number.");
-            return;
-          }
-          const lb = displayUnit === "kg" ? n / 0.453592 : n;
-          startTransition(async () => {
-            try {
-              await addWeighInAction(lb);
-              setLogMessage(`Logged ${n.toFixed(1)} ${displayUnit} for today.`);
-              router.refresh();
-            } catch (e) {
-              setLogMessage(e instanceof Error ? e.message : "Could not save.");
-            }
-          });
-        }}
-      >
-        Log weekly weigh-in ({displayUnit})
-      </Button>
-      {logMessage ? (
-        <p className="mt-2 text-center text-xs text-muted-foreground">{logMessage}</p>
-      ) : null}
+      {logging ? (
+        <WeighInForm
+          unit={displayUnit}
+          defaultValue={Number(displaySummary.currentWeight.toFixed(1))}
+          submitLabel="Save weigh-in"
+          onDone={() => setLogging(false)}
+        />
+      ) : (
+        <Button
+          className="mt-4"
+          variant="primary"
+          fullWidth
+          onClick={() => setLogging(true)}
+        >
+          Log weekly weigh-in ({displayUnit})
+        </Button>
+      )}
     </Card>
   );
 }
