@@ -27,9 +27,9 @@ export function subscribeWeightUnit(onStoreChange: () => void): () => void {
 }
 
 export function readStoredWeightUnit(): WeightUnit {
-  if (typeof window === "undefined") return "lb";
+  if (typeof window === "undefined") return "kg";
   const stored = window.localStorage.getItem(WEIGHT_UNIT_STORAGE_KEY);
-  return stored === "kg" ? "kg" : "lb";
+  return stored === "lb" ? "lb" : "kg";
 }
 
 export function storeWeightUnit(unit: WeightUnit): void {

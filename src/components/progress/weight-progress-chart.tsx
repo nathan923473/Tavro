@@ -46,7 +46,7 @@ export function WeightProgressChart({
   const displayUnit = useSyncExternalStore(
     subscribeWeightUnit,
     readStoredWeightUnit,
-    (): WeightUnit => "lb",
+    (): WeightUnit => "kg",
   );
 
   function handleUnitChange(unit: WeightUnit) {
@@ -237,7 +237,6 @@ export function WeightProgressChart({
 
       {logging ? (
         <WeighInForm
-          unit={displayUnit}
           defaultValue={Number(displaySummary.currentWeight.toFixed(1))}
           submitLabel="Save weigh-in"
           onDone={() => setLogging(false)}

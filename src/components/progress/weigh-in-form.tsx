@@ -1,31 +1,50 @@
 "use client";
 
 import { addWeighInAction } from "@/app/(app)/member/actions";
+import { WeightUnitToggle } from "@/components/progress/weight-unit-toggle";
 import { Button } from "@/components/ui/button";
-import { convertWeight } from "@/lib/weight-units";
+import {
+  convertWeight,
+  readStoredWeightUnit,
+  storeWeightUnit,
+  subscribeWeightUnit,
+} from "@/lib/weight-units";
 import type { WeightUnit } from "@/types";
 import { useRouter } from "next/navigation";
-import { useId, useState, useTransition } from "react";
+import { useId, useState, useSyncExternalStore, useTransition } from "react";
 
 export function WeighInForm({
-  unit,
   defaultValue,
   submitLabel,
   onDone,
 }: {
-  unit: WeightUnit;
+  /** Starting number, already in the current display unit. */
   defaultValue?: number | null;
   submitLabel: string;
   onDone?: () => void;
 }) {
   const router = useRouter();
   const inputId = useId();
-  const [pending, startTransition] = useTransition();
+  const unit = useSyncExternalStore(
+    subscribeWeightUnit,
+    readStoredWeightUnit,
+    (): WeightUnit => "kg",
+  );
+  const [, startTransition] = useTransition();
   const [value, setValue] = useState(
     defaultValue != null && Number.isFinite(defaultValue) ? String(defaultValue) : "",
   );
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
+
+  function selectUnit(next: WeightUnit) {
+    if (next === unit) return;
+    const n = Number.parseFloat(value);
+    if (Number.isFinite(n) && n > 0) {
+      setValue(convertWeight(n, unit, next).toFixed(1));
+    }
+    storeWeightUnit(next);
+  }
 
   function save() {
     const n = Number.parseFloat(value);
@@ -58,27 +77,28 @@ export function WeighInForm({
         if (status !== "saving") save();
       }}
     >
-      <div>
+      <div className="flex items-center justify-between gap-3">
         <label htmlFor={inputId} className="text-sm font-medium text-foreground">
-          Today’s weight ({unit})
+          Today’s weight
         </label>
-        <input
-          id={inputId}
-          type="number"
-          inputMode="decimal"
-          step="0.1"
-          min="0.1"
-          autoFocus
-          value={value}
-          disabled={status === "saving"}
-          onChange={(event) => {
-            setValue(event.target.value);
-            if (status === "error" || status === "saved") setStatus("idle");
-          }}
-          className="focus-ring mt-1.5 w-full rounded-xl border border-border bg-surface px-3 py-3 text-base text-foreground"
-          placeholder={unit === "kg" ? "70.0" : "154.0"}
-        />
+        <WeightUnitToggle value={unit} onChange={selectUnit} />
       </div>
+      <input
+        id={inputId}
+        type="number"
+        inputMode="decimal"
+        step="0.1"
+        min="0.1"
+        autoFocus
+        value={value}
+        disabled={status === "saving"}
+        onChange={(event) => {
+          setValue(event.target.value);
+          if (status === "error" || status === "saved") setStatus("idle");
+        }}
+        className="focus-ring w-full rounded-xl border border-border bg-surface px-3 py-3 text-base text-foreground"
+        placeholder={unit === "kg" ? "70.0" : "154.0"}
+      />
       <div className="flex gap-2">
         <Button type="submit" fullWidth disabled={status === "saving"}>
           {status === "saving" ? "Saving…" : submitLabel}

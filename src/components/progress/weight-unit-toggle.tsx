@@ -15,7 +15,7 @@ export function WeightUnitToggle({ value, onChange }: WeightUnitToggleProps) {
       role="group"
       aria-label="Weight unit"
     >
-      {(["lb", "kg"] as const).map((unit) => (
+      {(["kg", "lb"] as const).map((unit) => (
         <button
           key={unit}
           type="button"
