@@ -5,6 +5,7 @@ import { userFacingErrorMessage } from "@/lib/errors/user-message";
 import {
   adminApproveApplication,
   adminConfirmVerification,
+  adminPermitReapply,
   adminRejectApplication,
 } from "@/app/(app)/admin/creator-applications/actions";
 import { Badge } from "@/components/ui/badge";
@@ -105,8 +106,14 @@ export function CreatorApplicationReviewList({
                 ) : null}
               </dd>
             </div>
+            {app.coaching_focus ? (
+              <div>
+                <dt className="font-medium">Coaching focus</dt>
+                <dd className="text-muted-foreground">{app.coaching_focus}</dd>
+              </div>
+            ) : null}
             <div>
-              <dt className="font-medium">Pitch</dt>
+              <dt className="font-medium">Motivation</dt>
               <dd className="text-muted-foreground">{app.pitch}</dd>
             </div>
             {app.dm_verification_requested_at ? (
@@ -155,6 +162,16 @@ export function CreatorApplicationReviewList({
             >
               Reject
             </Button>
+            {app.status === "rejected" && app.reviewed_by ? (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={busyId === app.id}
+                onClick={() => run(app.id, () => adminPermitReapply(app.id))}
+              >
+                Allow reapply
+              </Button>
+            ) : null}
           </div>
         </Card>
       ))}

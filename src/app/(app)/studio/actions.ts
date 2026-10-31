@@ -178,6 +178,17 @@ export async function saveChallengeDraftAction(input: {
 
   if (!challengeId) throw new Error("Could not save draft.");
 
+  if (!input.challengeId) {
+    const { recordPlatformEvent } = await import("@/lib/analytics/record-event");
+    await recordPlatformEvent({
+      eventType: "challenge_created",
+      userId: user.id,
+      creatorId: user.id,
+      challengeId,
+      idempotencyKey: `challenge_created:${challengeId}`,
+    });
+  }
+
   await client.from("challenge_schedule_items").delete().eq("challenge_id", challengeId);
   const scheduleRows = input.schedule.map((item, i) => ({
     challenge_id: challengeId,

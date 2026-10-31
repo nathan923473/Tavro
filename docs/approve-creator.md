@@ -9,11 +9,15 @@ set is_admin = true
 where id = (select id from auth.users where email = 'you@example.com');
 ```
 
-3. Use the admin UI: log in as admin → **Profile** → **Review creator applications** (`/admin/creator-applications`).
+3. Run `051_creator_invites_and_onboarding.sql` before using personal invites, new verification codes, or reapply.
 
-4. Confirm social verification (bio check, DM, or **Confirm verification manually**).
+4. Personal invites: **Profile** → **Invite a creator** (`/admin/creator-invitations`). The link is single-use, email-bound, and expires. Accepting it records you as the inviter and the approver. It does not use the public application or bio code.
 
-5. When status is **awaiting_review** and verification is **verified**, click **Approve creator**.
+5. Organic applicants: **Profile** → **Review creator applications** (`/admin/creator-applications`).
+
+6. Confirm social verification (bio check, DM, or **Confirm verification manually**).
+
+7. When status is **awaiting_review** and verification is **verified**, click **Approve creator**. **Allow reapply** is only for an application you rejected. Expired codes are refreshed by the applicant, not by a new approval.
 
 SQL fallback (admin JWT/session required for RPC from client; in SQL editor use service role or run as postgres):
 
@@ -22,4 +26,4 @@ select public.admin_confirm_verification('APPLICATION_UUID');
 select public.approve_creator_application('APPLICATION_UUID');
 ```
 
-6. Creator creates community row in Studio, then can publish public challenges.
+8. Creator opens Studio and can publish a public challenge immediately. The setup checklist is optional.

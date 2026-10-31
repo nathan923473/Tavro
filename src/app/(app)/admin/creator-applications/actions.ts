@@ -22,10 +22,27 @@ export async function adminApproveApplication(applicationId: string) {
     app_id: applicationId,
   });
   if (error) throw new Error(error.message);
+  const { recordPlatformEvent } = await import("@/lib/analytics/record-event");
+  await recordPlatformEvent({
+    eventType: "creator_approved",
+    idempotencyKey: `creator_approved:${applicationId}`,
+    properties: { pathway: "organic", applicationId },
+  });
   revalidatePath("/admin/creator-applications");
   revalidatePath("/become-creator");
   revalidatePath("/studio");
   revalidatePath("/profile");
+}
+
+export async function adminPermitReapply(applicationId: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("permit_creator_reapply", {
+    app_id: applicationId,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/creator-applications");
+  revalidatePath("/become-creator");
 }
 
 export async function adminRejectApplication(applicationId: string, notes: string) {

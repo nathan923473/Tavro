@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  refreshCreatorVerificationCode,
   requestDmVerification,
   verifyBioForApplication,
 } from "@/app/(app)/become-creator/actions";
@@ -14,17 +15,22 @@ import { useState } from "react";
 export function CreatorVerificationPanel({
   application,
   dmTarget,
+  canRefreshCode,
+  statusTitle,
+  statusBody,
 }: {
   application: CreatorApplicationRow;
   dmTarget: string;
+  canRefreshCode: boolean;
+  statusTitle: string;
+  statusBody: string;
 }) {
   const [message, setMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState<"bio" | "dm" | null>(null);
+  const [loading, setLoading] = useState<"bio" | "dm" | "code" | null>(null);
 
   const expiresAt = application.verification_code_expires_at
     ? new Date(application.verification_code_expires_at)
     : null;
-  const expired = expiresAt ? expiresAt < new Date() : false;
   async function onVerifyBio() {
     setLoading("bio");
     setMessage(null);
@@ -34,6 +40,15 @@ export function CreatorVerificationPanel({
     if (result.ok) {
       window.location.reload();
     }
+  }
+
+  async function onRefreshCode() {
+    setLoading("code");
+    setMessage(null);
+    const result = await refreshCreatorVerificationCode(application.id);
+    setMessage(result.message);
+    setLoading(null);
+    if (result.ok) window.location.reload();
   }
 
   async function onRequestDm() {
@@ -54,27 +69,29 @@ export function CreatorVerificationPanel({
   return (
     <Card>
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="font-semibold">Verify your social account</h2>
+        <h2 className="font-semibold">{statusTitle}</h2>
         <Badge tone="muted">{statusLabel}</Badge>
         {application.verification_state === "verified" ? (
           <Badge tone="success">Verified</Badge>
         ) : null}
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Verification alone does not make you a creator — an admin must still
-        approve your application.
-      </p>
+      <p className="mt-2 text-sm text-muted-foreground">{statusBody}</p>
 
       {application.status === "awaiting_review" ? (
         <p className="mt-4 text-sm">
           Ownership verified. Our team will review your pitch and approve or
           reject your creator access.
         </p>
-      ) : expired ? (
-        <p className="mt-4 text-sm text-destructive">
-          Your verification code expired. Contact support or reapply when
-          reapplication is enabled.
-        </p>
+      ) : canRefreshCode ? (
+        <div className="mt-4 space-y-3">
+          <p className="text-sm">
+            The code for {application.social_link ?? "your profile"} has expired. Request a
+            new one and add it to that public bio.
+          </p>
+          <Button type="button" fullWidth disabled={loading !== null} onClick={onRefreshCode}>
+            {loading === "code" ? "Creating a code…" : "Get a new verification code"}
+          </Button>
+        </div>
       ) : (
         <>
           <div className="mt-4 rounded-xl bg-muted p-3">

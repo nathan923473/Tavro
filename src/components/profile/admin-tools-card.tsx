@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { BarChart3, FileWarning, UserCheck } from "lucide-react";
+import { BarChart3, FileWarning, MailPlus, UserCheck } from "lucide-react";
 import Link from "next/link";
 
 export function AdminToolsCard() {
@@ -20,6 +20,13 @@ export function AdminToolsCard() {
           </Link>
         </li>
         <li>
+          <Link
+            href="/admin/creator-invitations"
+            className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-surface text-sm font-semibold"
+          >
+            <MailPlus className="h-4 w-4 shrink-0" aria-hidden />
+            Invite a creator
+          </Link>
           <Link
             href="/admin/creator-applications"
             className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-surface text-sm font-semibold"

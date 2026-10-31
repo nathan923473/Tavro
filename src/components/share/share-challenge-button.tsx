@@ -1,5 +1,6 @@
 "use client";
 
+import { recordCreatorChallengeShareAction } from "@/app/(app)/studio/share-actions";
 import { Button } from "@/components/ui/button";
 import { getAppBaseUrl } from "@/lib/site-url";
 import { Share2 } from "lucide-react";
@@ -11,6 +12,7 @@ type ShareChallengeButtonProps = {
   text?: string;
   fullWidth?: boolean;
   variant?: "primary" | "outline" | "secondary";
+  challengeId?: string;
 };
 
 export function ShareChallengeButton({
@@ -19,12 +21,17 @@ export function ShareChallengeButton({
   text,
   fullWidth,
   variant = "secondary",
+  challengeId,
 }: ShareChallengeButtonProps) {
   const [message, setMessage] = useState<string | null>(null);
 
   async function share() {
     const url = `${getAppBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`;
     setMessage(null);
+    if (challengeId) {
+      const recorded = await recordCreatorChallengeShareAction(challengeId);
+      if (!recorded.ok && recorded.message) setMessage(recorded.message);
+    }
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({

@@ -5,8 +5,10 @@ export type CreatorApplicationRow = {
   user_id: string;
   display_name: string;
   pitch: string;
+  coaching_focus?: string | null;
   social_link: string | null;
   status: string;
+  reviewed_by?: string | null;
   verification_code: string | null;
   verification_code_expires_at: string | null;
   verification_state: string;
@@ -18,6 +20,19 @@ export type CreatorApplicationRow = {
   application_source: string | null;
   created_at: string;
 };
+
+export async function getLatestApplicationForUser(userId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("creator_applications")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return data as CreatorApplicationRow | null;
+}
 
 export async function getOpenApplicationForUser(userId: string) {
   const supabase = await createClient();

@@ -21,6 +21,19 @@ export function groupInvitePath(code: string): string {
   return `/invite/group/${code}`;
 }
 
+export function creatorInvitePath(token: string): string {
+  return `/invite/creator/${token}`;
+}
+
+/** Relative in-app path only. Rejects protocol-relative and absolute URLs. */
+export function safeInternalPath(next: string | null | undefined, fallback = "/"): string {
+  if (!next) return fallback;
+  if (!next.startsWith("/") || next.startsWith("//") || next.includes("\\") || next.includes("://")) {
+    return fallback;
+  }
+  return next;
+}
+
 export function userReferralPath(code: string): string {
   return `/welcome?ref=${code}`;
 }

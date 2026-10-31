@@ -7,7 +7,9 @@ import { StudioPerformanceSummary } from "@/components/creator/studio/studio-per
 import { StudioUpcomingChallengeCard } from "@/components/creator/studio/studio-upcoming-challenge-card";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { CreatorSetupChecklist } from "@/components/creator/studio/creator-setup-checklist";
 import { requireApprovedCreator } from "@/lib/auth/profile";
+import { loadCreatorSetup } from "@/lib/creator/setup-progress";
 import { fetchCommunityBySlug, fetchOwnerCommunity } from "@/lib/data/communities";
 import { fetchCreatorStudioOverview } from "@/lib/data/creator-studio";
 import { PrimaryLink } from "@/components/ui/link-button";
@@ -26,19 +28,28 @@ export default async function CreatorStudioPage() {
     : { community: null };
 
   const displayName = profile.displayName ?? "creator";
+  const setup = profile.creatorOnboardingCompleted
+    ? null
+    : await loadCreatorSetup(
+        user.id,
+        community
+          ? { slug: community.slug, communityName: community.communityName, bio: community.bio }
+          : null,
+      );
 
   return (
     <StudioLayout
       title="Creator Studio"
       subtitle={`Welcome back, ${displayName} · free for approved creators`}
     >
-      {!profile.creatorOnboardingCompleted ? (
-        <Card className="border-dashed border-primary/40">
-          <p className="text-sm font-medium">New creator? Finish the 3-minute setup.</p>
-          <Link href="/studio/onboarding" className="mt-2 inline-block text-sm font-semibold text-primary">
-            Start creator onboarding →
-          </Link>
-        </Card>
+      {setup ? (
+        <CreatorSetupChecklist
+          steps={setup.steps}
+          welcome={setup.welcome}
+          shareChallengeId={setup.shareChallengeId}
+          sharePath={setup.sharePath}
+          shareTitle={setup.shareTitle}
+        />
       ) : null}
 
       <Card variant="brand" className="space-y-2">

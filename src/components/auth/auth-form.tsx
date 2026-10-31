@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PasswordInput } from "@/components/ui/password-input";
 import { APP_NAME } from "@/lib/branding";
+import { safeInternalPath } from "@/lib/site-url";
 import { signUpMember } from "@/app/(auth)/actions";
 import { getOrCreateTabId, syncTabHintCookie } from "@/lib/auth/tab-id.client";
 import { createClient } from "@/lib/supabase/client";
@@ -27,7 +28,8 @@ async function syncProfileAfterAuth(displayName?: string) {
 function AuthFormInner({ mode }: { mode: AuthMode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/";
+  const next = safeInternalPath(searchParams.get("next"));
+  const creatorInvite = next.startsWith("/invite/creator/");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -135,8 +137,12 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
       </h1>
       <p className="mt-1 text-sm text-muted-foreground">
         {mode === "signup"
-          ? "Everyone starts as a member — creators apply separately."
-          : `Log in to ${APP_NAME}`}
+          ? creatorInvite
+            ? "Create the account for the email on your creator invite. You'll accept it on the next screen."
+            : "Everyone starts as a member — creators apply separately."
+          : creatorInvite
+            ? "Log in with the email this creator invite was issued for."
+            : `Log in to ${APP_NAME}`}
       </p>
       <form onSubmit={handleSubmit} className="mt-4 space-y-3">
         {mode === "signup" ? (

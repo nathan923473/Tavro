@@ -1,6 +1,7 @@
 "use server";
 
 import { readCreatorApplicationAttribution } from "@/lib/creator/growth-actions";
+import { validateOrganicApplication } from "@/lib/creator/onboarding-rules";
 import { bioContainsVerificationCode } from "@/lib/creator/verification";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
@@ -9,12 +10,17 @@ import { redirect } from "next/navigation";
 
 export async function submitCreatorApplication(formData: FormData): Promise<void> {
   const displayName = String(formData.get("display_name") ?? "").trim();
-  const pitch = String(formData.get("pitch") ?? "").trim();
+  const pitch = String(formData.get("motivation") ?? formData.get("pitch") ?? "").trim();
   const socialLink = String(formData.get("social_link") ?? "").trim();
+  const coachingFocus = String(formData.get("coaching_focus") ?? "").trim();
 
-  if (!displayName || !pitch || !socialLink) {
-    throw new Error("Name, pitch, and primary social link are required.");
-  }
+  const invalid = validateOrganicApplication({
+    displayName,
+    socialLink,
+    coachingFocus,
+    motivation: pitch,
+  });
+  if (invalid) throw new Error(invalid);
 
   const supabase = await createClient();
   const {
@@ -32,29 +38,82 @@ export async function submitCreatorApplication(formData: FormData): Promise<void
     p_social_link: socialLink,
     p_referred_by_user_id: attribution?.referredByUserId ?? null,
     p_application_source: attribution?.source ?? "unknown",
+    p_coaching_focus: coachingFocus,
   };
 
   let { data: appId, error } = await supabase.rpc("submit_creator_application", rpcArgs);
 
-  if (error && /p_referred_by|p_application_source|schema cache/i.test(error.message)) {
+  if (error && /p_coaching_focus|schema cache|could not find the function/i.test(error.message)) {
     ({ data: appId, error } = await supabase.rpc("submit_creator_application", {
       p_display_name: displayName,
-      p_pitch: pitch,
+      p_pitch: `Coaching focus: ${coachingFocus}\n\n${pitch}`,
+      p_social_link: socialLink,
+      p_referred_by_user_id: attribution?.referredByUserId ?? null,
+      p_application_source: attribution?.source ?? "unknown",
+    }));
+  }
+
+  if (error && /p_referred_by|p_application_source|schema cache|could not find the function/i.test(error.message)) {
+    ({ data: appId, error } = await supabase.rpc("submit_creator_application", {
+      p_display_name: displayName,
+      p_pitch: `Coaching focus: ${coachingFocus}\n\n${pitch}`,
       p_social_link: socialLink,
     }));
   }
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(
+      userFacingErrorMessage(new Error(error.message), "Could not submit your application. Please try again."),
+    );
   }
 
   if (!appId) {
     throw new Error("Could not create application.");
   }
 
+  const { recordPlatformEvent } = await import("@/lib/analytics/record-event");
+  await recordPlatformEvent({
+    eventType: "creator_application_submitted",
+    userId: user.id,
+    idempotencyKey: `creator_application_submitted:${appId}`,
+  });
+
   revalidatePath("/become-creator");
   revalidatePath("/profile");
   redirect(`/become-creator?submitted=1&app=${appId}`);
+}
+
+export async function refreshCreatorVerificationCode(applicationId: string): Promise<{
+  ok: boolean;
+  message: string;
+}> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, message: "Log in to refresh your verification code." };
+
+  const { error } = await supabase.rpc("refresh_creator_verification_code", {
+    app_id: applicationId,
+  });
+  if (error) {
+    if (/schema cache|could not find the function/i.test(error.message)) {
+      return {
+        ok: false,
+        message: "Requesting a new code needs database migration 051. Ask an admin to run it.",
+      };
+    }
+    return {
+      ok: false,
+      message: userFacingErrorMessage(
+        new Error(error.message),
+        "Could not create a new verification code.",
+      ),
+    };
+  }
+
+  revalidatePath("/become-creator");
+  return { ok: true, message: "New verification code ready. Add it to your public bio, then check again." };
 }
 
 export async function verifyBioForApplication(applicationId: string): Promise<{

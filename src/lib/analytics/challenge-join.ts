@@ -64,4 +64,27 @@ export async function recordChallengeJoinedEvent(input: {
     idempotencyKey: `challenge_joined:${input.challengeId}:${input.userId}`,
     properties: { isNewPlatformUser: input.isNewPlatformUser },
   });
+
+  if (input.userId === input.creatorId) return;
+  const admin = createAdminClient();
+  if (!admin) return;
+  const { data: challenges } = await admin
+    .from("challenges")
+    .select("id")
+    .eq("created_by", input.creatorId);
+  const ids = (challenges ?? []).map((row) => row.id);
+  if (!ids.length) return;
+  const { count } = await admin
+    .from("challenge_participants")
+    .select("*", { count: "exact", head: true })
+    .in("challenge_id", ids)
+    .neq("user_id", input.creatorId);
+  if (count !== 1) return;
+  await recordPlatformEvent({
+    eventType: "creator_first_participant_joined",
+    userId: input.userId,
+    creatorId: input.creatorId,
+    challengeId: input.challengeId,
+    idempotencyKey: `creator_first_participant:${input.creatorId}`,
+  });
 }

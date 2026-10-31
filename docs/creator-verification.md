@@ -15,6 +15,10 @@
 
 Social verification **never** auto-approves creator privileges.
 
+An expired code stays on the same application. The applicant requests a new 48-hour code. An admin rejection stays closed until **Allow reapply**.
+
+Personal invitations are a separate path (`051_creator_invites_and_onboarding.sql`). They do not skip the checks above for organic applicants.
+
 ## Database
 
 Run after 002, **in two steps** (Supabase SQL Editor):

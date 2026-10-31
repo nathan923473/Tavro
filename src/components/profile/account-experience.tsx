@@ -80,6 +80,12 @@ export async function AccountExperience() {
         {profile?.role === "admin" ? (
           <>
             <Link
+              href="/admin/creator-invitations"
+              className="flex min-h-11 items-center justify-center rounded-xl border border-border text-sm font-semibold"
+            >
+              Invite a creator
+            </Link>
+            <Link
               href="/admin/creator-applications"
               className="flex min-h-11 items-center justify-center rounded-xl border border-border text-sm font-semibold"
             >

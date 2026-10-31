@@ -1,8 +1,10 @@
 import { CreatorAcquisitionSummary } from "@/components/admin/creator-acquisition-summary";
+import { CreatorOnboardingFunnelSummary } from "@/components/admin/creator-onboarding-funnel";
 import { CreatorApplicationReviewList } from "@/components/admin/creator-application-review-list";
 import { PageHeader } from "@/components/layout/page-header";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { listApplicationsForAdmin } from "@/lib/creator/applications";
+import { fetchCreatorOnboardingFunnel } from "@/lib/creator/invitations";
 import { fetchCreatorAcquisitionStats } from "@/lib/data/creator-acquisition";
 import { createClient } from "@/lib/supabase/server";
 
@@ -10,9 +12,10 @@ export const metadata = { title: "Creator applications" };
 
 export default async function AdminCreatorApplicationsPage() {
   await requireAdmin();
-  const [applications, stats] = await Promise.all([
+  const [applications, stats, funnel] = await Promise.all([
     listApplicationsForAdmin(),
     fetchCreatorAcquisitionStats(),
+    fetchCreatorOnboardingFunnel(),
   ]);
 
   const referrerIds = [
@@ -39,6 +42,7 @@ export default async function AdminCreatorApplicationsPage() {
         subtitle="Private admin review · verification required before approval"
       />
       <div className="px-4 py-4">
+        <CreatorOnboardingFunnelSummary stats={funnel} />
         <CreatorAcquisitionSummary stats={stats} />
         <CreatorApplicationReviewList
           applications={applications}

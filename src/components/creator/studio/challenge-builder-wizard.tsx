@@ -251,7 +251,12 @@ export function ChallengeBuilderWizard({
           Share your link on Instagram, Stories, or DMs. All challenges are free to join.
         </p>
         <CopyLinkButton url={published.creatorPath} label="Copy challenge link" fullWidth />
-        <ShareChallengeButton path={published.creatorPath} title={title} fullWidth />
+        <ShareChallengeButton
+          path={published.creatorPath}
+          title={title}
+          challengeId={challengeId ?? undefined}
+          fullWidth
+        />
         <Link
           href={published.creatorPath}
           className="flex min-h-11 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
