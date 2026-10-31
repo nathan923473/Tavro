@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { submitContentReportAction } from "@/app/(app)/moderation/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -129,7 +131,7 @@ export function ReportContentDialog({
                   setMessage("Thanks — your report was submitted.");
                   setTimeout(onClose, 1200);
                 } catch (e) {
-                  setMessage(e instanceof Error ? e.message : "Could not submit report.");
+                  setMessage(userFacingErrorMessage(e, "Could not submit report."));
                 }
               })
             }

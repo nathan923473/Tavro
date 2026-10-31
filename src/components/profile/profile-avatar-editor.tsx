@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { uploadProfileAvatarAction } from "@/app/(app)/profile/actions";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { Button } from "@/components/ui/button";
@@ -47,7 +49,7 @@ export function ProfileAvatarEditor({
                   setMessage("Photo uploaded.");
                   router.refresh();
                 } catch (err) {
-                  setMessage(err instanceof Error ? err.message : "Upload failed.");
+                  setMessage(userFacingErrorMessage(err, "Upload failed."));
                 }
               });
             }}

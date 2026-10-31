@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { createAnnouncementAction } from "@/app/(app)/studio/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -75,7 +77,7 @@ export function StudioAnnouncementsPanel({
                 setMessage("Published.");
                 router.refresh();
               } catch (e) {
-                setMessage(e instanceof Error ? e.message : "Failed.");
+                setMessage(userFacingErrorMessage(e, "Failed."));
               }
             })
           }

@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { BrandWordmark } from "@/components/brand/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -98,7 +100,7 @@ function AuthFormInner({ mode }: { mode: AuthMode }) {
         router.refresh();
       }
     } catch (e) {
-      const raw = e instanceof Error ? e.message : "Something went wrong";
+      const raw = userFacingErrorMessage(e, "Something went wrong");
       if (raw.includes("Database error saving new user")) {
         setMessage(
           "Sign-up failed in Supabase (profile trigger). In Supabase → SQL Editor, run migration 003_fix_signup_profile_trigger.sql from this repo, then try again.",

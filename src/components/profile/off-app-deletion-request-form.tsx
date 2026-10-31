@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { submitOffAppDeletionRequestAction } from "@/app/(app)/profile/delete-account-actions";
 import { Button } from "@/components/ui/button";
 import { useState, useTransition } from "react";
@@ -23,7 +25,7 @@ export function OffAppDeletionRequestForm() {
             setEmail("");
             setNote("");
           } catch (err) {
-            setMessage(err instanceof Error ? err.message : "Could not submit request.");
+            setMessage(userFacingErrorMessage(err, "Could not submit request."));
           }
         });
       }}

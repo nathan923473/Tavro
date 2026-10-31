@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { ContentGuidelinesReminder } from "@/components/moderation/content-guidelines-reminder";
 import { setCommunityMediaUrlsAction } from "@/app/(app)/studio/media-actions";
 import { Button } from "@/components/ui/button";
@@ -34,7 +36,7 @@ export function CommunityMediaUpload({
         setMessage(`${kind === "avatar" ? "Profile" : "Banner"} image saved.`);
         router.refresh();
       } catch (e) {
-        setMessage(e instanceof Error ? e.message : "Upload failed.");
+        setMessage(userFacingErrorMessage(e, "Upload failed."));
       }
     });
   }

@@ -4,6 +4,7 @@ import { readCreatorApplicationAttribution } from "@/lib/creator/growth-actions"
 import { bioContainsVerificationCode } from "@/lib/creator/verification";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
 import { redirect } from "next/navigation";
 
 export async function submitCreatorApplication(formData: FormData): Promise<void> {
@@ -110,7 +111,10 @@ export async function verifyBioForApplication(applicationId: string): Promise<{
   });
 
   if (error) {
-    return { ok: false, message: error.message };
+    return {
+      ok: false,
+      message: userFacingErrorMessage(error, "Could not complete verification. Please try again."),
+    };
   }
 
   revalidatePath("/become-creator");
@@ -138,7 +142,10 @@ export async function requestDmVerification(applicationId: string): Promise<{
   });
 
   if (error) {
-    return { ok: false, message: error.message };
+    return {
+      ok: false,
+      message: userFacingErrorMessage(error, "Could not complete verification. Please try again."),
+    };
   }
 
   revalidatePath("/become-creator");

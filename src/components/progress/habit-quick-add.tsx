@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { createHabitAction } from "@/app/(app)/progress/actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -94,7 +96,7 @@ export function HabitQuickAdd({
         setReminderTime("");
         router.refresh();
       } catch (e) {
-        setMessage(e instanceof Error ? e.message : "Could not add habit.");
+        setMessage(userFacingErrorMessage(e, "Could not add habit."));
       }
     });
   }

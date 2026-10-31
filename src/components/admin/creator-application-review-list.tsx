@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import {
   adminApproveApplication,
   adminConfirmVerification,
@@ -29,7 +31,7 @@ export function CreatorApplicationReviewList({
       await action();
       window.location.reload();
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Action failed");
+      setMessage(userFacingErrorMessage(e, "Action failed"));
       setBusyId(null);
     }
   }

@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import {
   approveGroupJoinRequestAction,
   blockUserAction,
@@ -90,7 +92,7 @@ export function GroupInviteSettings({
                 router.refresh();
               } catch (err) {
                 setLocalVisibility(visibility);
-                setStatus(err instanceof Error ? err.message : "Update failed.");
+                setStatus(userFacingErrorMessage(err, "Update failed."));
               }
             });
           }}
@@ -136,7 +138,7 @@ export function GroupInviteSettings({
                     router.refresh();
                   } catch (err) {
                     setLocalDiscoveryPaused(discoveryPaused);
-                    setStatus(err instanceof Error ? err.message : "Update failed.");
+                    setStatus(userFacingErrorMessage(err, "Update failed."));
                   }
                 });
               }}
@@ -158,7 +160,7 @@ export function GroupInviteSettings({
                     router.refresh();
                   } catch (err) {
                     setLocalFrequency(checkInFrequency);
-                    setStatus(err instanceof Error ? err.message : "Update failed.");
+                    setStatus(userFacingErrorMessage(err, "Update failed."));
                   }
                 });
               }}
@@ -191,7 +193,7 @@ export function GroupInviteSettings({
                     router.refresh();
                   } catch (err) {
                     setLocalSummary(discoverySummary);
-                    setStatus(err instanceof Error ? err.message : "Update failed.");
+                    setStatus(userFacingErrorMessage(err, "Update failed."));
                   }
                 });
               }}
@@ -218,7 +220,7 @@ export function GroupInviteSettings({
                 await setGroupInvitesEnabledAction(groupId, !invitesEnabled);
                 router.refresh();
               } catch (e) {
-                setStatus(e instanceof Error ? e.message : "Update failed.");
+                setStatus(userFacingErrorMessage(e, "Update failed."));
               }
             })
           }
@@ -240,7 +242,7 @@ export function GroupInviteSettings({
                 });
                 router.refresh();
               } catch (e) {
-                setStatus(e instanceof Error ? e.message : "Update failed.");
+                setStatus(userFacingErrorMessage(e, "Update failed."));
               }
             })
           }
@@ -262,7 +264,7 @@ export function GroupInviteSettings({
               setStatus("New invite code and link generated. Old invites stop working.");
               router.refresh();
             } catch (e) {
-              setStatus(e instanceof Error ? e.message : "Could not regenerate.");
+              setStatus(userFacingErrorMessage(e, "Could not regenerate."));
             }
           })
         }
@@ -307,7 +309,7 @@ export function GroupInviteSettings({
                             await approveGroupJoinRequestAction(req.id);
                             router.refresh();
                           } catch (e) {
-                            setStatus(e instanceof Error ? e.message : "Could not approve.");
+                            setStatus(userFacingErrorMessage(e, "Could not approve."));
                           }
                         })
                       }
@@ -324,7 +326,7 @@ export function GroupInviteSettings({
                             await declineGroupJoinRequestAction(req.id);
                             router.refresh();
                           } catch (e) {
-                            setStatus(e instanceof Error ? e.message : "Could not decline.");
+                            setStatus(userFacingErrorMessage(e, "Could not decline."));
                           }
                         })
                       }
@@ -346,7 +348,7 @@ export function GroupInviteSettings({
                           setStatus(`${req.displayName} blocked.`);
                           router.refresh();
                         } catch (e) {
-                          setStatus(e instanceof Error ? e.message : "Could not block.");
+                          setStatus(userFacingErrorMessage(e, "Could not block."));
                         }
                       })
                     }
@@ -370,7 +372,7 @@ export function GroupInviteSettings({
                           });
                           setStatus("Report submitted for review.");
                         } catch (e) {
-                          setStatus(e instanceof Error ? e.message : "Could not report.");
+                          setStatus(userFacingErrorMessage(e, "Could not report."));
                         }
                       })
                     }

@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import {
   removeChallengeCoverAction,
   uploadChallengeCoverAction,
@@ -46,7 +48,7 @@ export function ChallengeCoverField({
         setMessage("Cover image updated.");
         router.refresh();
       } catch (e) {
-        setMessage(e instanceof Error ? e.message : "Upload failed.");
+        setMessage(userFacingErrorMessage(e, "Upload failed."));
       } finally {
         URL.revokeObjectURL(localPreview);
         setPreviewUrl(null);
@@ -62,7 +64,7 @@ export function ChallengeCoverField({
         setMessage("Cover image removed.");
         router.refresh();
       } catch (e) {
-        setMessage(e instanceof Error ? e.message : "Remove failed.");
+        setMessage(userFacingErrorMessage(e, "Remove failed."));
       }
     });
   }

@@ -4,6 +4,7 @@ import { ensureUserProfile } from "@/lib/auth/ensure-profile";
 import { createAdminClient, isAdminSignupEnabled } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
 import { randomBytes } from "node:crypto";
 
 async function findUserIdByEmail(
@@ -146,7 +147,10 @@ export async function loginMember(input: {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    return { ok: false, message: error.message };
+    return {
+      ok: false,
+      message: userFacingErrorMessage(error, "Could not log in. Check your email and password."),
+    };
   }
 
   await ensureUserProfile();

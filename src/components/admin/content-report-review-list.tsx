@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { adminUpdateContentReportAction } from "@/app/(app)/moderation/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,7 +26,7 @@ export function ContentReportReviewList({ reports }: { reports: ContentReportRow
       await adminUpdateContentReportAction(id, status, notesById[id] ?? "");
       window.location.reload();
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Action failed");
+      setMessage(userFacingErrorMessage(e, "Action failed"));
       setBusyId(null);
     }
   }

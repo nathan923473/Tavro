@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { updateMemberGoalPreferencesAction } from "@/app/(app)/member/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -83,7 +85,7 @@ export function MemberGoalPreferencesCard({
               setStatus("Saved.");
               router.refresh();
             } catch (e) {
-              setStatus(e instanceof Error ? e.message : "Could not save.");
+              setStatus(userFacingErrorMessage(e, "Could not save."));
             }
           })
         }

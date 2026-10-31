@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { deleteAccountAction } from "@/app/(app)/profile/delete-account-actions";
 import {
   ACCOUNT_DELETION_SUMMARY,
@@ -37,7 +39,7 @@ export function DeleteAccountSection() {
           window.location.href = "/account-deleted";
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Could not delete account.");
+        setError(userFacingErrorMessage(e, "Could not delete account."));
       }
     });
   }

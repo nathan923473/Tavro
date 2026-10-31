@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { CreatorApplicationRow } from "@/lib/creator/applications";
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
 import { useState } from "react";
 
 export function CreatorVerificationPanel({
@@ -28,7 +29,7 @@ export function CreatorVerificationPanel({
     setLoading("bio");
     setMessage(null);
     const result = await verifyBioForApplication(application.id);
-    setMessage(result.message);
+    setMessage(userFacingErrorMessage(result.message, "Could not verify that. Please try again."));
     setLoading(null);
     if (result.ok) {
       window.location.reload();
@@ -39,7 +40,7 @@ export function CreatorVerificationPanel({
     setLoading("dm");
     setMessage(null);
     const result = await requestDmVerification(application.id);
-    setMessage(result.message);
+    setMessage(userFacingErrorMessage(result.message, "Could not verify that. Please try again."));
     setLoading(null);
   }
 

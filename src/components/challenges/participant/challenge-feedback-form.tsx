@@ -3,6 +3,7 @@
 import { submitChallengeFeedbackAction } from "@/lib/challenge-report/challenge-feedback-actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
 import { useState, useTransition } from "react";
 
 type Props = {
@@ -100,7 +101,11 @@ export function ChallengeFeedbackForm({ challengeId, initial }: Props) {
               whatImprove,
               shareWrittenFeedback: shareWritten,
             });
-            setMessage(res.ok ? "Thanks — feedback saved." : res.message);
+            setMessage(
+              res.ok
+                ? "Thanks — feedback saved."
+                : userFacingErrorMessage(res.message, "Could not save feedback. Please try again."),
+            );
           });
         }}
       >

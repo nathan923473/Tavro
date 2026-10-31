@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { saveParticipantTimezoneAction } from "@/app/(app)/member/actions";
 import { TimezoneSelect } from "@/components/timezone/timezone-select";
 import { Button } from "@/components/ui/button";
@@ -76,7 +78,7 @@ export function TimezoneSettingsCard({
               });
               setMessage("Timezone saved.");
             } catch (e) {
-              setMessage(e instanceof Error ? e.message : "Could not save.");
+              setMessage(userFacingErrorMessage(e, "Could not save."));
             }
           })
         }

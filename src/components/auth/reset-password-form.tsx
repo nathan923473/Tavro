@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { BrandWordmark } from "@/components/brand/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -68,7 +70,7 @@ export function ResetPasswordForm() {
       router.push("/?password_updated=1");
       router.refresh();
     } catch (e) {
-      const raw = e instanceof Error ? e.message : "Something went wrong";
+      const raw = userFacingErrorMessage(e, "Something went wrong");
       if (raw.toLowerCase().includes("session")) {
         setMessage(
           "This reset link expired or was already used. Request a new link from the forgot password page.",

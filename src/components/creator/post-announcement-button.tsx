@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { updateCommunityAnnouncementAction } from "@/app/(app)/member/actions";
 import { Button } from "@/components/ui/button";
 import { Megaphone } from "lucide-react";
@@ -36,7 +38,7 @@ export function PostAnnouncementButton({
               setMessage("Announcement saved.");
               router.refresh();
             } catch (e) {
-              setMessage(e instanceof Error ? e.message : "Save failed.");
+              setMessage(userFacingErrorMessage(e, "Save failed."));
             }
           });
         }}

@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { shareAchievementWithGroupAction } from "@/app/(app)/progress/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -38,7 +40,7 @@ export function ShareWithGroupCard({ loggedIn }: { loggedIn: boolean }) {
               await shareAchievementWithGroupAction(message);
               setStatus("Shared with your group.");
             } catch (e) {
-              setStatus(e instanceof Error ? e.message : "Could not share.");
+              setStatus(userFacingErrorMessage(e, "Could not share."));
             }
           })
         }

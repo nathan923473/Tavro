@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { addWeighInAction } from "@/app/(app)/member/actions";
 import { WeightUnitToggle } from "@/components/progress/weight-unit-toggle";
 import { Button } from "@/components/ui/button";
@@ -59,7 +61,7 @@ export function WeighInForm({
         router.refresh();
       } catch (error) {
         setStatus("error");
-        setMessage(error instanceof Error ? error.message : "Could not save.");
+        setMessage(userFacingErrorMessage(error, "Could not save."));
       }
     });
   }

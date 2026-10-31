@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { BrandWordmark } from "@/components/brand/brand-wordmark";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -38,7 +40,7 @@ export function ForgotPasswordForm() {
         `If an account exists for that email, we sent a link to choose a new password. Check spam, then open the link on this device in ${APP_NAME}.`,
       );
     } catch (e) {
-      const raw = e instanceof Error ? e.message : "Something went wrong";
+      const raw = userFacingErrorMessage(e, "Something went wrong");
       if (
         raw.toLowerCase().includes("rate limit") ||
         raw.includes("over_email_send_rate_limit")

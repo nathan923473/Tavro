@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { deleteChallengeFormAction } from "@/app/(app)/studio/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -30,7 +32,7 @@ export function DeleteChallengeButton({
         setError(null);
         await deleteChallengeFormAction(challengeId);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not delete challenge.");
+        setError(userFacingErrorMessage(err, "Could not delete challenge."));
       }
     });
   }

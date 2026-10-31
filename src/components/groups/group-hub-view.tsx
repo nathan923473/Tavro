@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { GroupOverviewHeader } from "@/components/groups/group-overview-header";
 import { GroupOwnerPendingCard } from "@/components/groups/group-owner-pending-card";
 import { GroupTabChat } from "@/components/groups/group-tab-chat";
@@ -43,7 +45,7 @@ export function GroupHubView({
         setStatus(null);
         router.refresh();
       } catch (e) {
-        setStatus(e instanceof Error ? e.message : "Something went wrong.");
+        setStatus(userFacingErrorMessage(e, "Something went wrong."));
       }
     });
   }

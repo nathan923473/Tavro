@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
 import Link from "next/link";
 
 export default function CreatorCommunityError({
@@ -18,7 +19,7 @@ export default function CreatorCommunityError({
         you did wrong in the browser.
       </p>
       <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
-        {error.message || "Unknown error"}
+        {userFacingErrorMessage(error, "Something unexpected went wrong while loading this page.")}
       </p>
       <p className="text-sm text-muted-foreground">
         In Supabase → <strong>SQL Editor</strong>, run the whole file{" "}

@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { updateDisplayNameAction } from "@/app/(app)/profile/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -21,7 +23,7 @@ export function DisplayNameCard({ initialName }: { initialName: string }) {
         setMessage("Saved.");
         router.refresh();
       } catch (err) {
-        setMessage(err instanceof Error ? err.message : "Could not save.");
+        setMessage(userFacingErrorMessage(err, "Could not save."));
       }
     });
   }

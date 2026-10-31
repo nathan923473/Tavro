@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { requestJoinGroupByInviteCodeAction } from "@/app/(app)/groups/actions";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -25,13 +27,13 @@ export function GroupInviteJoin({
           startTransition(async () => {
             try {
               const result = await requestJoinGroupByInviteCodeAction(code);
-              setMessage(result.message);
+              setMessage(userFacingErrorMessage(result.message, "Could not join this group. Please try again."));
               if (result.status !== "pending") {
                 router.push("/groups");
                 router.refresh();
               }
             } catch (e) {
-              setMessage(e instanceof Error ? e.message : "Could not join.");
+              setMessage(userFacingErrorMessage(e, "Could not join."));
             }
           })
         }

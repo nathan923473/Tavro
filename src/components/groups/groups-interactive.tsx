@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import {
   createAccountabilityGroupAction,
   requestJoinGroupByInviteCodeAction,
@@ -283,7 +285,7 @@ export function GroupsInteractive({
                   setStatus("Your group is ready — invite a few friends who share your goals.");
                   router.refresh();
                 } catch (e) {
-                  setStatus(e instanceof Error ? e.message : "Failed");
+                  setStatus(userFacingErrorMessage(e, "Failed"));
                 }
               })
             }
@@ -314,10 +316,12 @@ export function GroupsInteractive({
                 startTransition(async () => {
                   try {
                     const result = await requestJoinGroupByInviteCodeAction(joinCode.trim());
-                    setStatus(result.message);
+                    setStatus(
+                      userFacingErrorMessage(result.message, "Could not join this group. Please try again."),
+                    );
                     router.refresh();
                   } catch (e) {
-                    setStatus(e instanceof Error ? e.message : "Failed");
+                    setStatus(userFacingErrorMessage(e, "Failed"));
                   }
                 })
               }

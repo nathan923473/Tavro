@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { completeOnboarding } from "@/app/(app)/member/actions";
 import { TimezoneSelect } from "@/components/timezone/timezone-select";
 import {
@@ -116,7 +118,7 @@ export function OnboardingFlow({
         router.push(nextPath ?? "/");
         router.refresh();
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Could not save onboarding.");
+        setError(userFacingErrorMessage(e, "Could not save onboarding."));
       }
     });
   }

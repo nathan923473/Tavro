@@ -14,6 +14,7 @@ import { ACCOUNTABILITY_GROUP_MAX_MEMBERS } from "@/lib/copy/accountability-grou
 import type { GroupFocusType } from "@/types";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
 
 export function GroupDiscoveryPanel({
   eligible,
@@ -192,10 +193,14 @@ export function GroupDiscoveryPanel({
                     startTransition(async () => {
                       try {
                         const result = await requestDiscoveryGroupJoinAction(g.id);
-                        setStatus(result.message);
+                        setStatus(
+                          userFacingErrorMessage(result.message, discoveryJoinErrorMessage("unknown")),
+                        );
                         router.refresh();
                       } catch (e) {
-                        setStatus(e instanceof Error ? e.message : discoveryJoinErrorMessage("unknown"));
+                        setStatus(
+                          userFacingErrorMessage(e, discoveryJoinErrorMessage("unknown")),
+                        );
                       }
                     })
                   }

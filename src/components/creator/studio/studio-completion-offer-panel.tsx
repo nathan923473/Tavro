@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { saveCompletionOfferAction } from "@/app/(app)/studio/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -47,7 +49,7 @@ export function StudioCompletionOfferPanel({
               setMessage("Saved.");
               router.refresh();
             } catch (e) {
-              setMessage(e instanceof Error ? e.message : "Save failed.");
+              setMessage(userFacingErrorMessage(e, "Save failed."));
             }
           });
         }}

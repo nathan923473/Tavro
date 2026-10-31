@@ -25,6 +25,7 @@ import { OpenChallengeButton } from "@/components/challenges/open-challenge-butt
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
 
 type ChallengeCardProps = {
   challenge: Challenge;
@@ -64,7 +65,7 @@ export function ChallengeCard({
         setMessage(success);
         router.refresh();
       } catch (e) {
-        setMessage(e instanceof Error ? e.message : "Something went wrong");
+        setMessage(userFacingErrorMessage(e, "Something went wrong. Please try again."));
       }
     });
   }
@@ -233,10 +234,15 @@ export function ChallengeCard({
             fullWidth
             disabled={pending || !loggedIn}
             onClick={() =>
-              run(
-                () => joinChallengeAction(challenge.id),
-                "You're in — check My challenges on Home.",
-              )
+              startTransition(async () => {
+                const result = await joinChallengeAction(challenge.id);
+                if (!result.ok) {
+                  setMessage(result.message);
+                  return;
+                }
+                setMessage("You're in — check My challenges on Home.");
+                router.refresh();
+              })
             }
           >
             {loggedIn ? "Join free challenge" : "Log in to join"}

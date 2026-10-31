@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import {
   approveGroupJoinRequestAction,
   declineGroupJoinRequestAction,
@@ -75,7 +77,7 @@ export function GroupOwnerPendingCard({
                       setStatus(null);
                       router.refresh();
                     } catch (e) {
-                      setStatus(e instanceof Error ? e.message : "Could not approve.");
+                      setStatus(userFacingErrorMessage(e, "Could not approve."));
                     }
                   })
                 }
@@ -93,7 +95,7 @@ export function GroupOwnerPendingCard({
                       setStatus(null);
                       router.refresh();
                     } catch (e) {
-                      setStatus(e instanceof Error ? e.message : "Could not decline.");
+                      setStatus(userFacingErrorMessage(e, "Could not decline."));
                     }
                   })
                 }

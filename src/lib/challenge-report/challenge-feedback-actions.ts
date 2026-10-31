@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
 import { revalidatePath } from "next/cache";
 
 export type ChallengeFeedbackInput = {
@@ -56,7 +57,10 @@ export async function submitChallengeFeedbackAction(
         message: "Feedback is not enabled yet — run migration 041_challenge_participant_feedback.sql.",
       };
     }
-    return { ok: false, message: error.message };
+    return {
+      ok: false,
+      message: userFacingErrorMessage(error, "Could not save feedback. Please try again."),
+    };
   }
 
   revalidatePath(`/challenges/${input.challengeId}`);

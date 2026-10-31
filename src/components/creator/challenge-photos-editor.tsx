@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { ContentGuidelinesReminder } from "@/components/moderation/content-guidelines-reminder";
 import {
   addChallengePhotoAction,
@@ -51,7 +53,7 @@ export function ChallengePhotosEditor({
         setMessage("Cover photo updated.");
         router.refresh();
       } catch (e) {
-        setMessage(e instanceof Error ? e.message : "Upload failed.");
+        setMessage(userFacingErrorMessage(e, "Upload failed."));
       }
     });
   }
@@ -63,7 +65,7 @@ export function ChallengePhotosEditor({
         setMessage("Cover image removed.");
         router.refresh();
       } catch (e) {
-        setMessage(e instanceof Error ? e.message : "Remove failed.");
+        setMessage(userFacingErrorMessage(e, "Remove failed."));
       }
     });
   }
@@ -76,7 +78,7 @@ export function ChallengePhotosEditor({
         setMessage("Photo added to challenge page.");
         router.refresh();
       } catch (e) {
-        setMessage(e instanceof Error ? e.message : "Upload failed.");
+        setMessage(userFacingErrorMessage(e, "Upload failed."));
       }
     });
   }
@@ -184,7 +186,7 @@ export function ChallengePhotosEditor({
                       await removeChallengePhotoAction(photo.id);
                       router.refresh();
                     } catch (e) {
-                      setMessage(e instanceof Error ? e.message : "Remove failed.");
+                      setMessage(userFacingErrorMessage(e, "Remove failed."));
                     }
                   })
                 }

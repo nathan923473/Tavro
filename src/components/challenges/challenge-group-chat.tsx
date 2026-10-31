@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import {
   loadChallengeMessagesAction,
   postChallengeMessageAction,
@@ -90,7 +92,7 @@ export function ChallengeGroupChat({
         setStatus("Message sent.");
         router.refresh();
       } catch (e) {
-        setStatus(e instanceof Error ? e.message : "Could not send message.");
+        setStatus(userFacingErrorMessage(e, "Could not send message."));
       }
     });
   }

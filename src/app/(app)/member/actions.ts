@@ -10,6 +10,7 @@ import type { AuStateOrTerritory } from "@/lib/timezone/constants";
 import { unwrapOne } from "@/lib/data/relations";
 import { revalidatePath } from "next/cache";
 import { randomBytes, randomUUID } from "node:crypto";
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
 
 async function requireUserId() {
   const supabase = await createClient();
@@ -438,7 +439,24 @@ async function maybeUnlockHabitMilestones(
   }
 }
 
-export async function joinChallengeAction(challengeId: string) {
+export async function joinChallengeAction(
+  challengeId: string,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  try {
+    await joinChallengeForUser(challengeId);
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      message: userFacingErrorMessage(
+        error,
+        "Could not join this challenge. Please try again.",
+      ),
+    };
+  }
+}
+
+async function joinChallengeForUser(challengeId: string) {
   const { supabase, userId } = await requireUserId();
   const { data: ch } = await supabase
     .from("challenges")
@@ -508,6 +526,23 @@ async function afterChallengeJoinNotifications(
 
 /** Join then return path to participant onboarding or today's challenge hub. */
 export async function joinChallengeAndContinueAction(
+  challengeId: string,
+  onboardingPath: string,
+): Promise<{ ok: true; nextPath: string } | { ok: false; message: string }> {
+  try {
+    return { ok: true, nextPath: await joinChallengeAndResolvePath(challengeId, onboardingPath) };
+  } catch (error) {
+    return {
+      ok: false,
+      message: userFacingErrorMessage(
+        error,
+        "Could not join this challenge. Please try again.",
+      ),
+    };
+  }
+}
+
+async function joinChallengeAndResolvePath(
   challengeId: string,
   onboardingPath: string,
 ): Promise<string> {

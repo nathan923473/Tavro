@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { saveCommunityAction } from "@/app/(app)/member/actions";
 import { setCommunityMediaUrlsAction } from "@/app/(app)/studio/media-actions";
 import { Badge } from "@/components/ui/badge";
@@ -91,7 +93,7 @@ export function CommunityPageEditor({
         setMessage(`${kind === "avatar" ? "Profile" : "Banner"} photo updated.`);
         router.refresh();
       } catch (e) {
-        setMessage(e instanceof Error ? e.message : "Upload failed.");
+        setMessage(userFacingErrorMessage(e, "Upload failed."));
       }
     });
   }
@@ -121,7 +123,7 @@ export function CommunityPageEditor({
           router.push(`/creator/${result.slug}/edit`);
         }
       } catch (e) {
-        setMessage(e instanceof Error ? e.message : "Save failed.");
+        setMessage(userFacingErrorMessage(e, "Save failed."));
       }
     });
   }

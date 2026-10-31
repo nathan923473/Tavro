@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import {
   publishChallengeAction,
   saveChallengeDraftAction,
@@ -236,7 +238,7 @@ export function ChallengeBuilderWizard({
         }
         if (typeof nextStep === "number") setStep(nextStep);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Save failed.");
+        setError(userFacingErrorMessage(e, "Save failed."));
       }
     });
   }
@@ -618,7 +620,7 @@ export function ChallengeBuilderWizard({
                     setPublished(paths);
                     router.refresh();
                   } catch (e) {
-                    setError(e instanceof Error ? e.message : "Publish failed.");
+                    setError(userFacingErrorMessage(e, "Publish failed."));
                   }
                 });
               }}

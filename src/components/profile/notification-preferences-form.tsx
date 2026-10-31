@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { saveNotificationPreferencesAction } from "@/app/(app)/profile/notification-actions";
 import { Button } from "@/components/ui/button";
 import { useState, useTransition } from "react";
@@ -27,7 +29,7 @@ export function NotificationPreferencesForm({
             await saveNotificationPreferencesAction(prefs);
             setMessage("Saved.");
           } catch (err) {
-            setMessage(err instanceof Error ? err.message : "Save failed.");
+            setMessage(userFacingErrorMessage(err, "Save failed."));
           }
         });
       }}

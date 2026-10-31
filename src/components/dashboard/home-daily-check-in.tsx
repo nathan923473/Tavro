@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { submitDailyCheckInAction } from "@/app/(app)/member/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -53,7 +55,7 @@ export function HomeDailyCheckIn({
         router.refresh();
       } catch (error) {
         setSaveState("error");
-        setSaveError(error instanceof Error ? error.message : "Could not save check-in.");
+        setSaveError(userFacingErrorMessage(error, "Could not save check-in."));
       }
     });
   }

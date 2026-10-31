@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
+
 import { leaveChallengeAction } from "@/app/(app)/member/actions";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -44,7 +46,7 @@ export function LeaveChallengeButton({
         }
         setConfirming(false);
       } catch (e) {
-        onStatus?.(e instanceof Error ? e.message : "Could not leave challenge.");
+        onStatus?.(userFacingErrorMessage(e, "Could not leave challenge."));
         setConfirming(false);
       }
     });

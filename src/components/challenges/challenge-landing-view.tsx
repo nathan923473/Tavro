@@ -22,6 +22,7 @@ import { OpenChallengeButton } from "@/components/challenges/open-challenge-butt
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { userFacingErrorMessage } from "@/lib/errors/user-message";
 
 function authNextPath(path: string) {
   return `/login?next=${encodeURIComponent(path)}`;
@@ -91,11 +92,17 @@ function ChallengeLandingBody({
     }
     startTransition(async () => {
       try {
-        const next = await joinChallengeAndContinueAction(challenge.id, joinContinuePath);
-        router.push(next);
+        const result = await joinChallengeAndContinueAction(challenge.id, joinContinuePath);
+        if (!result.ok) {
+          setStatus(result.message);
+          return;
+        }
+        router.push(result.nextPath);
         router.refresh();
       } catch (e) {
-        setStatus(e instanceof Error ? e.message : "Could not join.");
+        setStatus(
+          userFacingErrorMessage(e, "Could not join this challenge. Please try again."),
+        );
       }
     });
   }
@@ -265,7 +272,7 @@ function ChallengeLandingBody({
           </div>
 
           {status ? (
-            <p className="mt-2 text-sm text-red-600" role="alert">
+            <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
               {status}
             </p>
           ) : null}
