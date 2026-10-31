@@ -50,7 +50,7 @@ export function DesktopSidebar() {
   const onHome = useMainTabClick("/");
 
   return (
-    <aside className="sticky top-0 hidden h-dvh flex-col border-r border-border/70 bg-surface lg:flex">
+    <aside className="sticky top-0 hidden h-dvh w-[15.5rem] shrink-0 flex-col border-r border-border/70 bg-surface lg:flex">
       <div className="px-5 pb-2 pt-5">
         <Link href="/" onClick={onHome} className="focus-ring inline-flex rounded-xl">
           <BrandWordmark size="sm" />

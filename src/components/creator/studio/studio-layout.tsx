@@ -13,7 +13,7 @@ export function StudioLayout({
   return (
     <div className="animate-fade-up">
       <header className="sticky top-0 z-40 border-b border-border/60 bg-surface/95 backdrop-blur-md">
-        <div className="space-y-3 px-4 py-3.5">
+        <div className="space-y-3 px-4 py-3.5 lg:px-8 lg:py-5">
           <div>
             <h1 className="text-title-lg">{title}</h1>
             {subtitle ? (
@@ -23,7 +23,7 @@ export function StudioLayout({
           <StudioNav />
         </div>
       </header>
-      <div className="page-stack px-4 py-4">{children}</div>
+      <div className="page-stack px-4 py-4 lg:px-8 lg:py-6">{children}</div>
     </div>
   );
 }

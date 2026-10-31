@@ -1,40 +1,21 @@
 "use client";
 
+import { isStudioTabActive, studioTabs } from "@/components/creator/studio/studio-tabs";
 import { cn } from "@/lib/cn";
-import {
-  BarChart3,
-  LayoutGrid,
-  Link2,
-  Settings,
-  Trophy,
-  Users,
-} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
-const tabs = [
-  { href: "/studio", label: "Overview", icon: LayoutGrid, exact: true },
-  { href: "/studio/challenges", label: "Challenges", icon: Trophy },
-  { href: "/studio/community", label: "Community", icon: Users },
-  { href: "/studio/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/studio/shop", label: "Shop & Links", icon: Link2 },
-  { href: "/studio/settings", label: "Profile", icon: Settings },
-] as const;
 
 export function StudioNav() {
   const pathname = usePathname();
 
   return (
     <nav
-      className="scrollbar-none -mx-1 flex gap-1 overflow-x-auto pb-1"
+      className="scrollbar-none -mx-1 flex gap-1 overflow-x-auto pb-1 lg:hidden"
       aria-label="Creator Studio"
     >
-      {tabs.map((tab) => {
+      {studioTabs.map((tab) => {
         const { href, label, icon: Icon } = tab;
-        const exact = "exact" in tab && tab.exact;
-        const active = exact
-          ? pathname === href
-          : pathname === href || pathname.startsWith(`${href}/`);
+        const active = isStudioTabActive(pathname, tab);
         return (
           <Link
             key={href}

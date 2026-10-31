@@ -69,9 +69,11 @@ export function useInstantTabNavigate(): Navigate | null {
 export function InstantTabHost({
   children,
   notificationSlot,
+  creatorStudioSidebar,
 }: {
   children: ReactNode;
   notificationSlot?: ReactNode;
+  creatorStudioSidebar?: ReactNode;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -141,7 +143,7 @@ export function InstantTabHost({
 
   return (
     <InstantNavContext.Provider value={navigate}>
-      <AppShell notificationSlot={notificationSlot}>
+      <AppShell notificationSlot={notificationSlot} creatorStudioSidebar={creatorStudioSidebar}>
         {visible}
         {pending ? (
           <div hidden data-instant-live={cacheVersion}>
